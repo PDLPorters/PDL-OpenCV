@@ -1,5 +1,5 @@
 
- pp_setversion('0.01');
+# pp_setversion('0.01');
 
 pp_addhdr << 'EOH';
  	#include "tracker_wrapper.h"
@@ -32,7 +32,7 @@ EOD
 
 	);
 
-pp_def('init_tracker',
+pp_def('init',
 	Pars=>'float m(k,l); ushort b(j);',
 	# RedoDimsCode=>'$SIZE(l)=3*$SIZE(k); ',
 	# GenericTypes => ['F'],
@@ -58,21 +58,15 @@ pp_def('init_tracker',
 	}
 	 ),
         PMCode => <<'EOP',
-sub init_tracker{
+sub init{
 	my ($img, $tn, $box, $mat) = @_; 
-	zeroes(ushort,4) unless (ref($box) eq 'PDL');
-	say "init_tracker ...";
+	zeroes(ushort,4) unless $box->isa('PDL');
 	my $tracker;
-	_init_tracker_int($img,$box,$tn,$$tracker,$$mat);
-	say "init_tracker ... done";
+	_init_int($img,$box,$tn,$$tracker,$$mat);
 	return ($tracker,$box,$mat);
 }
 EOP
-);
-
-
-
-pp_addpm({At => 'Bot'}, <<"EOD");
+	Doc=><<"EOD",
 
 =head2 init_tracker - initialize OpenCV tracker 
 
@@ -91,8 +85,9 @@ $mat is a reference to the Mat object.
 $tracker is a reference to the tracker object. 
 
 
-=cut
+
 EOD
+);
 
 
 pp_def('update_tracker',
@@ -113,14 +108,6 @@ pp_def('update_tracker',
 		return;
 	},
 	),
-	PMCode=><<"PPPP",
-sub update_tracker {
-	my ($frame,$mat,$tracker,$box)=@_;
-	_update_tracker_int($frame,$box,$$tracker,$$mat);
-	$box;
-}
-PPPP
-
 	Doc=>"update the tracker box.\n",
 	);
 
