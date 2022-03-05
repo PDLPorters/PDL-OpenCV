@@ -1,0 +1,140 @@
+
+ pp_setversion('0.01');
+
+pp_addhdr << 'EOH';
+ 	#include "tracker_wrapper.h"
+	//TrackerWrapper * tw;
+	//MatWrapper * mw;
+
+EOH
+
+pp_def ('set_image',
+	Pars=>'m(k,l);',
+	OtherPars=>'MatWrapper * mw',
+	Code=>pp_line_numbers(__LINE__,
+	'
+		PDL_Indx ks = $SIZE(k);
+		PDL_Indx ls = $SIZE(l);
+		int * x;
+		int * y;
+		MatSize($COMP(mw),x,y);
+		if (((*x) == ks) && ((*y) == ls)) 
+			setData($COMP(mw),$P(m),0);
+		else
+			$CROAK("Matrix size does not match!\n");
+
+	'),
+	Doc=><<"EOD",
+
+=head2 set_image - update data of a Mat object. Size and type should match.
+
+EOD
+
+	);
+
+pp_def('init_tracker',
+	Pars=>'float m(k,l); ushort b(j);',
+	# RedoDimsCode=>'$SIZE(l)=3*$SIZE(k); ',
+	# GenericTypes => ['F'],
+	# OtherPars=>'size_t tracker',
+	OtherPars => 'int tracker; TrackerWrapper *  twi; MatWrapper * mwi; ' ,#,struct MatWrapper * mw',
+	Code=>pp_line_numbers(__LINE__,
+	q{
+		float myf=$m(k=>48,l=>48);
+		printf("48 48%f\\n",myf);
+		printf("tracker%d;\\n",$COMP(tracker));
+		PDL_Indx ks = $SIZE(k);
+		PDL_Indx ls = $SIZE(l);
+		struct bBox box;
+		box.x=$b(j=>0);
+		box.y=$b(j=>1);
+		box.width=$b(j=>2);
+		box.height=$b(j=>3);
+		printf("Hello World\n");
+		$COMP(twi) = newTracker($COMP(tracker));
+		$COMP(mwi) = newMat(ks,ls,cvT.f32c1,$P(m));
+		int res=init_tracker($COMP(twi),$COMP(mwi),&box);
+   		//printf ("twi %d ",$COMP(twi));
+	}
+	 ),
+        PMCode => <<'EOP',
+sub init_tracker{
+	my ($img, $tn, $box, $mat) = @_; 
+	zeroes(ushort,4) unless (ref($box) eq 'PDL');
+	say "init_tracker ...";
+	my $tracker;
+	_init_tracker_int($img,$box,$tn,$$tracker,$$mat);
+	say "init_tracker ... done";
+	return ($tracker,$box,$mat);
+}
+EOP
+);
+
+
+
+pp_addpm({At => 'Bot'}, <<"EOD");
+
+=head2 init_tracker - initialize OpenCV tracker 
+
+
+Call with 
+	
+	($tracker,$box) = init_tracker ( $img, $tn, [$box, [ $mat ]] );
+
+The first argument $img is the data, e.e. anything that fits a Mat object.
+$tn is the tracker, in this order, strarting with 0: 
+	
+	["BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
+
+$box is a 4-integer array (x,y,width,height) holding the bounding box.
+$mat is a reference to the Mat object.
+$tracker is a reference to the tracker object. 
+
+
+=cut
+EOD
+
+
+pp_def('update_tracker',
+	Pars=>'float m(k,l); [o] b(j);',
+	OtherPars => "TrackerWrapper * twi; MatWrapper * mwi",
+	Code =>pp_line_numbers(__LINE__,
+ 	q{
+   		printf ("twi %d ",$COMP(twi));
+		struct bBox  box;
+		MatWrapper * mw = $COMP(mwi);
+		TrackerWrapper * tw = $COMP(twi);
+		setData(mw,$P(m),cvT.f32c1);
+		update_tracker(tw,mw,& box);
+		$b(j=>0)=box.x;
+		$b(j=>1)=box.y;
+		$b(j=>2)=box.width;
+		$b(j=>3)=box.height;
+		return;
+	},
+	),
+	PMCode=><<"PPPP",
+sub update_tracker {
+	my ($frame,$mat,$tracker,$box)=@_;
+	_update_tracker_int($frame,$box,$$tracker,$$mat);
+	$box;
+}
+PPPP
+
+	Doc=>"update the tracker box.\n",
+	);
+
+
+
+pp_add_boot << 'EOB';
+
+	tw_init();
+	printf ("init done (autoinclude)\n");
+
+
+EOB
+
+
+
+pp_done();
+
