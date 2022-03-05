@@ -1,5 +1,14 @@
 
+
+pp_addpm ({At=>'Top'},<<"EOPM");
+
+use 5.10.0;
+
+EOPM
+
 # pp_setversion('0.01');
+
+pp_bless ("PDL::Tracking");
 
 pp_addhdr << 'EOH';
  	#include "tracker_wrapper.h"
@@ -32,7 +41,7 @@ EOD
 
 	);
 
-pp_def('init',
+pp_def('init_tracker',
 	Pars=>'float m(k,l); ushort b(j);',
 	# RedoDimsCode=>'$SIZE(l)=3*$SIZE(k); ',
 	# GenericTypes => ['F'],
@@ -45,27 +54,39 @@ pp_def('init',
 		printf("tracker%d;\\n",$COMP(tracker));
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
-		struct bBox box;
+		bBox box;
 		box.x=$b(j=>0);
 		box.y=$b(j=>1);
 		box.width=$b(j=>2);
 		box.height=$b(j=>3);
+		printf("ROI x %d y %d width %d height %d",box.x,box.y,box.width,box.height);
+		//printf("ROI x %d y %d width %d height %d",box->x,box->y,box->width,box->height);
+
 		printf("Hello World\n");
-		$COMP(twi) = newTracker($COMP(tracker));
-		$COMP(mwi) = newMat(ks,ls,cvT.f32c1,$P(m));
-		int res=init_tracker($COMP(twi),$COMP(mwi),&box);
-   		//printf ("twi %d ",$COMP(twi));
+		TrackerWrapper *tw = newTracker($COMP(tracker));
+		printf("Hello World\n");
+		MatWrapper *mw = newMat(ks,ls,cvT.f32c1,$P(m));
+		int res=init_tracker(tw,mw,&box);
+		printf("ROI x %d y %d width %d height %d\n",box.x,box.y,box.width,box.height);
+		printf ("data from mat %f\n",MatAt(mw,48,48));
+		$COMP(twi) = tw;
+		$COMP(mwi)=mw;
+   		printf ("twi %d \n",tw);
 	}
 	 ),
-        PMCode => <<'EOP',
-sub init{
+        PMCode => pp_line_numbers(__LINE__,
+<<'EOP',
+sub init_tracker{
 	my ($img, $tn, $box, $mat) = @_; 
-	zeroes(ushort,4) unless $box->isa('PDL');
+	zeroes(ushort,4) unless ( ref ($box) eq 'PDL');
 	my $tracker;
-	_init_int($img,$box,$tn,$$tracker,$$mat);
+	say "tn $tn box $box";
+	_init_tracker_int($img,$box,$tn,$$tracker,$$mat);
+	say "tracker pointer $$tracker, mat pointer $$mat, box $box";
 	return ($tracker,$box,$mat);
 }
 EOP
+),
 	Doc=><<"EOD",
 
 =head2 init_tracker - initialize OpenCV tracker 
@@ -105,9 +126,18 @@ pp_def('update_tracker',
 		$b(j=>1)=box.y;
 		$b(j=>2)=box.width;
 		$b(j=>3)=box.height;
-		return;
+		//return;
 	},
 	),
+        PMCode => pp_line_numbers(__LINE__,
+<<'EOPM',
+	sub update_tracker {
+		my ($mat,$tw,$mw)=@_;
+		_update_tracker_int($mat,$box,$$tw,$$mw);
+		$box;
+	}
+EOPM
+),
 	Doc=>"update the tracker box.\n",
 	);
 
