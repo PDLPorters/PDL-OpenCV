@@ -1,0 +1,15 @@
+
+
+
+This is an attempt to interface OpenCV from PDL. It is centred around object
+tracking, at the moment. Full coverage of OpenCV features is beyond my
+resources, at the moment.
+
+This is in early development, it is not working as intended yet.
+
+In the tw directory, the sources for the wrapper are contained. They can be
+built using cmake. If you know a simple recipe to call it from the top level,
+please let me know. To me, that is low priority.
+
+Currently this is compiled for OpenCV 4.5. At least between majer versions, the
+API is changing. Some support for v3.2 is likely to come in the future.
