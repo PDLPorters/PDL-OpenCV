@@ -19,6 +19,8 @@ my ($to, $box, $mo) = PDL::Tracking::init_tracker($data(,,0),$tracker,$box); #,$
     say "init tracker $to, matrix $mo";
 	say "box $box";
 
+say "MatAt ",PDL::Tracking::mat_at($mo,48,48);
+
 for my $j (1..9) {
         $box=update_tracker($data(,,$j),$to,$mo); #,$box,$tracker,);
         say "$j $box";

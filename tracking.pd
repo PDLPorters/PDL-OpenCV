@@ -16,24 +16,6 @@ pp_addhdr << 'EOH';
 	//MatWrapper * mw;
 
 EOH
-pp_def ('mat_at',
-	Pars=>'[o] m();',
-	OtherPars=>'MatWrapper * mw,int x,int y',
-	Code=>pp_line_numbers(__LINE__,
-	'
-		$o()=MatAt($COMP($mw),$COMP(x),$COMP(y));
-	'),
-	PMCode=>pp_line_numbers(__LINE__,
-	'
-	sub mat_at {
-		my ($mw,$x,$y)=@_;
-		my $o=PDL->null;
-		_mat_at_int($o,$$mw,$x,$y);
-		$o;
-	}
-	'),
-);
-
 
 pp_def ('set_image',
 	Pars=>'m(k,l);',
@@ -170,5 +152,27 @@ EOB
 
 
 
+
+pp_def ('mat_at',
+	Pars=>'[o] m();',
+	OtherPars=>'MatWrapper * mw;int x;int y;',
+	Code=>pp_line_numbers(__LINE__,
+	'
+		$m()=MatAt($COMP(mw),$COMP(x),$COMP(y));
+	',),
+	PMCode=>pp_line_numbers(__LINE__,
+	q{
+	sub mat_at {
+		my ($mw,$x,$y)=@_;
+		my $o=PDL->null;
+		_mat_at_int($o,$$mw,$x,$y);
+		$o;
+	}
+	},
+	),
+);
+
 pp_done();
+
+__END__
 
