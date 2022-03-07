@@ -8,12 +8,12 @@ EOPM
 
 # pp_setversion('0.01');
 
-pp_bless ("PDL::Tracking");
+pp_bless ("PDL::OCV");
 
 pp_addhdr << 'EOH';
  	#include "tracker_wrapper.h"
-	//TrackerWrapper * tw;
-	//MatWrapper * mw;
+	TrackerWrapper * tw;
+	MatWrapper * mw;
 
 EOH
 
@@ -41,8 +41,40 @@ EOD
 
 	);
 
+pp_def('test_return',
+	Pars=>'[o] a()',
+	OtherPars=>'MatWrapper * mw',
+	Code=>'$a()=44;',
+	PMCode=>'
+	sub test_return {
+		my $a=zeroes(4);
+		my $mw;
+		_test_return_int($a,$$mw);
+		say "test_return $a";
+		return ($a,$mw);
+
+	}',
+	);
+pp_def('new_mat',
+	Pars=>'float m(k,l);',
+	OtherPars=>'MatWrapper * mwi',
+	Code=>pp_line_numbers(__LINE__,'
+		PDL_Indx ks = $SIZE(k);
+		PDL_Indx ls = $SIZE(l);
+		mw = newMat(ks,ls,cvT.f32c1,$P(m));
+		$COMP(mwi)=mw;
+	'),
+	PMCode=>'
+	sub new_mat{
+		my ($m)=@_;
+		my $mw;
+		_new_mat_int($m,$$mw);
+		$mw;
+	}',
+);
+
 pp_def('init_tracker',
-	Pars=>'float m(k,l); ushort b(j);',
+	Pars=>'float m(k,l); ushort [o] b(j=4);',
 	# RedoDimsCode=>'$SIZE(l)=3*$SIZE(k); ',
 	# GenericTypes => ['F'],
 	# OtherPars=>'size_t tracker',
@@ -63,26 +95,31 @@ pp_def('init_tracker',
 		//printf("ROI x %d y %d width %d height %d",box->x,box->y,box->width,box->height);
 
 		printf("Hello World\n");
-		TrackerWrapper *tw = newTracker($COMP(tracker));
+		tw = newTracker($COMP(tracker));
 		printf("Hello World\n");
-		MatWrapper *mw = newMat(ks,ls,cvT.f32c1,$P(m));
+		mw = newMat(ks,ls,cvT.f32c1,$P(m));
 		int res=init_tracker(tw,mw,&box);
 		printf("ROI x %d y %d width %d height %d\n",box.x,box.y,box.width,box.height);
 		printf ("data from mat %f\n",MatAt(mw,48,48));
 		$COMP(twi) = tw;
 		$COMP(mwi)=mw;
+		$b(j=>0)=box.x;
+		$b(j=>1)=box.y;
+		$b(j=>2)=box.width;
+		$b(j=>3)=box.height;
    		printf ("twi %d \n",tw);
+		//printf ("box %d %d %d %d\n",$b);
 	}
 	 ),
         PMCode => pp_line_numbers(__LINE__,
 <<'EOP',
 sub init_tracker{
 	my ($img, $tn, $box, $mat) = @_; 
-	zeroes(ushort,4) unless ( ref ($box) eq 'PDL');
+	$box=zeroes(ushort,4) unless ( ref ($box) eq 'PDL');
 	my $tracker;
 	say "tn $tn box $box";
 	_init_tracker_int($img,$box,$tn,$$tracker,$$mat);
-	say "tracker pointer $$tracker, mat pointer $$mat, box $box";
+	#say "tracker pointer $$tracker, mat pointer $$mat, box $box";
 	return ($tracker,$box,$mat);
 }
 EOP
@@ -155,17 +192,25 @@ EOB
 
 pp_def ('mat_at',
 	Pars=>'[o] m();',
-	OtherPars=>'MatWrapper * mw;int x;int y;',
+	OtherPars=>'MatWrapper * mwi;int x;int y;',
 	Code=>pp_line_numbers(__LINE__,
 	'
-		$m()=MatAt($COMP(mw),$COMP(x),$COMP(y));
+		mw=$COMP(mwi);
+		float f=0.42;
+		printf ("at: %d",$COMP(x));
+		f=MatAt(mw,$COMP(x),$COMP(y));
+		printf ("at: %f",f);
+		$m()=f;
+		printf ("at: %f",$m());
 	',),
 	PMCode=>pp_line_numbers(__LINE__,
 	q{
 	sub mat_at {
 		my ($mw,$x,$y)=@_;
-		my $o=PDL->null;
+		my $o=zeroes(1);
+		say "x $x y $y";
 		_mat_at_int($o,$$mw,$x,$y);
+		say "$o";
 		$o;
 	}
 	},
