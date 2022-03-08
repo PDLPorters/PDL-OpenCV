@@ -1,4 +1,6 @@
 TYPEMAP
+trackerObj *	T_PTROBJ
+matObj *	T_PTROBJ
 
 TrackerWrapper * T_PTR
 MatWrapper * T_PTR

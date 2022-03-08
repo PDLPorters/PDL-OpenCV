@@ -29,7 +29,9 @@ typedef struct bBox{
 
 typedef struct MatWrapper MatWrapper;
 MatWrapper * newMat (const int width, const int height, const int type, void * data);
-int deleteTracker(TrackerWrapper * wrapper);
+MatWrapper * emptyMat (const int cols, const int rows, const int type );
+int newMat2 (MatWrapper * mw,const int width, const int height, const int type, void * data);
+int deleteMat(MatWrapper * wrapper);
 void * getData (const MatWrapper * Mat);
 int setData (MatWrapper * Mat, void * data, const int type);
 void MatSize (const MatWrapper * Mat, int * cols, int * rows);

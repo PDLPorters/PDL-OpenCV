@@ -4,16 +4,19 @@ pp_addpm ({At=>'Top'},<<"EOPM");
 
 use 5.10.0;
 
+
+
 EOPM
 
-# pp_setversion('0.01');
+our $VERSION = 0.01;
+pp_setversion($VERSION);
 
 pp_bless ("PDL::OCV");
 
 pp_addhdr << 'EOH';
  	#include "tracker_wrapper.h"
-	TrackerWrapper * tw;
-	MatWrapper * mw;
+	typedef TrackerWrapper trackerObj;
+	typedef MatWrapper matObj;
 
 EOH
 
@@ -61,16 +64,23 @@ pp_def('new_mat',
 	Code=>pp_line_numbers(__LINE__,'
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
-		mw = newMat(ks,ls,cvT.f32c1,$P(m));
+		MatWrapper *mw = newMat(ks,ls,cvT.f32c1,$P(m));
+		//newMat($COMP(mwi),ks,ls,cvT.f32c1,$P(m));
 		$COMP(mwi)=mw;
+		printf ("newMat finished.");
+		printf ("c new_mat at: %f", MatAt($COMP(mwi),48,48));
 	'),
-	PMCode=>'
+	PMCode=>pp_line_numbers(__LINE__,'
 	sub new_mat{
 		my ($m)=@_;
-		my $mw;
+		my $mw = newM($m->dim(0),$m->dim(1),$m->type); #,$m->get_dataref);
+		#my $mw = newMM(); 
+		say "newM : ",keys %$mw;
+		say "new mat $$mw";
 		_new_mat_int($m,$$mw);
-		$mw;
-	}',
+		say "new mat $$mw";
+		say "(from newMat) mat_at :",mat_at($$mw,48,48);
+	}',),
 );
 
 pp_def('init_tracker',
@@ -78,12 +88,11 @@ pp_def('init_tracker',
 	# RedoDimsCode=>'$SIZE(l)=3*$SIZE(k); ',
 	# GenericTypes => ['F'],
 	# OtherPars=>'size_t tracker',
-	OtherPars => 'int tracker; TrackerWrapper *  twi; MatWrapper * mwi; ' ,#,struct MatWrapper * mw',
+	OtherPars => 'TrackerWrapper *  twi; MatWrapper * mwi; ' ,#,struct MatWrapper * mw',
 	Code=>pp_line_numbers(__LINE__,
 	q{
 		float myf=$m(k=>48,l=>48);
 		printf("48 48%f\\n",myf);
-		printf("tracker%d;\\n",$COMP(tracker));
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
 		bBox box;
@@ -95,19 +104,15 @@ pp_def('init_tracker',
 		//printf("ROI x %d y %d width %d height %d",box->x,box->y,box->width,box->height);
 
 		printf("Hello World\n");
-		tw = newTracker($COMP(tracker));
-		printf("Hello World\n");
-		mw = newMat(ks,ls,cvT.f32c1,$P(m));
-		int res=init_tracker(tw,mw,&box);
+		newMat($COMP(mwi),ks,ls,cvT.f32c1,$P(m));
+		int res=init_tracker($COMP(twi),$COMP(mwi),&box);
 		printf("ROI x %d y %d width %d height %d\n",box.x,box.y,box.width,box.height);
-		printf ("data from mat %f\n",MatAt(mw,48,48));
-		$COMP(twi) = tw;
-		$COMP(mwi)=mw;
+		printf ("data from mat %f\n",MatAt($COMP(mwi),48,48));
+		//$COMP(mwi)=mw;
 		$b(j=>0)=box.x;
 		$b(j=>1)=box.y;
 		$b(j=>2)=box.width;
 		$b(j=>3)=box.height;
-   		printf ("twi %d \n",tw);
 		//printf ("box %d %d %d %d\n",$b);
 	}
 	 ),
@@ -118,7 +123,8 @@ sub init_tracker{
 	$box=zeroes(ushort,4) unless ( ref ($box) eq 'PDL');
 	my $tracker;
 	say "tn $tn box $box";
-	_init_tracker_int($img,$box,$tn,$$tracker,$$mat);
+	$tracker = newT($tn);
+	_init_tracker_int($img,$box,$$tracker,$$mat);
 	#say "tracker pointer $$tracker, mat pointer $$mat, box $box";
 	return ($tracker,$box,$mat);
 }
@@ -195,7 +201,7 @@ pp_def ('mat_at',
 	OtherPars=>'MatWrapper * mwi;int x;int y;',
 	Code=>pp_line_numbers(__LINE__,
 	'
-		mw=$COMP(mwi);
+		MatWrapper * mw=$COMP(mwi);
 		float f=0.42;
 		printf ("at: %d",$COMP(x));
 		f=MatAt(mw,$COMP(x),$COMP(y));
@@ -209,6 +215,7 @@ pp_def ('mat_at',
 		my ($mw,$x,$y)=@_;
 		my $o=zeroes(1);
 		say "x $x y $y";
+		say "mw ?",defined $$mw;
 		_mat_at_int($o,$$mw,$x,$y);
 		say "$o";
 		$o;
@@ -217,7 +224,61 @@ pp_def ('mat_at',
 	),
 );
 
+pp_addxs('','
+MODULE = PDL::OCV PACKAGE = PDL::OCV
+
+matObj *
+newMM ()
+ CODE:
+MatWrapper * mw;
+  RETVAL = mw;
+ OUTPUT:
+  RETVAL
+
+
+matObj *
+newM (c,r,t)
+	int c
+	int r
+	int t
+ CODE:
+MatWrapper* mw = NULL;
+ t=cvT.f32c1;
+ mw=emptyMat(c,r,t);
+  RETVAL = mw;
+ OUTPUT:
+  RETVAL
+
+trackerObj *
+newT (type)
+  int type
+ CODE:
+ RETVAL = newTracker(type);
+ OUTPUT:
+  RETVAL
+
+MODULE = PDL::OCV PACKAGE = trackerObj PREFIX = track_
+
+void
+track_DESTROY(tw)
+  trackerObj * tw
+ CODE:
+  deleteTracker(tw);
+
+MODULE = PDL::OCV PACKAGE = matObj PREFIX = mat_
+
+void
+mat_DESTROY(mw)
+  matObj * mw
+ CODE:
+  deleteMat(mw);
+
+');
+
+
+
 pp_done();
+
 
 __END__
 

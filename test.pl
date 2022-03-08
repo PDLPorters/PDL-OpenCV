@@ -16,6 +16,7 @@ say "data 48 48 ",$data(48,48,0);
 my ($mo,$box,$to);
 
 my ($mw)=PDL::OCV::new_mat($data(,,0));
+say "new mat done.";
 say "MatAt ",$a=PDL::OCV::mat_at($mw,48,48);
 say "A $a";
 

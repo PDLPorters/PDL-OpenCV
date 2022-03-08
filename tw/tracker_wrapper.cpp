@@ -14,7 +14,7 @@ struct TrackerWrapper
 {
 	cv::Ptr<cv::Tracker> tracker; 
 } ;
-struct TrackerWrapper * newTracker(int trackerNumber) {
+TrackerWrapper * newTracker(int trackerNumber) {
 	string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
 	string trackerType = trackerTypes[trackerNumber];
 	printf ("init tracker \n");
@@ -65,7 +65,42 @@ void MatSize (const MatWrapper * Mat, int * cols, int * rows)
 float MatAt (const MatWrapper * mw,const int x,const int y) {
 	return mw->mat.at<float>(x,y);
 }
-struct MatWrapper * newMat (const int cols, const int rows, const int type, void * data) {
+
+
+MatWrapper * emptyMat (const int cols, const int rows, const int type ) {
+//int emptyMat (MatWrapper * mw,const int cols, const int rows, const int type ) {
+	MatWrapper * mw;
+	printf ("rows %d cols %d\n",rows,cols);
+	mw->mat=Mat(); //(cols,rows,type);
+	//printf ("rows %d cols %d\n",frame.rows,frame.cols);
+	//printf ("rows %d cols %d\n",frame.rows,frame.cols);
+	printf ("rows %d cols %d\n",mw->mat.rows,mw->mat.cols);
+	//printf("empty mat %d\n", MatAt (mw,32,48) );
+	return mw;
+}
+
+int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, void * data) {
+	cv::Mat frame,norm;
+
+	printf ("data type %d\n",type);
+	if ((type == CV_32FC1) || (type == CV_32FC3)) {
+		float * fdata = (float * ) data;
+		frame=Mat (rows, cols, type, fdata);
+		printf("set float data.\n");
+	}
+	printf ("at 48 48 (newMat) %f\n",frame.at<float>(48,48));
+	//frame.data =(uchar*) data;
+	normalize(frame,norm, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
+	printf("norm.\n");
+	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
+	mw->mat = norm;
+	printf("assign.\n");
+	printf ("mw->at 48 48 (newMat) %f\n",mw->mat.at<float>(48,48));
+	return  1;
+}
+
+
+MatWrapper * newMat (const int cols, const int rows, const int type, void * data) {
 	cv::Mat frame,norm;
 
 	printf ("data type %d\n",type);
@@ -131,7 +166,7 @@ int update_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * roi) {
 	return 1;
 }
 
-int show_tracker (struct MatWrapper * frame, bBox * box) {
+int show_tracker (MatWrapper * frame, bBox * box) {
 	Rect roi;
 	roi.x=box->x;
 	roi.y=box->y;
