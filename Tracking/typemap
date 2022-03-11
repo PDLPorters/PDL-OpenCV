@@ -1,0 +1,5 @@
+TYPEMAP
+
+trackerObj * T_PTROBJ
+TrackerWrapper * T_PTR
+

@@ -1,5 +1,6 @@
 #!perl
 
+use strict;
 pp_addpm ({At=>'Top'},<<"EOPM");
 
 use 5.10.0;
@@ -46,13 +47,14 @@ EOD
 
 	);
 
+pp_def('abc');
+
 pp_def('new_mat',
 	Pars=>'float m(k,l);',
 	OtherPars=>'MatWrapper * mwi',
 	Code=>pp_line_numbers(__LINE__,'
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
-		//matObj * mw = newMat(ks,ls,5,$P(m));
 		setData($COMP(mwi),$P(m),0);
 		printf ("newMat finished.");
 		printf ("c new_mat at: %f", MatAt($COMP(mwi),48,48));

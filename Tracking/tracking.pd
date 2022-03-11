@@ -37,13 +37,14 @@ pp_def('init_tracker',
         PMCode => pp_line_numbers(__LINE__,
 <<'EOP'),
 sub init_tracker{
-        my ($img, $tn, $box, $mat) = @_; 
+        my ($class,$img, $tn, $box, $mat) = @_; 
         $box=zeroes(ushort,4) unless ( ref ($box) eq 'PDL');
-        my $mat=new_mat($m) unless $$mat eq 'REF';
+        my $mat=new_mat($img) unless $$mat eq 'REF';
         my $tracker=newT ($tn);
         say "tn $tn box $box";
         _init_tracker_int($box,$$tracker,$$mat);
         #say "tracker pointer $$tracker, mat pointer $$mat, box $box";
+	bless \$tracker,$class;
         return ($tracker,$box,$mat);
 }
 EOP
