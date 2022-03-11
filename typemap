@@ -1,5 +1,6 @@
 TYPEMAP
 
 matObj * T_PTROBJ
+
 MatWrapper * T_PTR
 

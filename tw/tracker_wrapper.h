@@ -16,7 +16,6 @@ struct cvType {
         int f32c1 ;
 } cvT;
 
-
 int  cv_init();
 //struct cvType cvT;
 typedef struct TrackerWrapper TrackerWrapper;

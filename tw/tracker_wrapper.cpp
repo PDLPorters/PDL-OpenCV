@@ -66,8 +66,6 @@ float MatAt (const MatWrapper * mw,const int x,const int y) {
 	printf("rows %d",mw->mat.rows);
 	return mw->mat.at<float>(x,y);
 }
-
-
 MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
 	return mw;
@@ -144,7 +142,6 @@ int setMat (MatWrapper * frame, void * data, const int type, const int rows, con
 	frame->mat.data=(uchar *)data;	
 	return 1;
 }
-
 int setData (MatWrapper * frame, void * data, const int type=0 ){
 	if (type && type != frame->mat.type())  {
 		frame->mat.convertTo(frame->mat,type);
