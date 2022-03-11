@@ -1,0 +1,154 @@
+#!perl
+
+pp_addpm ({At=>'Top'},<<"EOPM");
+
+use 5.10.0;
+
+
+use Data::Dumper;
+
+EOPM
+
+our $VERSION = 0.01;
+pp_setversion($VERSION);
+
+pp_bless ("PDL::OpenCV");
+
+pp_addhdr << 'EOH';
+ 	#include "tracker_wrapper.h"
+	typedef TrackerWrapper trackerObj;
+	typedef MatWrapper matObj;
+	//MatWrapper * mw;
+
+EOH
+
+pp_def ('set_image',
+	Pars=>'m(k,l);',
+	OtherPars=>'MatWrapper * mw',
+	Code=>pp_line_numbers(__LINE__,
+	'
+		PDL_Indx ks = $SIZE(k);
+		PDL_Indx ls = $SIZE(l);
+		int * x;
+		int * y;
+		MatSize($COMP(mw),x,y);
+		if (((*x) == ks) && ((*y) == ls)) 
+			setData($COMP(mw),$P(m),0);
+		else
+			$CROAK("Matrix size does not match!\n");
+
+	'),
+	Doc=><<"EOD",
+
+=head2 set_image - update data of a Mat object. Size and type should match.
+
+EOD
+
+	);
+
+pp_def('new_mat',
+	Pars=>'float m(k,l);',
+	OtherPars=>'MatWrapper * mwi',
+	Code=>pp_line_numbers(__LINE__,'
+		PDL_Indx ks = $SIZE(k);
+		PDL_Indx ls = $SIZE(l);
+		//matObj * mw = newMat(ks,ls,5,$P(m));
+		setData($COMP(mwi),$P(m),0);
+		printf ("newMat finished.");
+		printf ("c new_mat at: %f", MatAt($COMP(mwi),48,48));
+	'),
+	PMCode=>pp_line_numbers(__LINE__,'
+	sub new_mat{
+		my ($class,$m)=@_;
+		my $mw = newM($m->dim(0),$m->dim(1),0); #,$m->get_dataref);
+		#my $mw = newMW(); 
+		#say "newM : ",Dumper $mw;
+		#say "new mat $$mw";
+		_new_mat_int($m,$$mw);
+		bless \$mw,$class;
+		say mat_at($$mw,48,48);
+	}',),
+);
+
+
+
+pp_add_boot (<< 'EOB');
+
+	cv_init();
+	printf ("init done (autoinclude)\n");
+
+
+EOB
+
+
+
+
+pp_def ('mat_at',
+	Pars=>'[o] m();',
+	OtherPars=>'MatWrapper * mwi;int x;int y;',
+	Code=>pp_line_numbers(__LINE__,
+	'
+		printf ("at: %d\n",$COMP(x));
+		MatWrapper * mw=($COMP(mwi));
+		float f=0.42;
+		printf ("at: %d",$COMP(x));
+		f=MatAt(mw,$COMP(x),$COMP(y));
+		printf ("at: %f",f);
+		$m()=f;
+		printf ("at: %f",$m());
+	',),
+	PMCode=>pp_line_numbers(__LINE__,
+	q{
+	sub mat_at {
+		my ($mw,$x,$y)=@_;
+		my $o=zeroes(1);
+		say "x $x y $y";
+		say "mw ?",defined $$mw;
+		_mat_at_int($o,$$mw,$x,$y);
+		say "$o";
+		$o;
+	}
+	},
+	),
+);
+pp_addxs('','
+MODULE = PDL::OpenCV PACKAGE = PDL::OpenCV
+
+matObj *
+newM (c,r,t)
+        int c
+        int r
+        int t
+ CODE:
+matObj * mo = NULL;
+ t=cvT.f32c1;
+ mo=emptyMat(c,r,t);
+ if (mo==NULL) {
+         barf("emptyMat returned null.\n");
+ }
+ printf ("newM: mo %d\n",mo);
+  RETVAL = mo;
+ OUTPUT:
+  RETVAL
+
+
+matObj *
+newMW ()
+ CODE:
+matObj * mo= emptyMW();
+  RETVAL = mo;
+ OUTPUT:
+  RETVAL
+
+MODULE = PDL::OpenCV PACKAGE = matObj PREFIX = mat_
+
+void
+mat_DESTROY(mw)
+  matObj * mw
+ CODE:
+  deleteMat(mw);
+
+');
+
+
+pp_done();

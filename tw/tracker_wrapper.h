@@ -16,7 +16,8 @@ struct cvType {
         int f32c1 ;
 } cvT;
 
-int  tw_init();
+
+int  cv_init();
 //struct cvType cvT;
 typedef struct TrackerWrapper TrackerWrapper;
 struct TrackerWrapper * newTracker (int tracker_type);
@@ -29,9 +30,13 @@ typedef struct bBox{
 
 typedef struct MatWrapper MatWrapper;
 MatWrapper * newMat (const int width, const int height, const int type, void * data);
-int deleteTracker(TrackerWrapper * wrapper);
+MatWrapper * emptyMW ();
+MatWrapper * emptyMat (const int cols, const int rows, const int type );
+int newMat2 (MatWrapper * mw,const int width, const int height, const int type, void * data);
+int deleteMat(MatWrapper * wrapper);
 void * getData (const MatWrapper * Mat);
 int setData (MatWrapper * Mat, void * data, const int type);
+int setMat (MatWrapper * Mat, void * data, const int type, const int rows, const int cols);
 void MatSize (const MatWrapper * Mat, int * cols, int * rows);
 float MatAt (const MatWrapper * mw,const int x,const int y);
 
