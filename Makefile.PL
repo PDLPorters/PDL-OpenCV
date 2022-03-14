@@ -1,13 +1,39 @@
-  use PDL::Core::Dev;            # Pick up development utilities
-  use ExtUtils::MakeMaker;
+use strict;
+use warnings;
+use ExtUtils::MakeMaker;
 
-  $package = ["opencv.pd",OpenCV,PDL::OpenCV];
-  %hash = pdlpp_stdargs($package);
-  #$hash{OBJECT} .= ' additional_Ccode$(OBJ_EXT) ';
-  $hash{clean}->{FILES} .= ' todelete_Ccode$(OBJ_EXT) ';
-  $hash{'VERSION_FROM'} = 'opencv.pd';
-  push @{$hash{  'LIBS' }},    '-ltracker_wrapper';
+use Getopt::Long;
 
-  WriteMakefile(%hash);
+my $force;
+my $result = GetOptions("force"=>\$force);
 
-  sub MY::postamble { pdlpp_postamble($package); }
+
+WriteMakefile(
+    NAME                => 'PDL::OpenCV',
+    AUTHOR              => 'Ingo Schmid',
+    VERSION_FROM        => 'OpenCV/opencv.pd',
+    ABSTRACT_FROM       => 'OpenCV/opencv.pd',
+    ($ExtUtils::MakeMaker::VERSION >= 6.3002
+      ? ('LICENSE'=> 'perl')
+      : ()),
+    PREREQ_PM => {
+        'Test::More' => 0,
+        'PDL'        => '2.4.4',
+    },
+    PREREQ_FATAL        => 0,
+    DIR                 => ['OpenCV', 'Tracking', ],
+    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean               => { FILES => ['PDL-OpenCV-*'] },
+);
+
+sub MY::postamble {
+    my $text =
+'
+install ::
+	@echo "Updating PDL documentation database ..."
+	@$(PERL) add_doc.pl
+
+';
+
+    return $text;
+}

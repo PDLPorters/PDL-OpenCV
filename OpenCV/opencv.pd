@@ -47,7 +47,6 @@ EOD
 
 	);
 
-pp_def('abc');
 
 pp_def('new_mat',
 	Pars=>'float m(k,l);',
@@ -56,8 +55,8 @@ pp_def('new_mat',
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
 		setData($COMP(mwi),$P(m),0);
-		printf ("newMat finished.");
-		printf ("c new_mat at: %f", MatAt($COMP(mwi),48,48));
+		printf ("newMat finished. pointer %p\n",$COMP(mwi));
+		//printf ("c new_mat at: %f", MatAt($COMP(mwi),48,48));
 	'),
 	PMCode=>pp_line_numbers(__LINE__,'
 	sub new_mat{
@@ -65,10 +64,10 @@ pp_def('new_mat',
 		my $mw = newM($m->dim(0),$m->dim(1),0); #,$m->get_dataref);
 		#my $mw = newMW(); 
 		#say "newM : ",Dumper $mw;
-		#say "new mat $$mw";
 		_new_mat_int($m,$$mw);
-		bless \$mw,$class;
-		say mat_at($$mw,48,48);
+		#say "new mat $$mw";
+		#say "mat_at from new_mat ",mat_at($mw,48,48);
+		bless $mw,$class;
 	}',),
 );
 
@@ -90,24 +89,21 @@ pp_def ('mat_at',
 	OtherPars=>'MatWrapper * mwi;int x;int y;',
 	Code=>pp_line_numbers(__LINE__,
 	'
-		printf ("at: %d\n",$COMP(x));
-		MatWrapper * mw=($COMP(mwi));
-		float f=0.42;
-		printf ("at: %d",$COMP(x));
-		f=MatAt(mw,$COMP(x),$COMP(y));
-		printf ("at: %f",f);
+		printf ("at: mwi %p\n",$COMP(mwi));
+		float f=MatAt($COMP(mwi),$COMP(x),$COMP(y));
+		//printf ("at: %f\n",f);
 		$m()=f;
-		printf ("at: %f",$m());
+		//printf ("at: %f",$m());
 	',),
 	PMCode=>pp_line_numbers(__LINE__,
 	q{
 	sub mat_at {
 		my ($mw,$x,$y)=@_;
 		my $o=zeroes(1);
-		say "x $x y $y";
-		say "mw ?",defined $$mw;
+		#say "x $x y $y";
+		#say "mw ? ",$$$mw;
 		_mat_at_int($o,$$mw,$x,$y);
-		say "$o";
+		#say "$o";
 		$o;
 	}
 	},
@@ -154,3 +150,4 @@ mat_DESTROY(mw)
 
 
 pp_done();
+

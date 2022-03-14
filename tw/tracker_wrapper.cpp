@@ -63,7 +63,7 @@ void MatSize (const MatWrapper * Mat, int * cols, int * rows)
 }
 
 float MatAt (const MatWrapper * mw,const int x,const int y) {
-	printf("rows %d",mw->mat.rows);
+	printf("MatAt: rows %d",mw->mat.rows);
 	return mw->mat.at<float>(x,y);
 }
 MatWrapper * emptyMW () {

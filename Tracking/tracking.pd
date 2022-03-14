@@ -10,6 +10,8 @@ use PDL::OpenCV;
 
 use Data::Dumper;
 
+say "hell owrld\n";
+
 EOPM
 pp_addhdr << 'EOH';
         #include "tracker_wrapper.h"
