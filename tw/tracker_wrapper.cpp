@@ -17,7 +17,7 @@ struct TrackerWrapper
 TrackerWrapper * newTracker(int trackerNumber) {
 	string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
 	string trackerType = trackerTypes[trackerNumber];
-	printf ("init tracker \n");
+	//printf ("init tracker \n");
 	cv::Ptr<cv::Tracker> tracker; 
 	// create a tracker object
 	//if (trackerType == "BOOSTING")
@@ -39,7 +39,7 @@ TrackerWrapper * newTracker(int trackerNumber) {
 	// Ptr<Tracker> tracker = TrackerKCF::create();
 	TrackerWrapper * Tr= new TrackerWrapper;
 	Tr->tracker = tracker;
-	printf ("init tracker done.\n");
+	//printf ("init tracker done.\n");
 	return Tr;
 }
 
@@ -63,7 +63,7 @@ void MatSize (const MatWrapper * Mat, int * cols, int * rows)
 }
 
 float MatAt (const MatWrapper * mw,const int x,const int y) {
-	printf("MatAt: rows %d",mw->mat.rows);
+	//printf("MatAt: rows %d\n",mw->mat.rows);
 	return mw->mat.at<float>(x,y);
 }
 MatWrapper * emptyMW () {
@@ -96,17 +96,17 @@ int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, voi
 	printf ("data type %d\n",type);
 	if ((type == CV_32FC1) || (type == CV_32FC3)) {
 		float * fdata = (float * ) data;
-		frame=Mat (rows, cols, type, fdata);
+		frame=Mat (cols, rows, type, fdata);
 		printf("set float data.\n");
 	}
-	printf ("at 48 48 (newMat) %f\n",frame.at<float>(48,48));
+	//printf ("at 48 48 (newMat) %f\n",frame.at<float>(48,48));
 	//frame.data =(uchar*) data;
 	normalize(frame,norm, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
 	printf("norm.\n");
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat = norm;
 	printf("assign.\n");
-	printf ("mw->at 48 48 (newMat) %f\n",mw->mat.at<float>(48,48));
+	//printf ("mw->at 48 48 (newMat) %f\n",mw->mat.at<float>(48,48));
 	return  1;
 }
 
@@ -120,23 +120,53 @@ MatWrapper * newMat (const int cols, const int rows, const int type, void * data
 		frame=Mat (rows, cols, type, fdata);
 		printf("set float data.\n");
 	}
-	printf ("at 48 48 (newMat) %f\n",frame.at<float>(48,48));
+	//printf ("at 48 48 (newMat) %f\n",frame.at<float>(48,48));
 	//frame.data =(uchar*) data;
 	MatWrapper * mw = new MatWrapper;
 	normalize(frame,norm, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat = norm;
-	printf ("mw->at 48 48 (newMat) %f\n",mw->mat.at<float>(48,48));
+	//printf ("mw->at 48 48 (newMat) %f\n",mw->mat.at<float>(48,48));
 	return  mw;
 }
 
 void * getData (const MatWrapper * frame) {
 	return frame->mat.data;
 }
+
+int getDataCopy(const MatWrapper * frame,float * data) {
+	size_t lins=frame->mat.rows;
+	size_t cols=frame->mat.cols;
+	for ( size_t i = 0; i<lins; i++ ) {
+		for ( size_t j = 0; j<cols; j++ ) {
+			data[i*cols+j] = frame->mat.at<float>(i,j);
+		}
+	}
+	return 1;
+}
+int cols (MatWrapper * mw, int cols) {
+	//printf ("cols(): %d\n",mw->mat.cols);
+	if ( cols>=0 ) mw->mat.cols=cols;
+	//printf ("cols(): %d\n",mw->mat.cols);
+	return mw->mat.cols;
+}
+
+int rows (MatWrapper * mw, int rows) {
+	if ( rows>=0 ) mw->mat.rows=rows;
+	return mw->mat.rows;
+}
+
+int type (MatWrapper * mw, int type) {
+	if (type >=0 && type != mw->mat.type())  {
+		mw->mat.convertTo(mw->mat,type);
+	}
+	return mw->mat.type();
+}
+
 int setMat (MatWrapper * frame, void * data, const int type, const int rows, const int cols ){
 	frame->mat.rows = rows;
 	frame->mat.cols = cols;
-	if (type && type != frame->mat.type())  {
+	if (type >=0 && type != frame->mat.type())  {
 		frame->mat.convertTo(frame->mat,type);
 	}
 	frame->mat.data=(uchar *)data;	
@@ -157,22 +187,22 @@ int init_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box ){
 	roi.height=box->height;
 	roi.width=box->width;
 	//imshow("Image ",frame->mat);
-	printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
-	printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
+	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
+	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
 	if (roi.x == 0) {
 		namedWindow("tracker",WINDOW_NORMAL);
 		roi=selectROI("tracker",frame->mat,true,false);
 	}
-	printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
-	printf ("at 48 48 (init_tracker %f\n",frame->mat.at<float>(48,48));
+	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
+	//printf ("at 48 48 (init_tracker %f\n",frame->mat.at<float>(48,48));
 	box->x=roi.x;
 	box->y=roi.y;
 	box->width=roi.width;
 	box->height=roi.height;
-	printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
+	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
 	Tr->tracker->init(frame->mat,roi );
-	printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
-	printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
+	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
+	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
 	return 1;
 }
 int update_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * roi) {

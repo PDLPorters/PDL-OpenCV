@@ -4,9 +4,11 @@
 
 #define CARDIACMOCO_ICE_NAMESPACE offline
 #ifdef __cplusplus
+#include <opencv2/viz/vizcore.hpp>
 extern "C" {
 #endif
 
+// #include <opencv2/opencv.hpp>
 
 // 
 struct cvType {
@@ -27,13 +29,18 @@ typedef struct bBox{
 } bBox;
  
 
-typedef struct MatWrapper MatWrapper;
-MatWrapper * newMat (const int width, const int height, const int type, void * data);
+
+typedef struct MatWrapper  MatWrapper ;
+int rows (MatWrapper * mw, int rows) ;
+int cols (MatWrapper * mw, int cols) ;
+int type (MatWrapper * mw, int type) ;
+MatWrapper * newMat (const int cols, const int rows, const int type, void * data);
 MatWrapper * emptyMW ();
 MatWrapper * emptyMat (const int cols, const int rows, const int type );
-int newMat2 (MatWrapper * mw,const int width, const int height, const int type, void * data);
+int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, void * data);
 int deleteMat(MatWrapper * wrapper);
 void * getData (const MatWrapper * Mat);
+int getDataCopy(const MatWrapper * frame,float * data);
 int setData (MatWrapper * Mat, void * data, const int type);
 int setMat (MatWrapper * Mat, void * data, const int type, const int rows, const int cols);
 void MatSize (const MatWrapper * Mat, int * cols, int * rows);
