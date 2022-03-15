@@ -85,7 +85,7 @@ pp_def ('get_data',
 		',),
 	Doc=><<"EOD",
 
-=head2 set_data - update data of a Mat object. Size and type should match.
+=head2 get_data - update data from a Mat object. Size and type should match.
 
 EOD
 
@@ -102,11 +102,13 @@ pp_def ('set_data',
 		int * x;
 		int * y;
 		MatSize($COMP(mw),x,y);
-		if (((*x) == ks) && ((*y) == ls)) 
+		if (((*x) == ks) && ((*y) == ls))  {
+			printf("m(0,0) %f \n",$m(k=>0,l=>0));
 			setData($COMP(mw),$P(m),0);
-		else
+		} else {
 			$CROAK("Matrix size does not match!\n");
 
+		}
 	'),
 	Doc=><<"EOD",
 
@@ -122,12 +124,15 @@ pp_def('new_mat',
 	OtherPars=>'MatWrapper * mwi',
 	Code=>pp_line_numbers(__LINE__,'
 		setData($COMP(mwi),$P(m),0);
+		printf ("after setData %f \n",MatAt($COMP(mwi),0,0));
 	'),
 	PMCode=>pp_line_numbers(__LINE__,'
 	sub new_mat{
 		my ($class,$m)=@_;
 		my $mw = newM($m->dim(1),$m->dim(0),0); #,$m->get_dataref);
 		_new_mat_int($m->transpose,$$mw);
+		say "(new_mat perl) ",mat_at($mw,0,0);
+		say $m->slice(0,0);
 		bless $mw,$class;
 	}',),
 	Doc=><<"EOD",
@@ -212,7 +217,7 @@ matObj * mo = NULL;
  if (mo==NULL) {
          barf("emptyMat returned null.\n");
  }
- printf ("newM: mo %d\n",mo);
+ printf ("newM: mo %p\n",mo);
   RETVAL = mo;
  OUTPUT:
   RETVAL
@@ -230,7 +235,7 @@ MODULE = PDL::OpenCV PACKAGE = matObj PREFIX = mat_
 
 
 void
-mat_DESTROY(mw)
+destroy(mw)
   matObj * mw
  CODE:
   deleteMat(mw);
@@ -267,10 +272,10 @@ sub ufunc {
 	delete $extra{Exception};
     }
     my $codestr = '
-		printf ("ufunc: mw %p\n",$COMP(mw)); 
+	//	printf ("ufunc: mw %p\n",$COMP(mw)); 
 		int res;
 		res = '.$func.'($COMP(mw),$COMP(v));
-		printf ("res %d\n",res);
+		//printf ("res %d\n",res);
 		$b() = res;' ;
     pp_def($name,
 	   Pars => '[o]b()',

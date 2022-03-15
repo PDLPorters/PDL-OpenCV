@@ -64,7 +64,9 @@ void MatSize (const MatWrapper * Mat, int * cols, int * rows)
 
 float MatAt (const MatWrapper * mw,const int x,const int y) {
 	//printf("MatAt: rows %d\n",mw->mat.rows);
-	return mw->mat.at<float>(x,y);
+	float f =mw->mat.at<float>(x,y);
+	printf("MatAt x/y %d %d: %f\n",x,y, f);
+	return f;
 }
 MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
@@ -175,8 +177,10 @@ int setMat (MatWrapper * frame, void * data, const int type, const int rows, con
 int setData (MatWrapper * frame, void * data, const int type=0 ){
 	if (type && type != frame->mat.type())  {
 		frame->mat.convertTo(frame->mat,type);
+		printf("Converting\n");
 	}
 	frame->mat.data=(uchar *)data;	
+	printf ("set_data (at 0, 0) %f\n",MatAt(frame,0,0));
 	return 1;
 }
 
