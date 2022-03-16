@@ -1,21 +1,14 @@
 #!perl
 
 use strict;
-pp_addpm ({At=>'Top'},<<'EOPM');
+pp_addpm ({At=>'Top'},<<"EOPM");
 
 use 5.10.0;
 
 
 use Data::Dumper;
 
-sub PDL::OpenCV::get_dp {
-	my ($self,$p) = @_;
-	barf ("get_dp: not a piddle! ") unless (ref($p) =~ /PDL/ );
-	$p=float($p);
-	getD($$self,$p);
-	say "data ref ",$p->get_dataref;
-	$p->upd_data;
-	$p;
+sub rows {
 }
 EOPM
 
@@ -31,144 +24,6 @@ pp_addhdr << 'EOH';
 	//MatWrapper * mw;
 
 EOH
-pp_addxs('','
-MODULE = PDL::OpenCV PACKAGE = PDL::OpenCV
-
-void * dataPtr (mo)
-	matObj * mo
-CODE:
-	void * data_ptr = getData(mo);
-	RETVAL = data_ptr;
-OUTPUT: 
-RETVAL
-
-matObj *
-nMat (c,r,t,p,p2)
-int c
-int r
-int t
-SV * p
-CODE:
-matObj * mo = NULL;
-//void * ptr = SvRV( p2 );
-pdl * pid = PDL->SvPDLV(p);
-void * ptr =  pid->data ;
-printf ("dims %d\n",pid->datatype);
-if (pid->dims[0] == 3) {
-	t=cvT.f32c3;
-} else {
-	t=cvT.f32c1;
-}
-float * dp = ptr;
-mo=newMat(c,r,t,dp);
-if (mo==NULL) {
-	barf("emptyMat returned null.\n");
-}
-//printf ("newM: mo %p\n",mo);
-printf ("newM: data %p\n",getData(mo));
-RETVAL = mo;
-OUTPUT:
-RETVAL
-
-
-void  
-getD(mo, p)
-IV  mo
-SV * p
-CODE:
-//mw = SvR
-void * ptr =  mo;
-matObj * mw =  ptr;
-//printf ("getD *mo. %p\n",(*mo));
-printf ("getD mo. %p\n",(mo));
-printf ("getD mw. %p\n",mw);
-pdl * pid = PDL->SvPDLV(p);
-MatAt(mw,4,4);
-printf ("getD data %p\n",getData(mw));
-ptr =getData(mo);
-float * fp = ptr;
-pid->data=ptr;
-printf("data (pid) 0,0 %f\n", fp[0]);
-
-');
-
-pp_def('new_mat',
-	Pars=>'float m(c,r);',
-	OtherPars=>'MatWrapper * mwi',
-	Code=>pp_line_numbers(__LINE__,'
-		//setData($COMP(mwi),$P(m),0);
-		//printf ("after setData %f \n",MatAt($COMP(mwi),0,0));
-		printf ("after setData %f \n",$m(c=>0,r=>0));
-		printf ("data pointer %p \n",$P(m));
-	'),
-	PMCode=>pp_line_numbers(__LINE__,'
-	sub new_mat{
-		my ($class,$m)=@_;
-		$m=float ($m); #->transpose);
-		$m->make_physical;
-		my $dr=$m->get_dataref;
-		say "ref: ",$dr;
-		say "type ",$m->type,", ",$m->get_datatype;
-		my $mw = nMat($m->dim(1),$m->dim(0),0,$m,$dr); #,$m->get_dataref);
-		my %h ={};
-		$h{mw}=$mw;
-		bless $mw,$class;
-		#_new_mat_int($m,$$mw);
-		say "(new_mat perl) ",mat_at($mw,0,0);
-		say $m->slice(0,0);
-		#say getD($mw,$m);
-		#say "after getD ",$m->slice(0,0);
-		$mw;
-	}',),
-	Doc=><<"EOD",
-
-=head2 new_mat - the constructor of a Mat() object.
-
-From a 2-D piddle, a Mat is created. Note, that rows and cols are swapped.
-
-EOD
-
-);
-
-pp_addxs('','
-matObj *
-newM (c,r,t)
-        int c
-        int r
-        int t
- CODE:
-matObj * mo = NULL;
- t=cvT.f32c1;
- mo=emptyMat(c,r,t);
- if (mo==NULL) {
-         barf("emptyMat returned null.\n");
- }
- printf ("newM: mo %p\n",mo);
-  RETVAL = mo;
- OUTPUT:
-  RETVAL
-
-
-matObj *
-newMW ()
- CODE:
-matObj * mo= emptyMW();
-  RETVAL = mo;
- OUTPUT:
-  RETVAL
-
-MODULE = PDL::OpenCV PACKAGE = matObjPtr PREFIX = mat_
-
-
-void
-mat_DESTROY(mw)
-  matObj * mw
- CODE:
-  deleteMat(mw);
-
-
-');
-
 
 pp_def ('get_data',
 	Pars=>'i(k,l) ; float [o] m(k,l);',
@@ -212,7 +67,7 @@ pp_def ('get_data',
 	'
 		sub get_data {
 			my ($self,$i,$p,) = @_;
-			my $mw=$self; #->mw;
+			my $mw=$self->mw;
 			unless (ref ($p) =~ "PDL") {
 				say "rows $mw->rows";
 				$p=zeroes(float,$mw->cols,$mw->rows);
@@ -266,6 +121,40 @@ EOD
 	);
 
 
+pp_def('new_mat',
+	Pars=>'float m(c,r);',
+	OtherPars=>'MatWrapper * mwi',
+	Code=>pp_line_numbers(__LINE__,'
+		//setData($COMP(mwi),$P(m),0);
+		printf ("after setData %f \n",MatAt($COMP(mwi),0,0));
+		printf ("after setData %f \n",$m(c=>0,r=>0));
+		printf ("data pointer %p \n",$P(m));
+	'),
+	PMCode=>pp_line_numbers(__LINE__,'
+	sub new_mat{
+		my ($class,$m)=@_;
+		$m=$m->transpose;
+		$m->make_physical;
+		my $dr=$m->get_dataref;
+		say "ref: ",$dr;
+		my $mw = nMat($m->dim(1),$m->dim(0),0,$m,$dr); #,$m->get_dataref);
+		my %h ={};
+		$h{mw}=$mw;
+		bless \$mw,$class;
+		_new_mat_int($m,$$mw);
+		say "(new_mat perl) ",mat_at($mw,0,0);
+		say $m->slice(0,0);
+	}',),
+	Doc=><<"EOD",
+
+=head2 new_mat - the constructor of a Mat() object.
+
+From a 2-D piddle, a Mat is created. Note, that rows and cols are swapped.
+
+EOD
+
+);
+
 
 
 pp_add_boot (<< 'EOB');
@@ -315,6 +204,88 @@ pp_def ('mat_at',
 	},
 	),
 );
+pp_addxs('','
+MODULE = PDL::OpenCV PACKAGE = PDL::OpenCV
+
+void * dataPtr (mo)
+	matObj * mo
+CODE:
+	void * data_ptr = getData(mo);
+	RETVAL = data_ptr;
+OUTPUT: 
+RETVAL
+
+matObj *
+nMat (c,r,t,p,p2)
+        int c
+        int r
+        int t
+	SV * p
+	SV * p2
+ CODE:
+matObj * mo = NULL;
+void * ptr = SvRV( p2 );
+pdl * pid = PDL->SvPDLV(p);
+ //void * ptr =  pid->data ;
+printf ("dims %d\n",pid->datatype);
+ t=cvT.f32c1;
+ float * dp = ptr;
+ float * dp2 = pid->data;
+ printf ("data: p %f\n",dp[0]);
+ printf ("data: pid %f\n",dp2[6]);
+ printf ("pointer ptr %p\n",ptr);
+ printf ("pointer dp %p\n",dp);
+ printf ("pointer pid->data %p\n",pid->data);
+ mo=newMat(c,r,t,p);
+ 
+ if (mo==NULL) {
+         barf("emptyMat returned null.\n");
+ }
+ printf ("newM: mo %p\n",mo);
+ printf ("newM: data %p\n",getData(mo));
+  RETVAL = mo;
+ OUTPUT:
+  RETVAL
+
+matObj *
+newM (c,r,t)
+        int c
+        int r
+        int t
+ CODE:
+matObj * mo = NULL;
+ t=cvT.f32c1;
+ mo=emptyMat(c,r,t);
+ 
+ if (mo==NULL) {
+         barf("emptyMat returned null.\n");
+ }
+ printf ("newM: mo %p\n",mo);
+  RETVAL = mo;
+ OUTPUT:
+  RETVAL
+
+
+matObj *
+newMW ()
+ CODE:
+matObj * mo= emptyMW();
+  RETVAL = mo;
+ OUTPUT:
+  RETVAL
+
+MODULE = PDL::OpenCV PACKAGE = matObjPtr PREFIX = mat_
+
+
+void
+mat__DESTROY(mw)
+  matObj * mw
+ CODE:
+  deleteMat(mw);
+
+
+');
+
 sub protect_chars {
   my ($txt) = @_;
   $txt =~ s/>/E;gt#/g;
@@ -358,9 +329,9 @@ sub ufunc {
 			   my (\$self,\$v) = \@\_;
 			   \$v = -1 unless defined \$v;
 			   my \$res=zeroes(ushort,1);
-			   #say "$name calling now (\$v)";
+			   say "$name calling now (\$v)";
 			   _$name\_int(\$res,\$\$self,\$v);
-			   #say "res \$res?";
+			   say "res \$res?";
 			   \$res;
 		   }
 	   },),

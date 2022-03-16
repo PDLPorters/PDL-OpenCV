@@ -50,6 +50,7 @@ int deleteTracker(TrackerWrapper * wrapper) {
 
 struct MatWrapper {
 	cv::Mat mat;
+	void * dp;
 };
 
 int deleteMat(MatWrapper * wrapper) {
@@ -63,7 +64,7 @@ void MatSize (const MatWrapper * Mat, int * cols, int * rows)
 }
 
 float MatAt (const MatWrapper * mw,const int x,const int y) {
-	//printf("MatAt: rows %d\n",mw->mat.rows);
+	printf("MatAt: data pointer %p\n",mw->mat.data);
 	float f =mw->mat.at<float>(x,y);
 	printf("MatAt x/y %d %d: %f\n",x,y, f);
 	return f;
@@ -107,6 +108,7 @@ int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, voi
 	printf("norm.\n");
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat = norm;
+	mw->dp=norm.data;
 	printf("assign.\n");
 	//printf ("mw->at 48 48 (newMat) %f\n",mw->mat.at<float>(48,48));
 	return  1;
@@ -119,16 +121,19 @@ MatWrapper * newMat (const int cols, const int rows, const int type, void * data
 	printf ("data type %d\n",type);
 	if ((type == CV_32FC1) || (type == CV_32FC3)) {
 		float * fdata = (float * ) data;
-		frame=Mat (rows, cols, type, fdata);
+		frame=Mat (rows, cols, type, data).clone();
 		printf("set float data.\n");
 	}
-	//printf ("at 48 48 (newMat) %f\n",frame.at<float>(48,48));
+	printf ("at 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//frame.data =(uchar*) data;
 	MatWrapper * mw = new MatWrapper;
-	normalize(frame,norm, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
+	//normalize(frame,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
+	printf ("frame 0 0 (newMat) %f\n",frame.at<float>(0,0));
+	//printf ("norm 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
-	mw->mat = norm;
-	//printf ("mw->at 48 48 (newMat) %f\n",mw->mat.at<float>(48,48));
+	mw->mat = frame;
+	mw->dp=frame.data;
+	printf ("mw->at 0 0 (newMat) %f\n",mw->mat.at<float>(0,0));
 	return  mw;
 }
 
