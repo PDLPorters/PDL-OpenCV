@@ -1,7 +1,7 @@
 #!perl
 
 
-pp_bless ("PDL::OpenCV");
+pp_bless ("PDL::OpenCV::Tracking");
 pp_addpm ({At=>'Top'},<<"EOPM");
 
 use 5.10.0;
@@ -13,6 +13,7 @@ use Data::Dumper;
 say "hell owrld\n";
 
 EOPM
+
 pp_addhdr << 'EOH';
         #include "tracker_wrapper.h"
         typedef TrackerWrapper trackerObj;
@@ -129,6 +130,7 @@ track_DESTROY(to)
   trackerObj * to
  CODE:
   deleteTracker(to);
+  free (to);
 ',
 );
 

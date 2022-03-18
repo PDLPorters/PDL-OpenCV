@@ -23,7 +23,7 @@ WriteMakefile(
     CCFLAGS => `pkg-config --cflags opencv4`,
 #    LDDLFLAGS => `pkg-config --libs opencv4`,
     PREREQ_FATAL        => 0,
-    DIR                 => ['OpenCV', 'Tracking', ],
+    DIR                 => ['OpenCV', 'Tracking',],
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => ['PDL-OpenCV-*'] },
 );

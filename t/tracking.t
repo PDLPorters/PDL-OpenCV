@@ -19,22 +19,22 @@ sub tapprox {
   return $diff < $eps;
 }
 
-my $data=rvals(5,6,2);
+my $data=rvals(128,128,74);
 my $slice = float $data(,,0;-);
 #my $dr=$slice->get_dataref;
 say $data(0,0,0;-);
 #say ("5,6,5,$dr");
 #my $mw=PDL::OpenCV->nMat(5,6,5,$slice) ; #->get_dataref);
-my $mw=PDL::OpenCV->new_mat($data(,,0;-));
+my ($tr,$box,$mw)=PDL::OpenCV::Tracking->init_tracker($data(,,0;-),2);
 
 say "new_mat completed. Starting tests";
+say "box $box";
 say "at ",$mw->mat_at(4,4),$data(4,4,0);
 say "at (get_data",$mw->get_data()->(4,4);
 
-for my $x (0..4)  {
-	for my $y (0..5) {
+for my $x (0..$data->dim(2)-1)  {
+	$tr->update_tracker($data(,,$x;-));
 		#is( tapprox( $data($x,$y,0;-), $mw->mat_at($x,$y)),  1,"mat_at $x, $y" );
-	}
 }
 say "rows: ",$mw->rows;
 #say "cols2 ",$mw->cols2;

@@ -45,6 +45,5 @@ say "val 4 4 ",$g(4,4);
 say "$g ",$data(,,0);
 is( tapprox ($data(,,0;-)->flat-$g->flat),1,'getData flat');
 is( tapprox ($data(,,0;-)-$g),1,'getData');
-$mw->DESTROY;
 done_testing();
 
