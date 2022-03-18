@@ -26,7 +26,7 @@ pp_bless ("PDL::OpenCV");
 
 pp_addhdr << 'EOH';
  	#include "tracker_wrapper.h"
-	typedef TrackerWrapper trackerObj;
+	// typedef TrackerWrapper trackerObj;
 	typedef MatWrapper matObj;
 	//MatWrapper * mw;
 
@@ -90,6 +90,17 @@ float * fp = ptr;
 pid->data=ptr;
 printf("data (pid) 0,0 %f\n", fp[0]);
 
+MODULE = PDL::OpenCV 		PACKAGE = matObjPtr PREFIX = mat_
+
+
+void
+mat_DESTROY(mw)
+  matObj * mw
+ CODE:
+  deleteMat(mw);
+  free (mw);
+
+
 ');
 
 pp_def('new_mat',
@@ -130,103 +141,42 @@ EOD
 
 );
 
-pp_addxs('','
-matObj *
-newM (c,r,t)
-        int c
-        int r
-        int t
- CODE:
-matObj * mo = NULL;
- t=cvT.f32c1;
- mo=emptyMat(c,r,t);
- if (mo==NULL) {
-         barf("emptyMat returned null.\n");
- }
- printf ("newM: mo %p\n",mo);
-  RETVAL = mo;
- OUTPUT:
-  RETVAL
-
-
-matObj *
-newMW ()
- CODE:
-matObj * mo= emptyMW();
-  RETVAL = mo;
- OUTPUT:
-  RETVAL
-
-MODULE = PDL::OpenCV PACKAGE = matObjPtr PREFIX = mat_
-
-
-void
-mat_DESTROY(mw)
-  matObj * mw
- CODE:
-  deleteMat(mw);
-
-
-');
-
 
 pp_def ('get_data',
-	Pars=>'i(k,l) ; float [o] m(k,l);',
-	OtherPars=>'MatWrapper * mw; SV * res',
+	Pars=>'float [o] m(k,l);',
+	OtherPars=>'MatWrapper * mw;',
 	Code=>pp_line_numbers(__LINE__,
 	'
-		/*
-		pdl * p = PDL->SvPDLV($COMP(res));
-		PDL_RETERROR(PDL_err, PDL->make_physical(p));
-		printf ("data type %d",p->datatype);
-		printf ("dims %d",p->datatype);
-		*/
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
 		int x = cols($COMP(mw),-1);
 		int y = rows($COMP(mw),-1);
 		//printf ("x %d : ks %d / y %d : ls %d ",x,ks,y,ls);
-		float * dat;
-		if ( x == ks && y == ls )
+		if ( y == ks && x == ls )
 		{
-			//dat = (float *)getData($COMP(mw)); 
-		//	$P(m)=dat;
-			//p->data=dat;
 			getDataCopy($COMP(mw),$P(m)); 
 		} else {
 			$CROAK("Matrix size does not match!\n");
 		}
-		int i,j;
-		for (i =0 ; i<x; i++ ) {
-			for (j =0 ; j<y; j++ ) {
-				printf ("i %d,j %d: dat %f, in %f, ",i,j,$m(k=>i,l=>j),$i(k=>i,l=>j));  //dat[i*y+j]); //,p->data[i*x+j]);
-				printf ("mat_at %f \n",MatAt($COMP(mw),i,j));  //dat[i*y+j]); //,p->data[i*x+j]);
-				//$m(k=>i,l=>j) = dat[i*y+j]; //,p->data[i*x+j]);
-			}
-		}
-
-		/*p->state |= PDL_DONTTOUCHDATA | PDL_ALLOCATED;
-		*/
 	'),
 	PMCode=>pp_line_numbers(__LINE__,
 	'
 		sub get_data {
-			my ($self,$i,$p,) = @_;
+			my ($self,$p,) = @_;
 			my $mw=$self; #->mw;
 			unless (ref ($p) =~ "PDL") {
 				say "rows $mw->rows";
-				$p=zeroes(float,$mw->cols,$mw->rows);
+				$p=zeroes(float,$mw->rows,$mw->cols);
 			}
 			#$p->upd_data;
 			#say "ref to data" ,$p->get_dataref;
-			_get_data_int($i->transpose,$p,$$mw,PDL->null);
-			say $i->info,$p->info;
+			_get_data_int($p,$$mw);
 			say "data type ", $p->type;
-			#_get_data_int(zeroes(1,1),$$mw,$p);
+			_get_data_int($p,$$mw);
 			say "(get_data) 4,4: ",$p->slice("4","4");
 			#say "ref to data after " ,$p->get_dataref;
 			#say "(get_data) 48,48: after",$p->slice("48","48");
-			$p->transpose;
+			$p; #->transpose;
 		}
 		',),
 	Doc=><<"EOD",
@@ -417,6 +367,35 @@ pp_def('cols2',
 		   }
 	'
 	);
+
+pp_addxs('','
+matObj *
+newM (c,r,t)
+        int c
+        int r
+        int t
+ CODE:
+matObj * mo = NULL;
+ t=cvT.f32c1;
+ mo=emptyMat(c,r,t);
+ if (mo==NULL) {
+         barf("emptyMat returned null.\n");
+ }
+ printf ("newM: mo %p\n",mo);
+  RETVAL = mo;
+ OUTPUT:
+  RETVAL
+
+
+matObj *
+newMW ()
+ CODE:
+matObj * mo= emptyMW();
+  RETVAL = mo;
+ OUTPUT:
+  RETVAL
+
+');
 
 
 int rows(mw)

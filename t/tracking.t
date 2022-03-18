@@ -7,6 +7,7 @@ use Test::More;
 use PDL::LiteF;
 use PDL::NiceSlice;
 use PDL::OpenCV;
+use PDL::OpenCV::Tracking;
 use 5.10.0;
 
 sub tapprox {
@@ -41,6 +42,7 @@ is( $mw->rows(), $data->dim(0),'rows' );
 is( $mw->cols() , $data->dim(1),'cols' );
 my $g=zeroes($data(,,0;-));
 $g=$mw->get_data();
+say "type g ",$g->type;
 say "val 4 4 ",$g(4,4);
 say "$g ",$data(,,0);
 is( tapprox ($data(,,0;-)->flat-$g->flat),1,'getData flat');

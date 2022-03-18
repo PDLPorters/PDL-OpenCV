@@ -4,11 +4,3 @@ matObj * T_PTROBJ
 
 MatWrapper * T_PTR
 
-OUTPUT
-matObj
-        sv_setref_pv($arg, CLASS, (void *) $var);
-
-INPUT
-matObj
-        $var = INT2PTR($type, SvIV((SV*)SvRV($arg)))
-
