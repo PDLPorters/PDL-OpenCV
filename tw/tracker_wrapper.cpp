@@ -137,7 +137,8 @@ MatWrapper * newMat (const int cols, const int rows, const int type, void * data
 	return  mw;
 }
 
-void * getData (const MatWrapper * frame) {
+void * getData (MatWrapper * frame) {
+	if (frame->mat.data != frame->dp) frame->dp=frame->mat.data;
 	return frame->mat.data;
 }
 
