@@ -25,7 +25,8 @@ pp_setversion($VERSION);
 pp_bless ("PDL::OpenCV");
 
 pp_addhdr << 'EOH';
- 	#include "tracker_wrapper.h"
+ 	#include "opencv_wrapper.h"
+ 	#include "generated_cvwrapper.h"
 	// typedef TrackerWrapper trackerObj;
 	typedef MatWrapper matObj;
 	//MatWrapper * mw;
@@ -54,12 +55,14 @@ matObj * mo = NULL;
 pdl * pid = PDL->SvPDLV(p);
 void * ptr =  pid->data ;
 printf ("dims %d\n",pid->datatype);
+printf ("nMat: cvT.f32c3 %d.\n",cvT.f32c1);
 if (pid->dims[0] == 3) {
 	t=cvT.f32c3;
 } else {
 	t=cvT.f32c1;
 }
 float * dp = ptr;
+printf("cols %d rows %d type %d\n",r,c,t);
 mo=newMat(c,r,t,dp);
 if (mo==NULL) {
 	barf("emptyMat returned null.\n");
@@ -172,7 +175,6 @@ pp_def ('get_data',
 			#say "ref to data" ,$p->get_dataref;
 			_get_data_int($p,$$mw);
 			say "data type ", $p->type;
-			_get_data_int($p,$$mw);
 			say "(get_data) 4,4: ",$p->slice("4","4");
 			#say "ref to data after " ,$p->get_dataref;
 			#say "(get_data) 48,48: after",$p->slice("48","48");
@@ -337,7 +339,7 @@ EOD
 } # sub: ufunc()
 
 # generate functions.
-map {ufunc($_,$_,0,"returns and optionally sets $_ of matrix. \n");} (qw/rows cols type/);
+map {ufunc($_,$_,0,"returns and optionally sets $_ of matrix. \n");} (qw/rows cols type / );
 
 
 pp_done();

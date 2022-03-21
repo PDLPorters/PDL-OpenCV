@@ -15,7 +15,8 @@ say "hell owrld\n";
 EOPM
 
 pp_addhdr << 'EOH';
-        #include "tracker_wrapper.h"
+        #include "generated_cvwrapper.h"
+        #include "opencv_wrapper.h"
         typedef TrackerWrapper trackerObj;
 
 EOH

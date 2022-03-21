@@ -1,25 +1,23 @@
 
-#ifndef _CALCULATESHIFT_WRAPPER_H
-#define _CALCULATESHIFT_WRAPPER_H
+#ifndef OPENCV_WRAPPER_H
+#define OPENCV_WRAPPER_H
 
-#define CARDIACMOCO_ICE_NAMESPACE offline
 #ifdef __cplusplus
-#include <opencv2/viz/vizcore.hpp>
+//#include <opencv2/viz/vizcore.hpp>
 extern "C" {
 #endif
 
-// #include <opencv2/opencv.hpp>
 
 // 
-struct cvType {
+typedef struct cvType {
 	int u8c3 ;
         int u8c1 ;
         int f32c3 ;
         int f32c1 ;
-} cvT;
+} cvType ;
 
+static cvType cvT;
 int  cv_init();
-//struct cvType cvT;
 typedef struct TrackerWrapper TrackerWrapper;
 struct TrackerWrapper * newTracker (int tracker_type);
 int  deleteTracker (struct TrackerWrapper *);
@@ -31,6 +29,18 @@ typedef struct bBox{
 
 
 typedef struct MatWrapper  MatWrapper ;
+#ifdef __cplusplus
+struct MatWrapper 
+{
+        cv::Mat mat;
+        void * dp;
+
+}
+;
+#else 
+
+#endif
+
 int rows (MatWrapper * mw, int rows) ;
 int cols (MatWrapper * mw, int cols) ;
 int type (MatWrapper * mw, int type) ;

@@ -2,7 +2,7 @@
 #include <opencv2/tracking.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include "tracker_wrapper.h"
+#include "opencv_wrapper.h"
 using namespace std;
 using namespace cv;
 /* use C name mangling */
@@ -48,11 +48,11 @@ int deleteTracker(TrackerWrapper * wrapper) {
 	return 1;
 }
 
-struct MatWrapper {
+/* struct MatWrapper {
 	cv::Mat mat;
 	void * dp;
 };
-
+*/
 int deleteMat(MatWrapper * wrapper) {
 	delete wrapper;
 	return 1;
@@ -118,7 +118,8 @@ int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, voi
 MatWrapper * newMat (const int cols, const int rows, const int type, void * data) {
 	cv::Mat frame,norm;
 
-	printf ("data type %d\n",type);
+	printf ("newMat data type %d\n",type);
+	printf ("cvt.f32c3 %d.\n",cvT.f32c3);
 	if ((type == CV_32FC1) || (type == CV_32FC3)) {
 		float * fdata = (float * ) data;
 		frame=Mat (rows, cols, type, data).clone();
@@ -241,6 +242,7 @@ int cv_init() {
 	cvT.u8c1 = CV_8UC1;
 	cvT.f32c3 = CV_32FC3;
 	cvT.f32c1 = CV_32FC1;
+	printf ("cvt.f32c3 %d.\n",cvT.f32c3);
 	printf ("tw_init done.\n");
 	return 1;
 }

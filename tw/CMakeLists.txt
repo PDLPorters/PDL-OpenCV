@@ -24,12 +24,13 @@ if(CMAKE_VERSION VERSION_LESS "2.8.11")
 endif()
 
 # Declare the executable target built from your sources
-add_library(tracker_wrapper SHARED tracker_wrapper.cpp )
+add_library(opencv_wrapper SHARED generated_cvwrapper.cpp opencv_wrapper.cpp )
 # Link your application with OpenCV libraries
-target_link_libraries(tracker_wrapper LINK_PRIVATE ${OpenCV_LIBS})
-set_target_properties(tracker_wrapper PROPERTIES PUBLIC_HEADER tracker_wrapper.h)
+target_link_libraries(opencv_wrapper LINK_PRIVATE ${OpenCV_LIBS})
+INSTALL(FILES opencv_wrapper.h generated_cvwrapper.h  DESTINATION include)
+# set_target_properties(opencv_wrapper PROPERTIES PUBLIC_HEADER opencv_wrapper.h PUBLIC_HEADER "")
 
 
-install (TARGETS  tracker_wrapper RUNTIME DESTINATION bin
+install (TARGETS  opencv_wrapper RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include)

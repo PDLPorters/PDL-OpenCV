@@ -28,7 +28,6 @@ my $mw=PDL::OpenCV->new_mat($data(,,0;-));
 
 say "new_mat completed. Starting tests";
 say "at ",$mw->mat_at(4,4),$data(4,4,0);
-say "at (get_data",$mw->get_data()->(4,4);
 
 for my $x (0..4)  {
 	for my $y (0..5) {
@@ -40,10 +39,10 @@ say "rows: ",$mw->rows;
 is( $mw->rows(), $data->dim(0),'rows' );
 is( $mw->cols() , $data->dim(1),'cols' );
 my $g=zeroes($data(,,0;-));
-$g=$mw->get_data();
+$mw->get_dp($g);
 say "val 4 4 ",$g(4,4);
 say "$g ",$data(,,0);
-is( tapprox ($data(,,0;-)->flat-$g->flat),1,'getData flat');
 is( tapprox ($data(,,0;-)-$g),1,'getData');
+$mw->DESTROY;
 done_testing();
 
