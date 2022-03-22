@@ -11,7 +11,6 @@ use Data::Dumper;
 sub PDL::OpenCV::get_dp {
 	my ($self,$p) = @_;
 	barf ("get_dp: not a piddle! ") unless (ref($p) =~ /PDL/ );
-	$p=float($p);
 	getD($$self,$p);
 	say "data ref ",$p->get_dataref;
 	$p->upd_data;
@@ -44,26 +43,25 @@ OUTPUT:
 RETVAL
 
 matObj *
-nMat (c,r,t,p,p2)
+nMat (c,r,p)
 int c
 int r
-int t
 SV * p
 CODE:
+int t;
 matObj * mo = NULL;
-//void * ptr = SvRV( p2 );
+//char * type = SvRV( t );
 pdl * pid = PDL->SvPDLV(p);
 void * ptr =  pid->data ;
-printf ("dims %d\n",pid->datatype);
-printf ("nMat: cvT.f32c3 %d.\n",cvT.f32c1);
-if (pid->dims[0] == 3) {
-	t=cvT.f32c3;
-} else {
-	t=cvT.f32c1;
+t=pid->datatype;
+printf ("dims %d\n",t );
+int l=1;
+if (pid->dims[0] <= 4) {
+	l=pid->dims[0];
 }
-float * dp = ptr;
-printf("cols %d rows %d type %d\n",r,c,t);
-mo=newMat(c,r,t,dp);
+//float * dp = ptr;
+printf("cols %d rows %d type %d planes l %d ptr %p \n",r,c,t,l,ptr);
+mo=newMat(c,r,t,l,ptr);
 if (mo==NULL) {
 	barf("emptyMat returned null.\n");
 }
@@ -107,31 +105,23 @@ mat_DESTROY(mw)
 ');
 
 pp_def('new_mat',
-	Pars=>'float m(c,r);',
+	Pars=>'m(c,r);',
+	GenericTypes=>[qw/A B S U L F D/ ],
 	OtherPars=>'MatWrapper * mwi',
 	Code=>pp_line_numbers(__LINE__,'
 		//setData($COMP(mwi),$P(m),0);
 		//printf ("after setData %f \n",MatAt($COMP(mwi),0,0));
-		printf ("after setData %f \n",$m(c=>0,r=>0));
-		printf ("data pointer %p \n",$P(m));
+		//printf ("after setData %f \n",$m(c=>0,r=>0));
+		//printf ("data pointer %p \n",$P(m));
 	'),
 	PMCode=>pp_line_numbers(__LINE__,'
 	sub new_mat{
 		my ($class,$m)=@_;
-		$m=float ($m); #->transpose);
 		$m->make_physical;
-		my $dr=$m->get_dataref;
-		say "ref: ",$dr;
 		say "type ",$m->type,", ",$m->get_datatype;
-		my $mw = nMat($m->dim(1),$m->dim(0),0,$m,$dr); #,$m->get_dataref);
-		my %h ={};
-		$h{mw}=$mw;
+		my $mw = nMat($m->dim(0),$m->dim(1),$m); #,$m->get_dataref);
 		bless $mw,$class;
 		#_new_mat_int($m,$$mw);
-		say "(new_mat perl) ",mat_at($mw,0,0);
-		say $m->slice(0,0);
-		#say getD($mw,$m);
-		#say "after getD ",$m->slice(0,0);
 		$mw;
 	}',),
 	Doc=><<"EOD",
@@ -146,7 +136,7 @@ EOD
 
 
 pp_def ('get_data',
-	Pars=>'float [o] m(k,l);',
+	Pars=>'[o] m(k,l);',
 	OtherPars=>'MatWrapper * mw;',
 	Code=>pp_line_numbers(__LINE__,
 	'
@@ -154,8 +144,8 @@ pp_def ('get_data',
 		PDL_Indx ls = $SIZE(l);
 		int x = cols($COMP(mw),-1);
 		int y = rows($COMP(mw),-1);
-		//printf ("x %d : ks %d / y %d : ls %d ",x,ks,y,ls);
-		if ( y == ks && x == ls )
+		printf ("x %d : ks %d / y %d : ls %d ",x,ks,y,ls);
+		if ( x == ks && y == ls )
 		{
 			getDataCopy($COMP(mw),$P(m)); 
 		} else {
@@ -178,7 +168,7 @@ pp_def ('get_data',
 			say "(get_data) 4,4: ",$p->slice("4","4");
 			#say "ref to data after " ,$p->get_dataref;
 			#say "(get_data) 48,48: after",$p->slice("48","48");
-			$p; #->transpose;
+			$p->transpose;
 		}
 		',),
 	Doc=><<"EOD",
@@ -246,20 +236,18 @@ sub mat2pdl {
 EOPM
 
 pp_def ('mat_at',
-	Pars=>'[o] m();',
+	Pars=>'double [o] m();',
 	OtherPars=>'MatWrapper * mwi;int x;int y;',
 	Code=>pp_line_numbers(__LINE__,
 	'
-		printf ("at: mwi %p\n",$COMP(mwi));
-		float f=MatAt($COMP(mwi),$COMP(x),$COMP(y));
-		$m()=f;
+		$m()=MatAt($COMP(mwi),$COMP(x),$COMP(y));
 	',),
 	PMCode=>pp_line_numbers(__LINE__,
 	q{
 	sub mat_at {
 		my ($mw,$x,$y)=@_;
 		my $o=zeroes(1);
-		say "pointer $$mw";
+		#say "pointer $$mw";
 		_mat_at_int($o,$$mw,$x,$y);
 		#say "$o";
 		$o;

@@ -50,11 +50,11 @@ MatWrapper * emptyMat (const int cols, const int rows, const int type );
 int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, void * data);
 int deleteMat(MatWrapper * wrapper);
 void * getData (MatWrapper * Mat);
-int getDataCopy(const MatWrapper * frame,float * data);
+int getDataCopy(const MatWrapper * frame,double * data);
 int setData (MatWrapper * Mat, void * data, const int type);
 int setMat (MatWrapper * Mat, void * data, const int type, const int rows, const int cols);
 void MatSize (const MatWrapper * Mat, int * cols, int * rows);
-float MatAt (const MatWrapper * mw,const int x,const int y);
+double MatAt (const MatWrapper * mw,const int x,const int y);
 
 int init_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
 int update_tracker(TrackerWrapper *, MatWrapper *, bBox * box);

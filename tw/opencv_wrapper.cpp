@@ -15,52 +15,6 @@ struct TrackerWrapper
 {
 	cv::Ptr<cv::Tracker> tracker; 
 } ;
-
-
-/*
-int map_type(char * rtype, int planes=1, long double scaletype=1) {
-	int cvtype,so;
-	if (rtype ==  "ushort") {
-		so=sizeof(short);
-		cvtype=CV_16UC(planes);
-		scaletype = 32768;
-		//grayIma=rff_us( file,cols,rows,cvtype,planes,so);
-		//cout<< so << " "<<sizeof(unsigned short);
-		//cout<<"point "<<(int)grayIma.at<unsigned short>(2,1)<<endl;
-	}
-	if (rtype == "short") {
-		so=sizeof(short);
-		typedef short imdata_t;
-		cvtype=CV_16SC(planes);
-		scaletype=65536;  
-		//grayIma=rff_s(file,cols,rows,cvtype,planes,so);
-	}
-	if (rtype == "long") {
-		so=sizeof(long);
-		cvtype=CV_32SC(planes);
-		scaletype=65536L/2*65536;
-		//grayIma=rff_l(file,cols,rows,cvtype,planes,so);
-	}
-	if (rtype ==  "float") {
-		so=sizeof(float);
-		cvtype=CV_32FC(planes);
-		//grayIma=rff_f(file,cols,rows,cvtype,planes,so);
-	}
-	if (rtype == "double") {
-		so=sizeof(double);
-		cvtype=CV_64FC(planes);
-		//grayIma=rff_d(file,cols,rows,cvtype,planes,so);
-	}
-	if (rtype == "byte") {
-		so=sizeof(char);
-		cvtype=CV_8UC(planes);
-		scaletype=256;
-		//grayIma=rff_b(file,cols,rows,cvtype,planes,so);
-	}
-	return cvtype;
-}
-*/
-
 TrackerWrapper * newTracker(int trackerNumber) {
 	string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
 	string trackerType = trackerTypes[trackerNumber];
@@ -110,10 +64,24 @@ void MatSize (const MatWrapper * Mat, int * cols, int * rows)
 	(*rows) = Mat->mat.rows;
 }
 
-float MatAt (const MatWrapper * mw,const int x,const int y) {
-	printf("MatAt: data pointer %p\n",mw->mat.data);
-	float f =mw->mat.at<float>(x,y);
-	printf("MatAt x/y %d %d: %f\n",x,y, f);
+double MatAt (const MatWrapper * mw,const int y,const int x) {
+	int type=mw->mat.type();
+	//printf("MatAt: data pointer %p\n",mw->mat.data);
+	//printf("MatAt: data tyep %d\n",type);
+	uchar depth = CV_MAT_DEPTH(type); //	type & CV_MAT_DEPTH_MASK;
+	uchar chans = 1 + (type >> CV_CN_SHIFT);
+	//printf ("depth %d chans %d\n",depth,chans);
+	double f;
+	switch ( depth ) {
+		case CV_8U:  f =mw->mat.at<char>(x,y); break;
+		case CV_8S:  f =mw->mat.at<unsigned char>(x,y); break;
+		case CV_16U: f =mw->mat.at<unsigned short>(x,y); break;
+		case CV_16S: f =mw->mat.at<short>(x,y); break;
+		case CV_32S: f =mw->mat.at<long>(x,y); break;
+		case CV_32F: f =mw->mat.at<float>(x,y); break;
+		case CV_64F: f =mw->mat.at<double>(x,y); break;
+	}
+	//printf("MatAt: f %g\n",f);
 	return f;
 }
 MatWrapper * emptyMW () {
@@ -146,10 +114,9 @@ int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, voi
 	printf ("data type %d\n",type);
 	if ((type == CV_32FC1) || (type == CV_32FC3)) {
 		float * fdata = (float * ) data;
-		frame=Mat (cols, rows, type, fdata);
+		frame=Mat (rows, cols, type, fdata);
 		printf("set float data.\n");
 	}
-	//printf ("at 48 48 (newMat) %f\n",frame.at<float>(48,48));
 	//frame.data =(uchar*) data;
 	normalize(frame,norm, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
 	printf("norm.\n");
@@ -157,7 +124,6 @@ int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, voi
 	mw->mat = norm;
 	mw->dp=norm.data;
 	printf("assign.\n");
-	//printf ("mw->at 48 48 (newMat) %f\n",mw->mat.at<float>(48,48));
 	return  1;
 }
 
@@ -167,32 +133,31 @@ MatWrapper * newMat (const int cols, const int rows, const int type, int planes,
 	printf ("newMat data type mapped %d(%d): %d\n",type,planes, cvtype);
 	//if (type == CV_32FC) ) {
 		//float * fdata = (float * ) data;
-		frame=Mat (rows, cols, type, data).clone();
+		frame=Mat (rows, cols, cvtype, data); //.clone();
 		printf("set float data.\n");
 	//}
-	printf ("at 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//frame.data =(uchar*) data;
 	MatWrapper * mw = new MatWrapper;
 	//normalize(frame,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
-	printf ("frame 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//printf ("norm 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat = frame;
 	mw->dp=frame.data;
-	printf ("mw->at 0 0 (newMat) %f\n",mw->mat.at<float>(0,0));
+	//printf ("at 0 0 (newMat) %f\n",MatAt(mw,0,0));
 	return  mw;
 }
+
 void * getData (MatWrapper * frame) {
 	if (frame->mat.data != frame->dp) frame->dp=frame->mat.data;
 	return frame->mat.data;
 }
 
-int getDataCopy(const MatWrapper * frame,float * data) {
+int getDataCopy(const MatWrapper * frame,double * data) {
 	size_t lins=frame->mat.rows;
 	size_t cols=frame->mat.cols;
-	for ( size_t i = 0; i<lins; i++ ) {
-		for ( size_t j = 0; j<cols; j++ ) {
-			data[i*cols+j] = frame->mat.at<float>(i,j);
+	for ( size_t i = 0; i<cols; i++ ) {
+		for ( size_t j = 0; j<lins; j++ ) {
+			data[j*cols+i] = MatAt(frame,i,j);
 		}
 	}
 	return 1;
@@ -226,7 +191,8 @@ int setMat (MatWrapper * frame, void * data, const int type, const int rows, con
 	return 1;
 }
 int setData (MatWrapper * frame, void * data, const int type=0 ){
-	if (type && type != frame->mat.type())  {
+	int cvtype=get_ocvtype(type,CV_MAT_CN(frame->mat.type()));
+	if (type && cvtype != frame->mat.type())  {
 		frame->mat.convertTo(frame->mat,type);
 		printf("Converting\n");
 	}
