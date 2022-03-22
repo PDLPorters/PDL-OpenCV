@@ -8,15 +8,15 @@ extern "C" {
 #endif
 
 
-// 
+/* 
 typedef struct cvType {
 	int u8c3 ;
         int u8c1 ;
         int f32c3 ;
         int f32c1 ;
 } cvType ;
-
 static cvType cvT;
+*/
 int  cv_init();
 typedef struct TrackerWrapper TrackerWrapper;
 struct TrackerWrapper * newTracker (int tracker_type);
@@ -29,7 +29,7 @@ typedef struct bBox{
 
 
 typedef struct MatWrapper  MatWrapper ;
-#ifdef __cplusplus
+/*#ifdef 0 &&__cplusplus
 struct MatWrapper 
 {
         cv::Mat mat;
@@ -40,11 +40,11 @@ struct MatWrapper
 #else 
 
 #endif
-
+*/
 int rows (MatWrapper * mw, int rows) ;
 int cols (MatWrapper * mw, int cols) ;
 int type (MatWrapper * mw, int type) ;
-MatWrapper * newMat (const int cols, const int rows, const int type, void * data);
+MatWrapper * newMat (const int cols, const int rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();
 MatWrapper * emptyMat (const int cols, const int rows, const int type );
 int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, void * data);

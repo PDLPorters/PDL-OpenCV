@@ -3,6 +3,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include "opencv_wrapper.h"
+#include "maptypes.h"
 using namespace std;
 using namespace cv;
 /* use C name mangling */
@@ -14,6 +15,52 @@ struct TrackerWrapper
 {
 	cv::Ptr<cv::Tracker> tracker; 
 } ;
+
+
+/*
+int map_type(char * rtype, int planes=1, long double scaletype=1) {
+	int cvtype,so;
+	if (rtype ==  "ushort") {
+		so=sizeof(short);
+		cvtype=CV_16UC(planes);
+		scaletype = 32768;
+		//grayIma=rff_us( file,cols,rows,cvtype,planes,so);
+		//cout<< so << " "<<sizeof(unsigned short);
+		//cout<<"point "<<(int)grayIma.at<unsigned short>(2,1)<<endl;
+	}
+	if (rtype == "short") {
+		so=sizeof(short);
+		typedef short imdata_t;
+		cvtype=CV_16SC(planes);
+		scaletype=65536;  
+		//grayIma=rff_s(file,cols,rows,cvtype,planes,so);
+	}
+	if (rtype == "long") {
+		so=sizeof(long);
+		cvtype=CV_32SC(planes);
+		scaletype=65536L/2*65536;
+		//grayIma=rff_l(file,cols,rows,cvtype,planes,so);
+	}
+	if (rtype ==  "float") {
+		so=sizeof(float);
+		cvtype=CV_32FC(planes);
+		//grayIma=rff_f(file,cols,rows,cvtype,planes,so);
+	}
+	if (rtype == "double") {
+		so=sizeof(double);
+		cvtype=CV_64FC(planes);
+		//grayIma=rff_d(file,cols,rows,cvtype,planes,so);
+	}
+	if (rtype == "byte") {
+		so=sizeof(char);
+		cvtype=CV_8UC(planes);
+		scaletype=256;
+		//grayIma=rff_b(file,cols,rows,cvtype,planes,so);
+	}
+	return cvtype;
+}
+*/
+
 TrackerWrapper * newTracker(int trackerNumber) {
 	string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
 	string trackerType = trackerTypes[trackerNumber];
@@ -114,17 +161,15 @@ int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, voi
 	return  1;
 }
 
-
-MatWrapper * newMat (const int cols, const int rows, const int type, void * data) {
+MatWrapper * newMat (const int cols, const int rows, const int type, int planes, void * data) {
 	cv::Mat frame,norm;
-
-	printf ("newMat data type %d\n",type);
-	printf ("cvt.f32c3 %d.\n",cvT.f32c3);
-	if ((type == CV_32FC1) || (type == CV_32FC3)) {
-		float * fdata = (float * ) data;
+	int cvtype = get_ocvtype(type,planes); 
+	printf ("newMat data type mapped %d(%d): %d\n",type,planes, cvtype);
+	//if (type == CV_32FC) ) {
+		//float * fdata = (float * ) data;
 		frame=Mat (rows, cols, type, data).clone();
 		printf("set float data.\n");
-	}
+	//}
 	printf ("at 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//frame.data =(uchar*) data;
 	MatWrapper * mw = new MatWrapper;
@@ -137,7 +182,6 @@ MatWrapper * newMat (const int cols, const int rows, const int type, void * data
 	printf ("mw->at 0 0 (newMat) %f\n",mw->mat.at<float>(0,0));
 	return  mw;
 }
-
 void * getData (MatWrapper * frame) {
 	if (frame->mat.data != frame->dp) frame->dp=frame->mat.data;
 	return frame->mat.data;
@@ -238,12 +282,14 @@ int show_tracker (MatWrapper * frame, bBox * box) {
 }
 
 int cv_init() {
+	/*
 	cvT.u8c3 = CV_8UC3;
 	cvT.u8c1 = CV_8UC1;
 	cvT.f32c3 = CV_32FC3;
 	cvT.f32c1 = CV_32FC1;
 	printf ("cvt.f32c3 %d.\n",cvT.f32c3);
 	printf ("tw_init done.\n");
+	*/
 	return 1;
 }
 

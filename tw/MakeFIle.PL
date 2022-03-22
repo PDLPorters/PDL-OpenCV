@@ -1,6 +1,8 @@
 #!perl
 use 5.10.0;
 use strict;
+use PDL::Types;
+use PDL::Core qw/howbig/;
 
 # define generated functions.
 # [ name , \%options , \@arguments
@@ -8,6 +10,62 @@ my @funclist = (
 ['convertTo',{method=>1,},' MatWrapper *','out','int','type',],
 ['normalize',{},' MatWrapper *','out','int','start','int','end','int','type'],
 );
+
+my $tstr="
+
+#ifndef MAP_DATATYPES_H
+#define MAP_DATATYPES_H
+
+struct MatWrapper
+{
+        cv::Mat mat;
+        void * dp;
+
+};
+
+int get_ocvtype(const int datatype,const int planes ) { 
+	switch (datatype) { \n";
+
+my $mstr="
+
+MatWrapper * newMat (const int cols, const int rows, const int type, const int planes, void * data) {
+	int cvtype = map_types(type,planes);
+	MatWrapper * mw = new MatWrapper;
+	switch(type)
+";
+for my $type ( PDL::Types::types ) {
+	next unless $type->real;
+	next if $type->ppsym =~/[KPQEN]/;
+	my $nt = $type->numval;
+	my $ct = $type->realctype;	
+	my $it = ( $type->integer ? 'C' : 'FC');	
+	my $st = ( $type->unsigned ? 'U' : 'S');
+	my $tt = ( $type->integer ? $st.$it : $it);
+	my $s = PDL::Core::howbig($type)*8;
+	$tstr.="\tcase $nt :
+		return CV_$s$tt(planes); break;\n";
+	$mstr.="case $nt : $ct * fdata = ($ct * ) data; break;\n";
+}
+$tstr.="\t}\n
+	return 0;
+}\n
+
+#endif
+";
+
+$mstr.="
+        mw->mat = frame;
+        mw->dp=frame.data;
+        printf (\"mw->at 0 0 (newMat) %f\\n\",mw->mat.at<float>(0,0));
+        return  mw;
+}\n
+";
+
+open my $fm, ">maptypes.h";
+print $fm $tstr;
+# print $fm $mstr;
+close $fm;
+
 
 sub gen_code { 
 	my $name =shift;
@@ -66,6 +124,7 @@ using namespace cv;
 extern "C" {
 #endif
 
+#include "maptypes.h"
 ';
 
 
