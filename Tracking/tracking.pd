@@ -81,7 +81,7 @@ pp_def('update_tracker',
                 struct bBox  box;
                 MatWrapper * mw = $COMP(mwi);
                 TrackerWrapper * tw = $COMP(twi);
-                setData(mw,$P(m),cvT.f32c1);
+                setData(mw,$P(m),$PDL(m)->datatype);
                 update_tracker(tw,mw,& box);
                 $b(j=>0)=box.x;
                 $b(j=>1)=box.y;

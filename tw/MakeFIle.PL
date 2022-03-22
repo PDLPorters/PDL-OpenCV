@@ -7,7 +7,7 @@ use PDL::Core qw/howbig/;
 # define generated functions.
 # [ name , \%options , \@arguments
 my @funclist = (
-['convertTo',{method=>1,},' MatWrapper *','out','int','type',],
+['convertTo',{method=>1,pre=>'try { out->mat.cols; } catch (...) { out = new MatWrapper; }; type=get_ocvtype(type,CV_MAT_CN(mw->mat.type()));'},' MatWrapper *','out','int','type',],
 ['normalize',{},' MatWrapper *','out','int','start','int','end','int','type'],
 );
 
@@ -33,24 +33,36 @@ MatWrapper * newMat (const int cols, const int rows, const int type, const int p
 	MatWrapper * mw = new MatWrapper;
 	switch(type)
 ";
+
+my $rstr="
+int get_pdltype(const int cvtype) {
+        uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
+        const uchar chans = CV_MAT_CN(cvtype) ; //1 + (cvtype >> CV_CN_SHIFT);
+	int t;
+	printf(\"ConvertTo cvtype %d\\n\",cvtype);
+	switch(depth) {
+";
 for my $type ( PDL::Types::types ) {
 	next unless $type->real;
 	next if $type->ppsym =~/[KPQEN]/;
 	my $nt = $type->numval;
 	my $ct = $type->realctype;	
-	my $it = ( $type->integer ? 'C' : 'FC');	
+	my $it = ( $type->integer ? '' : 'F');	
 	my $st = ( $type->unsigned ? 'U' : 'S');
 	my $tt = ( $type->integer ? $st.$it : $it);
 	my $s = PDL::Core::howbig($type)*8;
 	$tstr.="\tcase $nt :
-		return CV_$s$tt(planes); break;\n";
+		return CV_$s$tt\C(planes); break;\n";
 	$mstr.="case $nt : $ct * fdata = ($ct * ) data; break;\n";
+	$rstr.="\tcase CV_$s$tt : t = $nt; break;\n";
 }
 $tstr.="\t}\n
 	return 0;
 }\n
-
-#endif
+";
+$rstr.="\t}\n
+	return 0;
+}\n
 ";
 
 $mstr.="
@@ -63,7 +75,9 @@ $mstr.="
 
 open my $fm, ">maptypes.h";
 print $fm $tstr;
-# print $fm $mstr;
+print $fm $rstr;
+print $fm "
+#endif\n";
 close $fm;
 
 

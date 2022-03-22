@@ -42,6 +42,21 @@ CODE:
 OUTPUT: 
 RETVAL
 
+
+matObj *
+newMW ()
+ CODE:
+matObj * mo= NULL;
+mo=emptyMW();
+if (mo==NULL) {
+	barf("emptyMat returned null.\n");
+}
+	printf ("mo %p",mo);
+  RETVAL = mo;
+ OUTPUT:
+  RETVAL
+
+
 matObj *
 nMat (c,r,p)
 int c
@@ -54,19 +69,19 @@ matObj * mo = NULL;
 pdl * pid = PDL->SvPDLV(p);
 void * ptr =  pid->data ;
 t=pid->datatype;
-printf ("dims %d\n",t );
+//printf ("dims %d\n",t );
 int l=1;
 if (pid->dims[0] <= 4) {
 	l=pid->dims[0];
 }
 //float * dp = ptr;
-printf("cols %d rows %d type %d planes l %d ptr %p \n",r,c,t,l,ptr);
+//printf("cols %d rows %d type %d planes l %d ptr %p \n",r,c,t,l,ptr);
 mo=newMat(c,r,t,l,ptr);
 if (mo==NULL) {
 	barf("emptyMat returned null.\n");
 }
 //printf ("newM: mo %p\n",mo);
-printf ("newM: data %p\n",getData(mo));
+//printf ("newM: data %p\n",getData(mo));
 RETVAL = mo;
 OUTPUT:
 RETVAL
@@ -136,7 +151,7 @@ EOD
 
 
 pp_def ('get_data',
-	Pars=>'[o] m(k,l);',
+	Pars=>'double [o] m(k,l);',
 	OtherPars=>'MatWrapper * mw;',
 	Code=>pp_line_numbers(__LINE__,
 	'
@@ -144,7 +159,7 @@ pp_def ('get_data',
 		PDL_Indx ls = $SIZE(l);
 		int x = cols($COMP(mw),-1);
 		int y = rows($COMP(mw),-1);
-		printf ("x %d : ks %d / y %d : ls %d ",x,ks,y,ls);
+		//printf ("x %d : ks %d / y %d : ls %d\n ",x,ks,y,ls);
 		if ( x == ks && y == ls )
 		{
 			getDataCopy($COMP(mw),$P(m)); 
@@ -158,9 +173,10 @@ pp_def ('get_data',
 			my ($self,$p,) = @_;
 			my $mw=$self; #->mw;
 			unless (ref ($p) =~ "PDL") {
-				say "rows $mw->rows";
-				$p=zeroes(float,$mw->rows,$mw->cols);
+				say "rows ",$mw->rows;
+				$p=zeroes(sclr ($mw->cols),sclr ($mw->rows));
 			}
+			$p->make_physical;
 			#$p->upd_data;
 			#say "ref to data" ,$p->get_dataref;
 			_get_data_int($p,$$mw);
@@ -255,13 +271,37 @@ pp_def ('mat_at',
 	},
 	),
 );
+
+pp_def('convertTo',
+	Pars=>'',
+	OtherPars=>'MatWrapper * mi; MatWrapper * mo; int type',
+	PMCode=>pp_line_numbers(__LINE__,
+<<'EOPM'),
+		sub convertTo {
+		my ($mi,$mo,$t) = @_;
+		if (ref $mo ne q/PDL::OpenCV/) {
+			$t=$mo if defined $mo;
+			$mo=PDL::OpenCV::newMW();
+		}
+		barf "Not a valid data type $t\n" unless defined $t;
+		_convertTo_int($$mi,$$mo,$t);
+		bless($mo,'PDL::OpenCV');
+		$mo;
+	}
+EOPM
+
+	Code=>pp_line_numbers(__LINE__,
+		' cw_convertTo($COMP(mi),$COMP(mo),$COMP(type)); '),
+	);
+
+
 sub protect_chars {
-  my ($txt) = @_;
-  $txt =~ s/>/E;gt#/g;
-  $txt =~ s/</E;lt#/g;
-  $txt =~ s/;/</g;
-  $txt =~ s/#/>/g;
-  return $txt;
+	my ($txt) = @_;
+	$txt =~ s/>/E;gt#/g;
+	$txt =~ s/</E;lt#/g;
+	$txt =~ s/;/</g;
+	$txt =~ s/#/>/g;
+	return $txt;
 }
 
 
@@ -334,6 +374,13 @@ pp_done();
 
 
 __END__
+use Inline C => Config =>
+           enable => autowrap => LIBS => "-lopencv_wrapper" ;
+ 
+use Inline C =>"#include <generated_cvwrapper.h>
+int cw_convertTo ( MatWrapper * mw ,  MatWrapper * out, int type) ;
+";
+
 pp_def('cols2',
 	Pars=>'[o] c();',
 	   OtherPars=>'MatWrapper * mw; PDL_Indx v',
@@ -376,14 +423,6 @@ matObj * mo = NULL;
  OUTPUT:
   RETVAL
 
-
-matObj *
-newMW ()
- CODE:
-matObj * mo= emptyMW();
-  RETVAL = mo;
- OUTPUT:
-  RETVAL
 
 ');
 

@@ -47,6 +47,15 @@ say "val 4 4 ",$g(4,4);
 say "$g ",$data(,,0);
 is( tapprox ($data(,,0;-)->transpose-$g->transpose),1,'getData');
 
+my $dummy=ones($slice);
+my $ma; #=PDL::OpenCV->new_mat($dummy);
+$ma=$mw->convertTo(2);
+#convertTo($mw,$ma,2);
+say "Ma $ma";
 
+my $h;
+$h=$ma->get_data();
+say $h;
+is( tapprox ($data(,,0;-)->transpose-$h),1,'getData');
 done_testing();
 

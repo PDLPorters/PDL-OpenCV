@@ -86,6 +86,8 @@ double MatAt (const MatWrapper * mw,const int y,const int x) {
 }
 MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
+	mw->mat=Mat();
+	mw->dp=mw->mat.data;
 	return mw;
 }
 	
@@ -151,6 +153,7 @@ void * getData (MatWrapper * frame) {
 	if (frame->mat.data != frame->dp) frame->dp=frame->mat.data;
 	return frame->mat.data;
 }
+
 
 int getDataCopy(const MatWrapper * frame,double * data) {
 	size_t lins=frame->mat.rows;
