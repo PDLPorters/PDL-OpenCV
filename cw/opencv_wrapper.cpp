@@ -221,6 +221,12 @@ int init_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 	double min,max;
 	
 	minMaxIdx(mw->mat, &min, &max);
+        if ( mw->mat.type() > 4 ) {
+                normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
+        } else {
+                frame=mw->mat;
+        }
+
 	normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
 	//imshow("Image ",frame->mat);
 	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
@@ -271,7 +277,11 @@ int vread(MatWrapper * mw,char * name) {
 int update_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	Rect box;
 	Mat frame;
-	normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
+	if ( mw->mat.type() > 4 ) {
+		normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
+	} else {
+		frame=mw->mat.clone();
+	}
 	printf ("ud: box x/y %d %d \n",box.x ,box.y);
 	imshow("ud",frame);
 	waitKey(500);

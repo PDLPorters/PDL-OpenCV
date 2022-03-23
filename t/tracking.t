@@ -7,6 +7,7 @@ use Test::More;
 use PDL::LiteF;
 use PDL::NiceSlice;
 use PDL::OpenCV;
+use PDL::IO::FlexRaw;
 use PDL::OpenCV::Tracking;
 use 5.10.0;
 
@@ -19,7 +20,9 @@ sub tapprox {
   return $diff < $eps;
 }
 
-my $data=rvals(128,128,74);
+
+#my $data=rvals(128,128,74);
+my $data=readflex('/data/ingo/daten/c-31p/7T_data/C31P_MRS_45-1/conv/c_0074')->squeeze;
 my $slice = float $data(,,0;-);
 #my $dr=$slice->get_dataref;
 say $data(0,0,0;-);
