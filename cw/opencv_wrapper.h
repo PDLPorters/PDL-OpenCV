@@ -22,7 +22,6 @@ typedef struct TrackerWrapper TrackerWrapper;
 struct TrackerWrapper * newTracker (int tracker_type);
 int  deleteTracker (struct TrackerWrapper *);
 
-
 typedef struct bBox{  
 	int x; int y; int width; int height;
 } bBox;
@@ -45,6 +44,7 @@ struct MatWrapper
 int rows (MatWrapper * mw, int rows) ;
 int cols (MatWrapper * mw, int cols) ;
 int cwtype (MatWrapper * mw, int * pdltype) ;
+int vread(MatWrapper * mw,char * name);
 MatWrapper * newMat (const int cols, const int rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();
 //MatWrapper * emptyMat (const int cols, const int rows, const int type );
@@ -54,7 +54,7 @@ void * getData (MatWrapper * Mat);
 int getDataCopy(const MatWrapper * frame,void * data);
 int setData (MatWrapper * Mat, void * data, const int type);
 int setMat (MatWrapper * Mat, void * data, const int type, const int rows, const int cols);
-void MatSize (const MatWrapper * Mat, int * cols, int * rows);
+//void MatSize (const MatWrapper * Mat, int * cols, int * rows);
 double MatAt (const MatWrapper * mw,const int x,const int y);
 
 int init_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );

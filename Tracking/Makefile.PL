@@ -6,7 +6,7 @@
   #$hash{OBJECT} .= ' additional_Ccode$(OBJ_EXT) ';
   $hash{clean}->{FILES} .= ' todelete_Ccode$(OBJ_EXT) ';
   $hash{'VERSION_FROM'} = '../OpenCV/opencv.pd';
-  push @{$hash{  'LIBS' }},    '-ltracker_wrapper';
+  push @{$hash{  'LIBS' }},    '-lopencv_wrapper';
 
   WriteMakefile(%hash);
 

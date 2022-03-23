@@ -3,6 +3,8 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include "opencv_wrapper.h"
+#include <opencv2/videoio.hpp>
+
 #include "maptypes.h"
 using namespace std;
 using namespace cv;
@@ -58,11 +60,15 @@ int deleteMat(MatWrapper * wrapper) {
 	delete wrapper;
 	return 1;
 }
+/*
 void MatSize (const MatWrapper * Mat, int * cols, int * rows)
 {
-	(*cols) = Mat->mat.cols;
-	(*rows) = Mat->mat.rows;
+	cols = & Mat->mat.cols;
+	rows = & Mat->mat.rows;
+	printf ("cols %d\n",cols[0]);
+	printf ("cols %d\n",(*cols));
 }
+*/
 
 double MatAt (const MatWrapper * mw,const int y,const int x) {
 	int type=mw->mat.type();
@@ -191,14 +197,17 @@ int setMat (MatWrapper * mw, void * data, const int type, const int rows, const 
 	mw->mat.data=(uchar *)data;	
 	return 1;
 }
-int setData (MatWrapper * mw, void * data, const int type=0 ){
+int setData (MatWrapper * mw, void * data, const int type){
 	int cvtype=get_ocvtype(type,CV_MAT_CN(mw->mat.type()));
+	printf ("cvt %d t %d\n",cvtype,type); 
+	Mat out;
 	if (type && cvtype != mw->mat.type())  {
-		mw->mat.convertTo(mw->mat,type);
+		mw->mat.convertTo(out,cvtype);
 		printf("Converting\n");
 	}
+	mw->mat=out;
 	mw->mat.data=(uchar *)data;	
-	printf ("set_data (at 0, 0) %f\n",MatAt(mw,0,0));
+	printf ("set_data (at 3, 1) %f\n",MatAt(mw,0,0));
 	return 1;
 }
 
@@ -232,9 +241,42 @@ int init_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
 	return 1;
 }
+
+
+int vread(MatWrapper * mw,char * name) {
+	string str;
+	str=string(name);
+	VideoCapture cap;
+	cap.open( str );
+        if ( ! cap.isOpened() )
+        {
+                cout << "--(!)Error opening video capture\n";
+                return -1;
+        }
+	vector <Mat> video;
+	int j=0;
+	Mat frame;
+	for ( ;; ) {
+		cap >> frame;
+		if(frame.rows==0 || frame.cols==0)
+                        break;
+		video.push_back(frame);
+		j++;
+	}
+	Mat * mp = & video[0];
+	mw->dp=mp;
+	return j;
+}
+
 int update_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	Rect box;
-	Tr->tracker->update(mw->mat,box );
+	Mat frame;
+	normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
+	printf ("ud: box x/y %d %d \n",box.x ,box.y);
+	imshow("ud",frame);
+	waitKey(500);
+	Tr->tracker->update(frame,box );
+	printf ("ut: box %d %d \n",box.x ,box.y);
 	roi->x=box.x;
 	roi->y=box.y;
 	roi->height=box.height;

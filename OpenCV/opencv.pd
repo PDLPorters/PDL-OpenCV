@@ -203,20 +203,21 @@ EOD
 pp_def ('set_data',
 	Pars=>'m(k,l);',
 	OtherPars=>'MatWrapper * mw',
+	GenericTypes=>[qw/A B S U L F D/ ],
 	Code=>pp_line_numbers(__LINE__,
 	'
-		PDL_Indx ks = $SIZE(k);
-		PDL_Indx ls = $SIZE(l);
-		int * x;
-		int * y;
-		MatSize($COMP(mw),x,y);
-		if (((*x) == ks) && ((*y) == ls))  {
-			printf("m(0,0) %f \n",$m(k=>0,l=>0));
-			setData($COMP(mw),$PDL(m)->data,0);
-			$PDL(m)->state |= PDL_DONTTOUCHDATA | PDL_ALLOCATED;
-		} else {
-			$CROAK("Matrix size does not match!\n");
-
+			printf("m(3,1) %f \n",$m(k=>0,l=>0));
+			setData($COMP(mw),$P(m),$PDL(m)->datatype);
+	'),
+	PMCode=>pp_line_numbers(__LINE__,
+	'
+		sub set_data {
+			my ($mw,$data) = @_;
+			warn "This sets the Mat data pointer to the piddles. Apparently, this is unstable. Better use new_mat!\n";
+			barf "no data supplied.\n" unless defined $data;
+			barf "data has wrong dimensions.\n" unless ($data->dim(1) == $mw->rows &&  $mw->cols==$data->dim(0));
+			$data->make_physical;
+			_set_data_int(pdl($data),$$mw);
 		}
 	'),
 	Doc=><<"EOD",

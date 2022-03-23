@@ -43,12 +43,12 @@ pp_def('init_tracker',
 sub init_tracker{
         my ($class,$img, $tn, $box, $mat) = @_; 
         $box=zeroes(ushort,4) unless ( ref ($box) eq 'PDL');
-        my $mat=new_mat($img) unless $$mat eq 'REF';
+        my $mat=PDL::OpenCV->new_mat($img) unless $$mat eq 'REF';
         my $tracker=newT ($tn);
         say "tn $tn box $box";
         _init_tracker_int($box,$$tracker,$$mat);
         #say "tracker pointer $$tracker, mat pointer $$mat, box $box";
-	bless \$tracker,$class;
+	bless $tracker,$class;
         return ($tracker,$box,$mat);
 }
 EOP
@@ -77,12 +77,13 @@ pp_def('update_tracker',
         OtherPars => "TrackerWrapper * twi; MatWrapper * mwi",
         Code =>pp_line_numbers(__LINE__,
         q{
-                printf ("twi %d ",$COMP(twi));
+                printf ("twi %d \n",$COMP(twi));
                 struct bBox  box;
                 MatWrapper * mw = $COMP(mwi);
                 TrackerWrapper * tw = $COMP(twi);
-                setData(mw,$P(m),$PDL(m)->datatype);
+                //setData(mw,$P(m),$PDL(m)->datatype);
                 update_tracker(tw,mw,& box);
+		printf ("after update box %d %d \n",box.x ,box.y);
                 $b(j=>0)=box.x;
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
@@ -93,7 +94,9 @@ pp_def('update_tracker',
         PMCode => pp_line_numbers(__LINE__,
 <<'EOPM',
         sub update_tracker {
-                my ($mat,$tw,$mw)=@_;
+                my ($tw,$mat)=@_;
+		my $mw=PDL::OpenCV->new_mat($mat);
+		say ($mat->at(20,40),$mw->mat_at(20,40));
                 _update_tracker_int($mat,$box,$$tw,$$mw);
                 $box;
         }

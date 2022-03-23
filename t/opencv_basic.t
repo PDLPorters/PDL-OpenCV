@@ -49,15 +49,26 @@ $mw->get_data($g);
 #say "$g ",$data(,,0);
 is( tapprox ($data(,,0;-)->transpose-$g->transpose),1,'getData');
 
-my $dummy=ones($slice);
+#my $dummy=ones($slice);
 my $ma; #=PDL::OpenCV->new_mat($dummy);
 $ma=$mw->convertTo(2);
 #convertTo($mw,$ma,2);
 #say "Ma $ma";
 
+
 my $h;
 $h=$ma->get_data();
 #say $h;
-is( tapprox ($data(,,0;-)->transpose-$h),1,'getData');
+is( $ma->type , short->numval,'data type conversion');
+is( tapprox ($data(,,0;-)->transpose-$h),1,'getData - converted');
+my $b=yvals($slice);
+$ma->set_data($b->copy);
+$h=$ma->get_data();
+say ($b->transpose,$h);
+is( tapprox ($b->transpose-$h),1,'getData - set_data');
+$ma=PDL::OpenCV->new_mat($b);
+$h=$ma->get_data();
+say ($b->transpose,$h);
+is( tapprox ($b->transpose-$h),1,'getData - new_mat');
 done_testing();
 
