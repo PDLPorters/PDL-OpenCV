@@ -18,7 +18,7 @@ sub PDL::OpenCV::get_dp {
 }
 EOPM
 
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 pp_setversion($VERSION);
 
 pp_bless ("PDL::OpenCV");
@@ -51,7 +51,6 @@ mo=emptyMW();
 if (mo==NULL) {
 	barf("emptyMat returned null.\n");
 }
-	printf ("mo %p",mo);
   RETVAL = mo;
  OUTPUT:
   RETVAL
@@ -133,7 +132,7 @@ pp_def('new_mat',
 	sub new_mat{
 		my ($class,$m)=@_;
 		$m->make_physical;
-		say "type ",$m->type,", ",$m->get_datatype;
+		#say "type ",$m->type,", ",$m->get_datatype;
 		my $mw = nMat($m->dim(0),$m->dim(1),$m); #,$m->get_dataref);
 		bless $mw,$class;
 		#_new_mat_int($m,$$mw);
@@ -151,7 +150,7 @@ EOD
 
 
 pp_def ('get_data',
-	Pars=>'double [o] m(k,l);',
+	Pars=>'[o] m(k,l);',
 	OtherPars=>'MatWrapper * mw;',
 	Code=>pp_line_numbers(__LINE__,
 	'
@@ -162,7 +161,12 @@ pp_def ('get_data',
 		//printf ("x %d : ks %d / y %d : ls %d\n ",x,ks,y,ls);
 		if ( x == ks && y == ls )
 		{
-			getDataCopy($COMP(mw),$P(m)); 
+			//double * ptr =$P(m);
+			int t=getDataCopy($COMP(mw),$P(m)); 
+			//printf ("get_data: type %d\n",t);
+			$PDL(m)->datatype=t;
+			//printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
+			//$P(m)= ($PDL *) ptr;
 		} else {
 			$CROAK("Matrix size does not match!\n");
 		}
@@ -173,15 +177,15 @@ pp_def ('get_data',
 			my ($self,$p,) = @_;
 			my $mw=$self; #->mw;
 			unless (ref ($p) =~ "PDL") {
-				say "rows ",$mw->rows;
+				#say "rows ",$mw->rows;
 				$p=zeroes(sclr ($mw->cols),sclr ($mw->rows));
 			}
 			$p->make_physical;
 			#$p->upd_data;
 			#say "ref to data" ,$p->get_dataref;
 			_get_data_int($p,$$mw);
-			say "data type ", $p->type;
-			say "(get_data) 4,4: ",$p->slice("4","4");
+			#say "data type ", $p->type;
+			#say "(get_data) 4,4: ",$p->slice("4","4");
 			#say "ref to data after " ,$p->get_dataref;
 			#say "(get_data) 48,48: after",$p->slice("48","48");
 			$p->transpose;
@@ -229,7 +233,7 @@ EOD
 pp_add_boot (<< 'EOB');
 
 	cv_init();
-	printf ("init done (autoinclude)\n");
+	//printf ("init done (autoinclude)\n");
 
 
 EOB
@@ -294,6 +298,36 @@ EOPM
 		' cw_convertTo($COMP(mi),$COMP(mo),$COMP(type)); '),
 	);
 
+pp_def('type',
+	Pars=>'[io] cvt(); [io] pt();',
+	OtherPars=>'MatWrapper * mi; ',
+	Code=>pp_line_numbers(__LINE__, q{
+		//int * pt = & $COMP(pdltyp);
+		int t,ct;
+		t = $pt();
+		ct = $cvt();
+		//printf ("cvt %d pd %d \n",ct,t);
+		ct = cwtype($COMP(mi),& t);
+		//printf ("cvt %d pd %d \n",$cvt(),$pt());
+		$pt()=t;
+		$cvt()=ct;
+	} ),
+	PMCode=>pp_line_numbers(__LINE__, q{
+		sub type {
+			my ($mw,$t) =@_;
+			my $ct=pdl([-1]);
+			$t=pdl([-1]) unless defined $t;
+			#say $t->info,$ct->info;
+			#say "t $t ct $ct";
+			_type_int($t,$ct,$$mw,);
+			$t=sclr $t;
+			$ct=sclr $ct;
+			#say "type $t cvtype $ct";
+			($t,$ct);
+		}
+	}
+	),
+	);
 
 sub protect_chars {
 	my ($txt) = @_;
@@ -367,7 +401,7 @@ EOD
 } # sub: ufunc()
 
 # generate functions.
-map {ufunc($_,$_,0,"returns and optionally sets $_ of matrix. \n");} (qw/rows cols type / );
+map {ufunc($_,$_,0,"returns and optionally sets $_ of matrix. \n");} (qw/rows cols / );
 
 
 pp_done();
@@ -418,7 +452,7 @@ matObj * mo = NULL;
  if (mo==NULL) {
          barf("emptyMat returned null.\n");
  }
- printf ("newM: mo %p\n",mo);
+// printf ("newM: mo %p\n",mo);
   RETVAL = mo;
  OUTPUT:
   RETVAL

@@ -11,8 +11,87 @@ my @funclist = (
 ['normalize',{},' MatWrapper *','out','int','start','int','end','int','type'],
 );
 
-my $tstr="
+my ($tstr_l,$mstr_l,$rstr_l,$gstr_l,$gstr_l2);
+for my $type ( PDL::Types::types ) {
+	next unless $type->real;
+	my $ts=$type->ppsym;
+	next if $ts =~/[KPQEN]/;
+	my $nt = $type->numval;
+	my $ct = $type->realctype;	
+	my $it = ( $type->integer ? '' : 'F');	
+	my $st = ( $type->unsigned ? 'U' : 'S');
+	my $tt = ( $type->integer ? $st.$it : $it);
+	my $s = PDL::Core::howbig($type)*8;
+	$tstr_l.="\tcase $nt :
+		//printf(\"cv type %d\\n\",CV_$s$tt\C(planes));
+		return CV_$s$tt\C(planes); break;\n";
+	$mstr_l.="\tcase $nt : $ct * fdata = ($ct * ) data; break;\n";
+	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
+	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n";
+	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[j*cols+i] = MatAt(frame,i,j);\n \t\t\t break;\n";
+}
 
+# getDataCopy
+my $gstr="
+int getDataCopy(const MatWrapper * frame,void * rdata) {
+	size_t lins=frame->mat.rows;
+	size_t cols=frame->mat.cols;
+	int cvtype=frame->mat.type();
+	uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
+	//printf(\"getDataCopy: cvtype %d\\n\",depth);
+$gstr_l 
+	for ( size_t i = 0; i<cols; i++ ) {
+		for ( size_t j = 0; j<lins; j++ ) {
+			switch (depth) {
+		$gstr_l2
+			}
+		}
+	}
+	return get_pdltype(cvtype);
+}
+";
+
+# get_pdltype
+my $rstr="
+int get_pdltype(const int cvtype) {
+        uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
+        const uchar chans = CV_MAT_CN(cvtype) ; //1 + (cvtype >> CV_CN_SHIFT);
+	int t=-1;
+	//printf(\"ConvertTo cvtype %d\\n\",cvtype);
+	switch(depth) {
+		$rstr_l
+\t}\n
+	return t;
+}\n
+";
+
+
+# get_ocvtype
+my $tstr="
+int get_ocvtype(const int datatype,const int planes ) { 
+	switch (datatype) { \n
+		$tstr_l;
+\t}\n
+	return -1;
+}\n
+";
+
+my $mstr="
+
+MatWrapper * newMat (const int cols, const int rows, const int type, const int planes, void * data) {
+	int cvtype = map_types(type,planes);
+	MatWrapper * mw = new MatWrapper;
+	switch(type)
+	$mstr_l;
+        mw->mat = frame;
+        mw->dp=frame.data;
+        printf (\"mw->at 0 0 (newMat) %f\\n\",mw->mat.at<float>(0,0));
+        return  mw;
+}\n
+";
+
+open my $fm, ">maptypes.h";
+print $fm "
 #ifndef MAP_DATATYPES_H
 #define MAP_DATATYPES_H
 
@@ -23,57 +102,7 @@ struct MatWrapper
 
 };
 
-int get_ocvtype(const int datatype,const int planes ) { 
-	switch (datatype) { \n";
-
-my $mstr="
-
-MatWrapper * newMat (const int cols, const int rows, const int type, const int planes, void * data) {
-	int cvtype = map_types(type,planes);
-	MatWrapper * mw = new MatWrapper;
-	switch(type)
 ";
-
-my $rstr="
-int get_pdltype(const int cvtype) {
-        uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
-        const uchar chans = CV_MAT_CN(cvtype) ; //1 + (cvtype >> CV_CN_SHIFT);
-	int t;
-	printf(\"ConvertTo cvtype %d\\n\",cvtype);
-	switch(depth) {
-";
-for my $type ( PDL::Types::types ) {
-	next unless $type->real;
-	next if $type->ppsym =~/[KPQEN]/;
-	my $nt = $type->numval;
-	my $ct = $type->realctype;	
-	my $it = ( $type->integer ? '' : 'F');	
-	my $st = ( $type->unsigned ? 'U' : 'S');
-	my $tt = ( $type->integer ? $st.$it : $it);
-	my $s = PDL::Core::howbig($type)*8;
-	$tstr.="\tcase $nt :
-		return CV_$s$tt\C(planes); break;\n";
-	$mstr.="case $nt : $ct * fdata = ($ct * ) data; break;\n";
-	$rstr.="\tcase CV_$s$tt : t = $nt; break;\n";
-}
-$tstr.="\t}\n
-	return 0;
-}\n
-";
-$rstr.="\t}\n
-	return 0;
-}\n
-";
-
-$mstr.="
-        mw->mat = frame;
-        mw->dp=frame.data;
-        printf (\"mw->at 0 0 (newMat) %f\\n\",mw->mat.at<float>(0,0));
-        return  mw;
-}\n
-";
-
-open my $fm, ">maptypes.h";
 print $fm $tstr;
 print $fm $rstr;
 print $fm "
@@ -141,6 +170,7 @@ extern "C" {
 #include "maptypes.h"
 ';
 
+print $fc $gstr;
 
 print $fh '
 

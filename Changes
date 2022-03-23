@@ -1,0 +1,9 @@
+22-3-23 	Version 0.02
+		
+		This is a basic working perl/PDL OpencCV binding release. 
+
+		* Common data types in OpenCV are mapped to PDL types. This is a subset of PDL's types.
+		
+		* Code is partly generated (switch - case constructs for types) but also for common wrapper structure.
+		This can and should be extended. 
+

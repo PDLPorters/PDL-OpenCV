@@ -84,6 +84,7 @@ double MatAt (const MatWrapper * mw,const int y,const int x) {
 	//printf("MatAt: f %g\n",f);
 	return f;
 }
+
 MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
 	mw->mat=Mat();
@@ -125,18 +126,18 @@ int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, voi
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat = norm;
 	mw->dp=norm.data;
-	printf("assign.\n");
+	printf("assign. type %d\n",norm.type());
 	return  1;
 }
 
 MatWrapper * newMat (const int cols, const int rows, const int type, int planes, void * data) {
 	cv::Mat frame,norm;
 	int cvtype = get_ocvtype(type,planes); 
-	printf ("newMat data type mapped %d(%d): %d\n",type,planes, cvtype);
+	//printf ("newMat data type mapped %d(%d): %d\n",type,planes, cvtype);
 	//if (type == CV_32FC) ) {
 		//float * fdata = (float * ) data;
 		frame=Mat (rows, cols, cvtype, data); //.clone();
-		printf("set float data.\n");
+		//printf("set float data.\n");
 	//}
 	//frame.data =(uchar*) data;
 	MatWrapper * mw = new MatWrapper;
@@ -146,6 +147,7 @@ MatWrapper * newMat (const int cols, const int rows, const int type, int planes,
 	mw->mat = frame;
 	mw->dp=frame.data;
 	//printf ("at 0 0 (newMat) %f\n",MatAt(mw,0,0));
+	//printf ("mat type %d \n",mw->mat.type());
 	return  mw;
 }
 
@@ -155,16 +157,6 @@ void * getData (MatWrapper * frame) {
 }
 
 
-int getDataCopy(const MatWrapper * frame,double * data) {
-	size_t lins=frame->mat.rows;
-	size_t cols=frame->mat.cols;
-	for ( size_t i = 0; i<cols; i++ ) {
-		for ( size_t j = 0; j<lins; j++ ) {
-			data[j*cols+i] = MatAt(frame,i,j);
-		}
-	}
-	return 1;
-}
 int cols (MatWrapper * mw, int cols) {
 	//printf ("cols(): %d\n",mw->mat.cols);
 	if ( cols>=0 ) mw->mat.cols=cols;
@@ -177,45 +169,56 @@ int rows (MatWrapper * mw, int rows) {
 	return mw->mat.rows;
 }
 
-int type (MatWrapper * mw, int type) {
-	if (type >=0 && type != mw->mat.type())  {
-		mw->mat.convertTo(mw->mat,type);
+int cwtype (MatWrapper * mw, int * pdltype) {
+	int type = pdltype [0]; //
+	if (type >=0) {
+		type= get_ocvtype(pdltype[0],CV_MAT_CN(mw->mat.type()));
+		if  ( type != mw->mat.type())  {
+			mw->mat.convertTo(mw->mat,type);
+		}
+	} else {
+		pdltype[0]=get_pdltype(mw->mat.type());
 	}
 	return mw->mat.type();
 }
 
-int setMat (MatWrapper * frame, void * data, const int type, const int rows, const int cols ){
-	frame->mat.rows = rows;
-	frame->mat.cols = cols;
-	if (type >=0 && type != frame->mat.type())  {
-		frame->mat.convertTo(frame->mat,type);
+int setMat (MatWrapper * mw, void * data, const int type, const int rows, const int cols ){
+	mw->mat.rows = rows;
+	mw->mat.cols = cols;
+	if (type >=0 && type != mw->mat.type())  {
+		mw->mat.convertTo(mw->mat,type);
 	}
-	frame->mat.data=(uchar *)data;	
+	mw->mat.data=(uchar *)data;	
 	return 1;
 }
-int setData (MatWrapper * frame, void * data, const int type=0 ){
-	int cvtype=get_ocvtype(type,CV_MAT_CN(frame->mat.type()));
-	if (type && cvtype != frame->mat.type())  {
-		frame->mat.convertTo(frame->mat,type);
+int setData (MatWrapper * mw, void * data, const int type=0 ){
+	int cvtype=get_ocvtype(type,CV_MAT_CN(mw->mat.type()));
+	if (type && cvtype != mw->mat.type())  {
+		mw->mat.convertTo(mw->mat,type);
 		printf("Converting\n");
 	}
-	frame->mat.data=(uchar *)data;	
-	printf ("set_data (at 0, 0) %f\n",MatAt(frame,0,0));
+	mw->mat.data=(uchar *)data;	
+	printf ("set_data (at 0, 0) %f\n",MatAt(mw,0,0));
 	return 1;
 }
 
-int init_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box ){
+int init_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 	Rect roi;
+	Mat frame;
 	roi.x=box->x;
 	roi.y=box->y;
 	roi.height=box->height;
 	roi.width=box->width;
+	double min,max;
+	
+	minMaxIdx(mw->mat, &min, &max);
+	normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
 	//imshow("Image ",frame->mat);
 	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
 	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
 	if (roi.x == 0) {
 		namedWindow("tracker",WINDOW_NORMAL);
-		roi=selectROI("tracker",frame->mat,true,false);
+		roi=selectROI("tracker",frame,true,false);
 	}
 	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
 	//printf ("at 48 48 (init_tracker %f\n",frame->mat.at<float>(48,48));
@@ -224,15 +227,14 @@ int init_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box ){
 	box->width=roi.width;
 	box->height=roi.height;
 	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
-	Tr->tracker->init(frame->mat,roi );
+	Tr->tracker->init(mw->mat,roi );
 	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
 	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
 	return 1;
 }
-int update_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * roi) {
+int update_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	Rect box;
-	Tr->tracker->init(frame->mat,box );
-	Tr->tracker->update(frame->mat,box );
+	Tr->tracker->update(mw->mat,box );
 	roi->x=box.x;
 	roi->y=box.y;
 	roi->height=box.height;
@@ -240,13 +242,13 @@ int update_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * roi) {
 	return 1;
 }
 
-int show_tracker (MatWrapper * frame, bBox * box) {
+int show_tracker (MatWrapper * mw, bBox * box) {
 	Rect roi;
 	roi.x=box->x;
 	roi.y=box->y;
 	roi.height=box->height;
 	roi.width=box->width;
-	rectangle( frame->mat, roi, Scalar( 255, 0, 0 ), 2, 1 );
+	rectangle( mw->mat, roi, Scalar( 255, 0, 0 ), 2, 1 );
 	return 1;
 }
 
