@@ -39,7 +39,7 @@ int getDataCopy(const MatWrapper * frame,void * rdata) {
 	int cvtype=frame->mat.type();
 	uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
 	//printf(\"getDataCopy: cvtype %d\\n\",depth);
-$gstr_l 
+	$gstr_l 
 	for ( size_t i = 0; i<cols; i++ ) {
 		for ( size_t j = 0; j<lins; j++ ) {
 			switch (depth) {

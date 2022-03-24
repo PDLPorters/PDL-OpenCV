@@ -249,7 +249,7 @@ int init_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 }
 
 
-int vread(MatWrapper * mw,char * name) {
+int vread(MatWrapper * mw,char * name,void * data) {
 	string str;
 	str=string(name);
 	VideoCapture cap;

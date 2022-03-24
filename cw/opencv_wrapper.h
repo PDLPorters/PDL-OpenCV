@@ -44,7 +44,7 @@ struct MatWrapper
 int rows (MatWrapper * mw, int rows) ;
 int cols (MatWrapper * mw, int cols) ;
 int cwtype (MatWrapper * mw, int * pdltype) ;
-int vread(MatWrapper * mw,char * name);
+int vread(MatWrapper * mw,char * name,void * data);
 MatWrapper * newMat (const int cols, const int rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();
 //MatWrapper * emptyMat (const int cols, const int rows, const int type );

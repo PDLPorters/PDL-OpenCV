@@ -118,6 +118,17 @@ mat_DESTROY(mw)
 
 ');
 
+pp_def('vread', # INCOMPLETE !!!
+	Pars=>'[o] m(c,r,f]; ',
+	OtherPars=>'MatWrapper * mw; char * file',
+	GenericTypes=>[qw/A B S U L F D/ ],
+	Code=>pp_line_numbers(__LINE__,'
+		PDL_Indx cols,rows,frames,ch;
+		frames=vread(mw,file,$P(m));
+		if (frames<=0) {barf "Failed to read video. %s.\n",file;}
+	'),
+	);
+
 pp_def('new_mat',
 	Pars=>'m(c,r);',
 	GenericTypes=>[qw/A B S U L F D/ ],
