@@ -70,7 +70,7 @@ void MatSize (const MatWrapper * Mat, int * cols, int * rows)
 }
 */
 
-double MatAt (const MatWrapper * mw,const int y,const int x) {
+double MatAt (const MatWrapper * mw,const size_t y,const size_t x) {
 	int type=mw->mat.type();
 	//printf("MatAt: data pointer %p\n",mw->mat.data);
 	//printf("MatAt: data tyep %d\n",type);
@@ -95,10 +95,11 @@ MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
 	mw->mat=Mat();
 	mw->dp=mw->mat.data;
+	mw->vmat = vector<Mat>(mw->mat);
 	return mw;
 }
 	
-MatWrapper * emptyMat (const int cols=1, const int rows=1, const int type=CV_32FC1 ) {
+MatWrapper * emptyMat (const size_t cols=1, const size_t rows=1, const int type=CV_32FC1 ) {
 //int emptyMat (MatWrapper * mw,const int cols, const int rows, const int type ) {
 	MatWrapper * mw = new MatWrapper;
 	printf ("rows %d cols %d\n",rows,cols);
@@ -116,7 +117,7 @@ MatWrapper * emptyMat (const int cols=1, const int rows=1, const int type=CV_32F
 	return mw;
 }
 
-int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, void * data) {
+int newMat2 (MatWrapper * mw,const size_t cols, const size_t rows, const int type, void * data) {
 	cv::Mat frame,norm;
 	try { mw->mat.cols; } catch (...) { mw = new MatWrapper; } // if undefined, return new object.
 
@@ -136,7 +137,7 @@ int newMat2 (MatWrapper * mw,const int cols, const int rows, const int type, voi
 	return  1;
 }
 
-MatWrapper * newMat (const int cols, const int rows, const int type, int planes, void * data) {
+MatWrapper * newMat (const size_t cols, const size_t rows, const int type, int planes, void * data) {
 	cv::Mat frame,norm;
 	int cvtype = get_ocvtype(type,planes); 
 	//printf ("newMat data type mapped %d(%d): %d\n",type,planes, cvtype);
@@ -163,14 +164,14 @@ void * getData (MatWrapper * frame) {
 }
 
 
-int cols (MatWrapper * mw, int cols) {
+size_t cols (MatWrapper * mw, size_t cols) {
 	//printf ("cols(): %d\n",mw->mat.cols);
 	if ( cols>=0 ) mw->mat.cols=cols;
 	//printf ("cols(): %d\n",mw->mat.cols);
 	return mw->mat.cols;
 }
 
-int rows (MatWrapper * mw, int rows) {
+size_t rows (MatWrapper * mw, size_t rows) {
 	if ( rows>=0 ) mw->mat.rows=rows;
 	return mw->mat.rows;
 }
@@ -188,7 +189,7 @@ int cwtype (MatWrapper * mw, int * pdltype) {
 	return mw->mat.type();
 }
 
-int setMat (MatWrapper * mw, void * data, const int type, const int rows, const int cols ){
+int setMat (MatWrapper * mw, void * data, const int type, const size_t rows, const size_t cols ){
 	mw->mat.rows = rows;
 	mw->mat.cols = cols;
 	if (type >=0 && type != mw->mat.type())  {
@@ -270,8 +271,15 @@ int vread(MatWrapper * mw,char * name,void * data) {
 		j++;
 	}
 	Mat * mp = & video[0];
+	mw->vmat= video;
 	mw->dp=mp;
 	return j;
+}
+
+size_t vectorSize (MatWrapper * mw, size_t vl) {
+	if (vl>=0) mw->vmat.reserve(vl);
+	try {vl=mw->vmat.size(); } catch (...) { }
+	return  vl;
 }
 
 int update_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {

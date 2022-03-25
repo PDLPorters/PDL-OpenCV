@@ -28,22 +28,29 @@ for my $type ( PDL::Types::types ) {
 	$mstr_l.="\tcase $nt : $ct * fdata = ($ct * ) data; break;\n";
 	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
 	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n";
-	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[j*cols+i] = MatAt(frame,i,j);\n \t\t\t break;\n";
+	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[j*cols+i] = frame.at<$ct>(i,j);\n \t\t\t break;\n";
 }
 
 # getDataCopy
 my $gstr="
-int getDataCopy(const MatWrapper * frame,void * rdata) {
-	size_t lins=frame->mat.rows;
-	size_t cols=frame->mat.cols;
-	int cvtype=frame->mat.type();
+int getDataCopy(const MatWrapper * mw,void * rdata, size_t vl) {
+	size_t lins=mw->mat.rows;
+	size_t cols=mw->mat.cols;
+	int cvtype=mw->mat.type();
+	Mat frame;
 	uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
 	//printf(\"getDataCopy: cvtype %d\\n\",depth);
+	if (vl > 0) {
+	try {vl=mw->vmat.size(); } catch (...) { vl=1;} // default to 0 if not a vector
+	} else vl = 1;
 	$gstr_l 
-	for ( size_t i = 0; i<cols; i++ ) {
-		for ( size_t j = 0; j<lins; j++ ) {
-			switch (depth) {
-		$gstr_l2
+	for (size_t v = 0; v<vl; v ++ ) { //  iterate over vmax;
+		frame=mw->vmat[v];
+		for ( size_t i = 0; i<cols; i++ ) {
+			for ( size_t j = 0; j<lins; j++ ) {
+				switch (depth) {
+				$gstr_l2
+				}
 			}
 		}
 	}
@@ -78,12 +85,13 @@ int get_ocvtype(const int datatype,const int planes ) {
 
 my $mstr="
 
-MatWrapper * newMat (const int cols, const int rows, const int type, const int planes, void * data) {
+MatWrapper * newMat (const size_t cols, const size_t rows, const int type, const int planes, void * data) {
 	int cvtype = map_types(type,planes);
 	MatWrapper * mw = new MatWrapper;
 	switch(type)
 	$mstr_l;
         mw->mat = frame;
+	mw->vmat = vector<Mat>(frame);
         mw->dp=frame.data;
         printf (\"mw->at 0 0 (newMat) %f\\n\",mw->mat.at<float>(0,0));
         return  mw;
@@ -95,10 +103,12 @@ print $fm "
 #ifndef MAP_DATATYPES_H
 #define MAP_DATATYPES_H
 
+#include <vector>
 struct MatWrapper
 {
         cv::Mat mat;
         void * dp;
+	std::vector<cv::Mat> vmat;
 
 };
 

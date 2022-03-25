@@ -118,15 +118,48 @@ mat_DESTROY(mw)
 
 ');
 
+pp_def('vector_size',
+	Pars=>'indx [o] vs();',
+	OtherPars=>'MatWrapper * mw;',
+	Code=>'
+		$vs()=getSize(mw);
+	',
+);
+
 pp_def('vread', # INCOMPLETE !!!
-	Pars=>'[o] m(c,r,f]; ',
-	OtherPars=>'MatWrapper * mw; char * file',
+	Pars=>'m(c,r,f);',
 	GenericTypes=>[qw/A B S U L F D/ ],
-	Code=>pp_line_numbers(__LINE__,'
+	#OtherPars=>'MatWrapper * mw',
+	#Pars=>'m(c,r];',
+	OtherPars=>'MatWrapper * mw; char * file',
+
+	#Pars=>'[o] m(c,r,f];',
+	#OtherPars=>'MatWrapper * mw; char * file',
+	#GenericTypes=>[qw/A B S U L F D/ ],
+	RedoDimsCode=>pp_line_numbers(__LINE__,'
 		PDL_Indx cols,rows,frames,ch;
-		frames=vread(mw,file,$P(m));
+		$SIZE(c)=cols(mw,-1);
+		$SIZE(r)=rows(mw,-1);
+		$SIZE(f)=vread(mw,file); //,$P(m));
+		'),
+	Code=>pp_line_numbers(__LINE__,'
+		$PDL(m)->datatype=getDataCopy(mw,$P(m),$SIZE(f));
 		if (frames<=0) {barf "Failed to read video. %s.\n",file;}
 	'),
+	PMCode=>pp_line_numbers(__LINE__,'
+		sub vread {
+			my ($mw,$name,$p)=@_;
+			unless (ref ($p) =~ "PDL") {
+				#say "rows ",$mw->rows;
+				$p=PDL->null;
+				#$p=zeroes(sclr ($mw->cols),sclr ($mw->rows),$mw->vectorSize);
+			}
+			barf "cannot read file!" unless (-f $name);
+			$p->make_physical;
+			_vread_int($p,$$mw,$name);
+			$p;
+		}'
+		),
 	);
 
 pp_def('new_mat',
@@ -173,7 +206,7 @@ pp_def ('get_data',
 		if ( x == ks && y == ls )
 		{
 			//double * ptr =$P(m);
-			int t=getDataCopy($COMP(mw),$P(m)); 
+			int t=getDataCopy($COMP(mw),$P(m),0); 
 			//printf ("get_data: type %d\n",t);
 			$PDL(m)->datatype=t;
 			//printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
@@ -185,8 +218,7 @@ pp_def ('get_data',
 	PMCode=>pp_line_numbers(__LINE__,
 	'
 		sub get_data {
-			my ($self,$p,) = @_;
-			my $mw=$self; #->mw;
+			my ($mw,$p,) = @_;
 			unless (ref ($p) =~ "PDL") {
 				#say "rows ",$mw->rows;
 				$p=zeroes(sclr ($mw->cols),sclr ($mw->rows));
