@@ -16,8 +16,24 @@ sub PDL::OpenCV::get_dp {
 	$p->upd_data;
 	$p;
 }
-EOPM
 
+sub to_planes {
+	my $m = shift;
+	my ($c,$r,$l);
+	my @d=$m->dims;
+	$c=shift @d;
+	$r=shift @d;
+	$l=1;
+	if ($m->ndims>2 && $c < 4) {
+		$l=$c;
+		$c=$r;
+		$r=shift @d;
+	}
+	#$m->reshape($l,$c,$r,@d);
+	$l,$c,$r,@d;
+}
+
+EOPM
 our $VERSION = 0.02;
 pp_setversion($VERSION);
 
@@ -57,27 +73,33 @@ if (mo==NULL) {
 
 
 matObj *
-nMat (c,r,p)
-PDL_Indx c
-PDL_Indx r
+nMat (p)
 SV * p
 CODE:
 int t;
+PDL_Indx c;
+PDL_Indx r;
+int l;
 matObj * mo = NULL;
 //char * type = SvRV( t );
 pdl * pid = PDL->SvPDLV(p);
+l = pid->dims[0];
+c = pid->dims[1];
+r = pid->dims[2];
 void * ptr =  pid->data ;
 t=pid->datatype;
-//printf ("dims %d\n",t );
-int l=1;
-if (pid->dims[0] <= 4) {
-	l=pid->dims[0];
+printf ("type %d\n",t );
+if (pid->ndims > 2 && l<4)  {
+	mo=newMat(c,r,t,l,ptr);
+} else {
+	r=c;
+	c=l;
+	l=1;
+	mo=newMat(c,r,t,1,ptr);
 }
-//float * dp = ptr;
-//printf("cols %d rows %d type %d planes l %d ptr %p \n",r,c,t,l,ptr);
-mo=newMat(c,r,t,l,ptr);
+printf("cols %d rows %d type %d planes l %d ptr %p \n",c,r,t,l,ptr);
 if (mo==NULL) {
-	barf("emptyMat returned null.\n");
+	barf("newMat returned null.\n");
 }
 //printf ("newM: mo %p\n",mo);
 //printf ("newM: data %p\n",getData(mo));
@@ -98,7 +120,7 @@ matObj * mw =  ptr;
 printf ("getD mo. %p\n",(mo));
 printf ("getD mw. %p\n",mw);
 pdl * pid = PDL->SvPDLV(p);
-MatAt(mw,4,4);
+//MatAt(mw,4,4);
 printf ("getD data %p\n",getData(mw));
 ptr =getData(mo);
 float * fp = ptr;
@@ -135,8 +157,32 @@ pp_def('vector_size',
 	'),
 );
 
+pp_def('create_video',
+	Pars=>'m(l,c,r,f)',
+	OtherPars=>'MatWrapper * mw; int bs',
+	GenericTypes=>[qw/A B S U L F D/ ],
+	PMCode=>pp_line_numbers(__LINE__,'
+		sub vread {
+			my ($mo,$p)=@_;
+			if (ref $mo ne q/PDL::OpenCV/) {
+				$p=$mo;
+				$mo=PDL::OpenCV::newMW();
+				bless($mo,"PDL::OpenCV");
+			}
+			barf "No input piddle!\n" unless (ref ($p) =~ "PDL") ;
+			$size=howbig($p->type);
+			_create_video_int($p,$mo,$size);
+		}
+	'),
+	Code=>pp_line_numbers(__LINE__,'
+		PDL_Indx sz = $SIZE(l)*$SIZE(c)*$SIZE(r)*$COMP(bs);
+		int res = newVector($COMP(mw),$SIZE(f),$SIZE(c), $SIZE(r) , $PDL(m)->datatype, $SIZE(l), $P(m), sz);
+
+	'),
+);
+
 pp_def('vread', 
-	Pars=>'m(c,r,f);',
+	Pars=>'m(l,c,r,f);',
 	OtherPars=>'MatWrapper * mw; char * file',
 	GenericTypes=>[qw/A B S U L F D/ ],
 	PMCode=>pp_line_numbers(__LINE__,'
@@ -178,9 +224,10 @@ pp_def('new_mat',
 	PMCode=>pp_line_numbers(__LINE__,'
 	sub new_mat{
 		my ($class,$m)=@_;
-		$m->make_physical;
+		#$m->sever;
 		#say "type ",$m->type,", ",$m->get_datatype;
-		my $mw = nMat($m->dim(0),$m->dim(1),$m); #,$m->get_dataref);
+		my @d=to_planes($m);
+		my $mw = nMat($m); #,$m->get_dataref);
 		bless $mw,$class;
 		#_new_mat_int($m,$$mw);
 		$mw;
@@ -197,17 +244,32 @@ EOD
 
 
 pp_def ('get_data',
-	Pars=>'[o] m(k,l);',
+	Pars=>'[o] m(j,k,l);',
 	OtherPars=>'MatWrapper * mw;',
-	Code=>pp_line_numbers(__LINE__,
+	RedoDimsCode=>pp_line_numbers(__LINE__,
 	'
+		PDL_Indx js = $SIZE(j);
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
+		PDL_Indx ch = cw_channels($COMP(mw));
 		PDL_Indx x = cols($COMP(mw),-1);
 		PDL_Indx y = rows($COMP(mw),-1);
-		//printf ("x %d : ks %d / y %d : ls %d\n ",x,ks,y,ls);
-		if (x == ks && y == ls )
+		//if (js > 3 && ks == y && js == x) { 
+			//$PDL(m)->ndims++;
+			$SIZE(j)=ch;
+			$SIZE(k)=x;
+			$SIZE(l)=y;
+		//}
+		printf ("ch %d j; %d x %d : k %d / y %d : l %d\n ",ch,$SIZE(j),x,$SIZE(k),y,$SIZE(l));
+		/*if (ch == $SIZE(j)  && x == $SIZE(k) && y == $SIZE(l) )
 		{
+		} else {
+			$CROAK("Matrix size does not match!\n");
+		}
+		*/
+	'),
+	Code=>pp_line_numbers(__LINE__,
+	'
 			//double * ptr =$P(m);
 			printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
 			int t=getDataCopy($COMP(mw),$P(m),1); 
@@ -215,27 +277,30 @@ pp_def ('get_data',
 			$PDL(m)->datatype=t;
 			printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
 			//$P(m)= ($PDL *) ptr;
-		} else {
-			$CROAK("Matrix size does not match!\n");
-		}
 	'),
 	PMCode=>pp_line_numbers(__LINE__,
 	'
 		sub get_data {
 			my ($mw,$p,) = @_;
+			my @d;
 			unless (ref ($p) =~ "PDL") {
 				#say "rows ",$mw->rows;
-				$p=zeroes(sclr ($mw->cols),sclr ($mw->rows));
+				#$p=zeroes(sclr $mw->cw_channels ,sclr ($mw->cols),sclr ($mw->rows));
+				$p=PDL->null;
+			} else {
+				#$p=$p->transpose;
+				@d = to_planes($p);
+				$p->reshape(@d);
 			}
 			$p->make_physical;
 			#$p->upd_data;
 			say "ref to data" ,$p->get_dataref;
 			_get_data_int($p,$$mw);
 			#say "data type ", $p->type;
-			say "(get_data) 4,4: ",$p->slice("4","4");
+			#say "(get_data) 4,4: ",$p->slice("4","4");
 			#say "ref to data after " ,$p->get_dataref;
 			#say "(get_data) 48,48: after",$p->slice("48","48");
-			$p->transpose;
+			$p; #->transpose;
 		}
 		',),
 	Doc=><<"EOD",
@@ -304,20 +369,34 @@ sub mat2pdl {
 EOPM
 
 pp_def ('mat_at',
-	Pars=>'double [o] m();',
+	Pars=>'double [o] m(j);',
 	OtherPars=>'MatWrapper * mwi;int x;int y;',
 	Code=>pp_line_numbers(__LINE__,
 	'
-		$m()=MatAt($COMP(mwi),$COMP(x),$COMP(y));
+		//printf ("Hello Mat!\n");
+		//cwtype ( $COMP(mwi), pdltype);
+		$PDL(m)->datatype= MatAt($COMP(mwi),$COMP(x),$COMP(y),$P(m));
+		
+
+		//printf ("mat_at: pointer %p\n",$P(m));
+		//printf ("mat_at: data type %d\n",$PDL(m)->datatype);
+		//printf ("mat_at: %f\n",$P(m)[0]);
+		//$P(m)=vec;
+		/*
+		loop(j) %{ 
+			$m()=frame.data[cw_channels($COMP(mwi))*(cols($COMP(mwi)*$COMP(y) + $COMP(x)) + j];
+		%}
+		*/
 	',),
 	PMCode=>pp_line_numbers(__LINE__,
 	q{
 	sub mat_at {
 		my ($mw,$x,$y)=@_;
-		my $o=zeroes(1);
+		my ($t,$ct) = $mw->type;
+		my $o=zeroes(sclr $mw->cw_channels);
 		#say "pointer $$mw";
 		_mat_at_int($o,$$mw,$x,$y);
-		#say "$o";
+		#say "mat_at value $o";
 		$o;
 	}
 	},
@@ -334,10 +413,10 @@ pp_def('convertTo',
 		if (ref $mo ne q/PDL::OpenCV/) {
 			$t=$mo if defined $mo;
 			$mo=PDL::OpenCV::newMW();
+			bless($mo,'PDL::OpenCV');
 		}
 		barf "Not a valid data type $t\n" unless defined $t;
 		_convertTo_int($$mi,$$mo,$t);
-		bless($mo,'PDL::OpenCV');
 		$mo;
 	}
 EOPM
@@ -390,6 +469,62 @@ sub protect_chars {
 
 
 
+sub ofunc {
+    my ($name,$func,$overload,$doc,%extra) = @_;
+    my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
+    my $funcovp = protect_chars $funcov;
+    $func = $func->[0] if ref $func eq 'ARRAY';
+    my $got_complex = PDL::Core::Dev::got_complex_version($func, 0);
+    # handle exceptions
+    my $badcode; # = '$ISBAD(a())';
+    if ( exists $extra{Exception} ) {
+#	$badcode .= " || $extra{Exception}";
+#	print "Warning: ignored exception for $name\n";
+	# NOTE This option is unused ($badcode is commented out above).
+	#      See also `biop()`.
+	delete $extra{Exception};
+    }
+    my $codestr = '
+		//printf ("ofunc: mw %p\n",$COMP(mw)); 
+		int res;
+		res = '.$func.'($COMP(mw));
+		//printf ("res %d\n",res);
+		$b() = res;' ;
+    pp_def($name,
+	   Pars => '[o]b()',
+	   OtherPars=>'MatWrapper * mw; ',
+	   GenericTypes=>['N','D'],
+	   PMCode => pp_line_numbers(__LINE__, qq{
+		   sub $name {
+			   my (\$self) = \@\_;
+			   my \$res=zeroes(ushort,1);
+			   _$name\_int(\$res,\$\$self,);
+			   #say "res \$res?";
+			   \$res;
+		   }
+	   },),
+	   Code => pp_line_numbers(__LINE__, qq{
+	           $codestr
+	   }),
+	   %extra,
+	   Doc => << "EOD");
+=for ref
+
+$doc
+
+=for example
+
+   \$y = $funcov () ;
+   \$x->inplace->$name;  # modify \$x inplace
+
+It can be made to work inplace with the C<\$x-E<gt>inplace> syntax.
+This function is used to overload the unary C<$funcovp> operator/function.
+
+=cut
+
+EOD
+} # sub: ufunc()
+
 sub ufunc {
     my ($name,$func,$overload,$doc,%extra) = @_;
     my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
@@ -420,9 +555,9 @@ sub ufunc {
 			   my (\$self,\$v) = \@\_;
 			   \$v = -1 unless defined \$v;
 			   my \$res=zeroes(ushort,1);
-			   say "$name calling now (\$v)";
+			   #say "$name calling now (\$v)";
 			   _$name\_int(\$res,\$\$self,\$v);
-			   say "res \$res?";
+			   #say "res \$res?";
 			   \$res;
 		   }
 	   },),
@@ -450,6 +585,7 @@ EOD
 
 # generate functions.
 map {ufunc($_,$_,0,"returns and optionally sets $_ of matrix. \n");} (qw/rows cols / );
+map {ofunc($_,$_,0,"returns and optionally sets $_ of matrix. \n");} (qw/cw_channels planes/ );
 
 
 pp_done();

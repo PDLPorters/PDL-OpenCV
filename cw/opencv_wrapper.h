@@ -45,7 +45,11 @@ struct MatWrapper
 ptrdiff_t rows (MatWrapper * mw, ptrdiff_t rows) ;
 ptrdiff_t cols (MatWrapper * mw, ptrdiff_t cols) ;
 int cwtype (MatWrapper * mw, int * pdltype) ;
+int planes (MatWrapper * mw ) ;
 int vread(MatWrapper * mw,char * name,void * data);
+int vwrite(MatWrapper * mw,char * name,void * data);
+//MatWrapper * newVector(const ptrdiff_t vs,const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
+int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data,const ptrdiff_t size);
 ptrdiff_t vectorSize (MatWrapper * mw, ptrdiff_t size) ;
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();
@@ -57,7 +61,7 @@ int getDataCopy(const MatWrapper * frame,void * data, ptrdiff_t vl);
 int setData (MatWrapper * Mat, void * data, const int type);
 int setMat (MatWrapper * Mat, void * data, const int type, const ptrdiff_t rows, const ptrdiff_t cols);
 //void MatSize (const MatWrapper * Mat, int * cols, int * rows);
-double MatAt (const MatWrapper * mw,const ptrdiff_t x,const ptrdiff_t y);
+int  MatAt (const MatWrapper * mw,const ptrdiff_t x,const ptrdiff_t y,void * data);
 
 int init_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
 int update_tracker(TrackerWrapper *, MatWrapper *, bBox * box);

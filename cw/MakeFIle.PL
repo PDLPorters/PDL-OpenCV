@@ -15,10 +15,11 @@ my @funclist = (
 		out->vmat=vector(1,out->mat); 
 		out->dp=out->mat.data;',
 	},'MatWrapper *','out','int','type',],
-['normalize',{},' MatWrapper *','out','int','start','int','end','int','type'],
+['normalize',{},'MatWrapper *','out','int','start','int','end','int','type'],
+['channels',{cvret=>'int',method=>1,postxx=>'printf("res channels %d\n",res);',},,],
 );
 
-my ($tstr_l,$mstr_l,$rstr_l,$gstr_l,$gstr_l2);
+my ($tstr_l,$mstr_l,$rstr_l,$gstr_l,$gstr_l2,$astr_l2);
 for my $type ( PDL::Types::types ) {
 	next unless $type->real;
 	my $ts=$type->ppsym;
@@ -35,8 +36,36 @@ for my $type ( PDL::Types::types ) {
 	$mstr_l.="\tcase $nt : $ct * fdata = ($ct * ) data; break;\n";
 	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
 	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n";
-	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[j*cols+i] = frame.at<$ct>(j,i);\n \t\t\t break;\n";
+	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[(j*cols+i)*ch+c] = frame.ptr<$ct>(j)[ch*i+c];\n
+	\t\t\t break;\n";
+	$astr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[c] = frame.ptr<$ct>(i)[ch*j+c];\n
+	//printf(\"MatAt data at i %d j %d ch %d %g\\n\",i, j, ch,${ts}data[c] );
+	\t\t\t break;\n";
+	#$astr_l.="\t\t\tcase CV_$s$tt : ${ts}data = frame.data[frame.channels()*(frame.cols*y + x) + 0];
 }
+
+my $astr="
+int MatAt (const MatWrapper * mw,const ptrdiff_t j,const ptrdiff_t i,void * rdata) {
+	ptrdiff_t lins=mw->mat.rows;
+	ptrdiff_t cols=mw->mat.cols;
+	int type=mw->mat.type();
+	int cvtype=mw->mat.type();
+	int ch=mw->mat.channels();
+	//printf(\"MatAt: data pointer %p\\n\",mw->mat.data);
+	//printf(\"MatAt: piddle data pointer %p\\n\",rdata);
+	//printf(\"MatAt: data tyep %d\\n\",type);
+	uchar depth = CV_MAT_DEPTH(type); //	type & CV_MAT_DEPTH_MASK;
+	uchar chans = 1 + (type >> CV_CN_SHIFT);
+	cv::Mat frame=mw->mat;
+	$gstr_l;
+	for (int c = 0; c<ch; c++) {
+		switch ( depth ) {
+		$astr_l2;
+		}
+	}
+	return get_pdltype(cvtype);
+}
+";
 
 # getDataCopy
 my $gstr="
@@ -44,6 +73,7 @@ int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 	ptrdiff_t lins=mw->mat.rows;
 	ptrdiff_t cols=mw->mat.cols;
 	int cvtype=mw->mat.type();
+	int ch=mw->mat.channels();
 	Mat frame;
 	uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
 	//printf(\"getDataCopy: cvtype %d\\n\",depth);
@@ -59,8 +89,10 @@ int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 		frame=mw->vmat[v];
 		for ( ptrdiff_t i = 0; i<cols; i++ ) {
 			for ( ptrdiff_t j = 0; j<lins; j++ ) {
-				switch (depth) {
-				$gstr_l2
+				for (int c = 0; c<ch; c++) {
+					switch (depth) {
+					$gstr_l2
+					}
 				}
 			}
 		}
@@ -149,7 +181,8 @@ sub gen_code {
 	my $str = "$ret cw_$name ( MatWrapper * mw ";
 	my $argstr = join (", " ,@args) ; #$types[$i] $vals[$i]"), map { "$_ ".$args{$_} } keys (%args));
 	my $cvargs = join (', ',@cvargs);
-	$str .= ', '. $argstr if $argstr;
+	$cvargs='' if ($cvargs =~ /^\s*,\s*$/);
+	$str .= ', '. $argstr unless ($argstr =~ /^\s*$/);
 	$str.= ") ";
 	$name=$$opt{fucntion} if $$opt{function};
 	my $hstr = $str.";\n";
@@ -160,13 +193,15 @@ sub gen_code {
 	}
 	$str.= $$opt{pre}."\n";
 	my $lh ; #= 'void ';
+	# {cvret} is the return type. 
 	$lh = "$$opt{cvret} cvret = " if $$opt{cvret};
 	$str.=$lh."mw->mat.$name ( $cvargs );\n" if $$opt{method};
-	$str.=$lh."$name ( mw->mat,$cvargs );\n" unless $$opt{method};
+	$cvargs=", $cvargs" if $cvargs;
+	$str.=$lh."$name ( mw->mat $cvargs );\n" unless $$opt{method};
 	say "generate code: post:\n$$opt{post}\n";
 	$str.= "// post: \n".$$opt{post};
-	 ("retval = cvret\n") if (!$$opt{post} && $$opt{cvret} ) ;
-	$str.= "\n return retval; \n}\n";
+	$str.= ("retval = cvret;\n") if (!$$opt{post} && $$opt{cvret} ) ;
+	$str.= "\n return retval; \n}\n\n\n";
 	return ($hstr,$str);
 }
 
@@ -195,6 +230,7 @@ extern "C" {
 ';
 
 print $fc $gstr;
+print $fc $astr;
 
 print $fh '
 

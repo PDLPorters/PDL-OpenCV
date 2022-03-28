@@ -10,7 +10,6 @@ use PDL::OpenCV;
 
 use Data::Dumper;
 
-say "hell owrld\n";
 
 EOPM
 
@@ -43,12 +42,14 @@ pp_def('init_tracker',
 sub init_tracker{
         my ($class,$img, $tn, $box, $mat) = @_; 
         $box=zeroes(ushort,4) unless ( ref ($box) eq 'PDL');
-        my $mat=PDL::OpenCV->new_mat($img) unless $$mat eq 'REF';
+        my $mat=PDL::OpenCV->new_mat($img) unless $mat eq 'REF';
+	say "init_tracker: mat_at(50,50): ",$mat->mat_at(50,50);
         my $tracker=newT ($tn);
         say "tn $tn box $box";
         _init_tracker_int($box,$$tracker,$$mat);
         #say "tracker pointer $$tracker, mat pointer $$mat, box $box";
 	bless $tracker,$class;
+	say "init_tracker: mat_at(50,50): ",$mat->mat_at(50,50);
         return ($tracker,$box,$mat);
 }
 EOP

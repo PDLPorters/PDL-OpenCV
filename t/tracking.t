@@ -25,7 +25,7 @@ sub tapprox {
 my $data=readflex('/data/ingo/daten/c-31p/7T_data/C31P_MRS_45-1/conv/c_0074')->squeeze;
 my $slice = float $data(,,0;-);
 #my $dr=$slice->get_dataref;
-say $data(0,0,0;-);
+say $data(50,50,0;-);
 #say ("5,6,5,$dr");
 #my $mw=PDL::OpenCV->nMat(5,6,5,$slice) ; #->get_dataref);
 my ($tr,$box,$mw)=PDL::OpenCV::Tracking->init_tracker($data(,,0,;-),2,pdl(qw/20 20 30 10/));
@@ -33,7 +33,7 @@ my ($tr,$box,$mw)=PDL::OpenCV::Tracking->init_tracker($data(,,0,;-),2,pdl(qw/20 
 
 say "new_mat completed. Starting tests";
 say "box $box";
-say "at ",$mw->mat_at(4,4),$data(4,4,0);
+say "at ",$mw->mat_at(50,50),$data(50,50,0);
 say "at (get_data",$mw->get_data()->(4,4);
 
 for my $x (0..$data->dim(2)-1)  {
