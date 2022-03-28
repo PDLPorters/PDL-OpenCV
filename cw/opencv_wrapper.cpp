@@ -70,7 +70,7 @@ void MatSize (const MatWrapper * Mat, int * cols, int * rows)
 }
 */
 
-double MatAt (const MatWrapper * mw,const size_t y,const size_t x) {
+double MatAt (const MatWrapper * mw,const ptrdiff_t y,const ptrdiff_t x) {
 	int type=mw->mat.type();
 	//printf("MatAt: data pointer %p\n",mw->mat.data);
 	//printf("MatAt: data tyep %d\n",type);
@@ -95,49 +95,51 @@ MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
 	mw->mat=Mat();
 	mw->dp=mw->mat.data;
-	mw->vmat = vector<Mat>(mw->mat);
+	mw->vmat = vector<Mat>(1,mw->mat);
 	return mw;
 }
 	
-MatWrapper * emptyMat (const size_t cols=1, const size_t rows=1, const int type=CV_32FC1 ) {
+MatWrapper * emptyMat (const ptrdiff_t cols=1, const ptrdiff_t rows=1, const int type=CV_32FC1 ) {
 //int emptyMat (MatWrapper * mw,const int cols, const int rows, const int type ) {
 	MatWrapper * mw = new MatWrapper;
-	printf ("rows %d cols %d\n",rows,cols);
-	printf ("rs %d cs %d\n",rows,cols);
+	//printf ("rows %d cols %d\n",rows,cols);
+	//printf ("rs %d cs %d\n",rows,cols);
 	Mat frame;
 	try {
 		frame=Mat(rows, cols,CV_32FC1);
 	} catch (...) { printf ("Mat could not be created.\n"); }
 	//printf ("rows %d cols %d\n",frame.rows,frame.cols);
-	printf ("rows %d cols %d\n",frame.rows,frame.cols);
+	//printf ("rows %d cols %d\n",frame.rows,frame.cols);
 	//printf("empty mat %d\n", MatAt (mw,32,48) );
 	mw->mat=  frame; 
+	mw->vmat=vector(1,frame); 
 	//printf("empty mat %d\n", MatAt (mw,32,48) );
-	printf ("mw -> rows %d cols %d\n",mw->mat.rows,mw->mat.cols);
+	//printf ("mw -> rows %d cols %d\n",mw->mat.rows,mw->mat.cols);
 	return mw;
 }
 
-int newMat2 (MatWrapper * mw,const size_t cols, const size_t rows, const int type, void * data) {
+int newMat2 (MatWrapper * mw,const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
 	cv::Mat frame,norm;
 	try { mw->mat.cols; } catch (...) { mw = new MatWrapper; } // if undefined, return new object.
 
-	printf ("data type %d\n",type);
+	//printf ("data type %d\n",type);
 	if ((type == CV_32FC1) || (type == CV_32FC3)) {
 		float * fdata = (float * ) data;
 		frame=Mat (rows, cols, type, fdata);
-		printf("set float data.\n");
+		//printf("set float data.\n");
 	}
 	//frame.data =(uchar*) data;
 	normalize(frame,norm, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
-	printf("norm.\n");
+	//printf("norm.\n");
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
-	mw->mat = norm;
+	mw->mat =  norm;
+	mw->vmat =  vector(1,norm);
 	mw->dp=norm.data;
-	printf("assign. type %d\n",norm.type());
+	//printf("assign. type %d\n",norm.type());
 	return  1;
 }
 
-MatWrapper * newMat (const size_t cols, const size_t rows, const int type, int planes, void * data) {
+MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
 	cv::Mat frame,norm;
 	int cvtype = get_ocvtype(type,planes); 
 	//printf ("newMat data type mapped %d(%d): %d\n",type,planes, cvtype);
@@ -151,7 +153,8 @@ MatWrapper * newMat (const size_t cols, const size_t rows, const int type, int p
 	//normalize(frame,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
 	//printf ("norm 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
-	mw->mat = frame;
+	mw->mat =  frame;
+	mw->vmat  = vector(1, frame);
 	mw->dp=frame.data;
 	//printf ("at 0 0 (newMat) %f\n",MatAt(mw,0,0));
 	//printf ("mat type %d \n",mw->mat.type());
@@ -164,14 +167,15 @@ void * getData (MatWrapper * frame) {
 }
 
 
-size_t cols (MatWrapper * mw, size_t cols) {
-	//printf ("cols(): %d\n",mw->mat.cols);
-	if ( cols>=0 ) mw->mat.cols=cols;
-	//printf ("cols(): %d\n",mw->mat.cols);
+ptrdiff_t cols (MatWrapper * mw, ptrdiff_t cols) {
+	//printf ("cols(): %d, %d\n",mw->mat.cols,cols);
+	if ( cols>=0 ) { mw->mat.cols=cols; }
+	//printf ("cols(): after set %d\n",mw->mat.cols);
+	
 	return mw->mat.cols;
 }
 
-size_t rows (MatWrapper * mw, size_t rows) {
+ptrdiff_t rows (MatWrapper * mw, ptrdiff_t rows) {
 	if ( rows>=0 ) mw->mat.rows=rows;
 	return mw->mat.rows;
 }
@@ -189,7 +193,7 @@ int cwtype (MatWrapper * mw, int * pdltype) {
 	return mw->mat.type();
 }
 
-int setMat (MatWrapper * mw, void * data, const int type, const size_t rows, const size_t cols ){
+int setMat (MatWrapper * mw, void * data, const int type, const ptrdiff_t rows, const ptrdiff_t cols ){
 	mw->mat.rows = rows;
 	mw->mat.cols = cols;
 	if (type >=0 && type != mw->mat.type())  {
@@ -200,15 +204,16 @@ int setMat (MatWrapper * mw, void * data, const int type, const size_t rows, con
 }
 int setData (MatWrapper * mw, void * data, const int type){
 	int cvtype=get_ocvtype(type,CV_MAT_CN(mw->mat.type()));
-	printf ("cvt %d t %d\n",cvtype,type); 
+	//printf ("cvt %d t %d\n",cvtype,type); 
 	Mat out;
 	if (type && cvtype != mw->mat.type())  {
-		mw->mat.convertTo(out,cvtype);
-		printf("Converting\n");
+		mw->mat.convertTo(mw->mat,cvtype);
+		//printf("Converting\n");
 	}
-	mw->mat=out;
+	//mw->mat=out;
+	//mw->vmat[0]=out;
 	mw->mat.data=(uchar *)data;	
-	printf ("set_data (at 3, 1) %f\n",MatAt(mw,0,0));
+	printf ("set_data (at 3, 1) %f\n",MatAt(mw,3,1));
 	return 1;
 }
 
@@ -272,11 +277,12 @@ int vread(MatWrapper * mw,char * name,void * data) {
 	}
 	Mat * mp = & video[0];
 	mw->vmat= video;
-	mw->dp=mp;
+	mw->mat=video[0];
+	mw->dp=mp->data;
 	return j;
 }
 
-size_t vectorSize (MatWrapper * mw, size_t vl) {
+ptrdiff_t vectorSize (MatWrapper * mw, ptrdiff_t vl) {
 	if (vl>=0) mw->vmat.reserve(vl);
 	try {vl=mw->vmat.size(); } catch (...) { }
 	return  vl;
@@ -290,11 +296,11 @@ int update_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	} else {
 		frame=mw->mat.clone();
 	}
-	printf ("ud: box x/y %d %d \n",box.x ,box.y);
+	//printf ("ud: box x/y %d %d \n",box.x ,box.y);
 	imshow("ud",frame);
 	waitKey(500);
 	Tr->tracker->update(frame,box );
-	printf ("ut: box %d %d \n",box.x ,box.y);
+	//printf ("ut: box %d %d \n",box.x ,box.y);
 	roi->x=box.x;
 	roi->y=box.y;
 	roi->height=box.height;

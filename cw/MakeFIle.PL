@@ -7,7 +7,14 @@ use PDL::Core qw/howbig/;
 # define generated functions.
 # [ name , \%options , \@arguments
 my @funclist = (
-['convertTo',{method=>1,pre=>'try { out->mat.cols; } catch (...) { out = new MatWrapper; }; type=get_ocvtype(type,CV_MAT_CN(mw->mat.type()));'},' MatWrapper *','out','int','type',],
+['convertTo',{method=>1,
+	pre=>'
+		try { out->mat.cols; } catch (...) { out = new MatWrapper; }; 
+		type=get_ocvtype(type,CV_MAT_CN(mw->mat.type()));',
+	post=>'
+		out->vmat=vector(1,out->mat); 
+		out->dp=out->mat.data;',
+	},'MatWrapper *','out','int','type',],
 ['normalize',{},' MatWrapper *','out','int','start','int','end','int','type'],
 );
 
@@ -28,26 +35,30 @@ for my $type ( PDL::Types::types ) {
 	$mstr_l.="\tcase $nt : $ct * fdata = ($ct * ) data; break;\n";
 	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
 	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n";
-	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[j*cols+i] = frame.at<$ct>(i,j);\n \t\t\t break;\n";
+	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[j*cols+i] = frame.at<$ct>(j,i);\n \t\t\t break;\n";
 }
 
 # getDataCopy
 my $gstr="
-int getDataCopy(const MatWrapper * mw,void * rdata, size_t vl) {
-	size_t lins=mw->mat.rows;
-	size_t cols=mw->mat.cols;
+int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
+	ptrdiff_t lins=mw->mat.rows;
+	ptrdiff_t cols=mw->mat.cols;
 	int cvtype=mw->mat.type();
 	Mat frame;
 	uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
 	//printf(\"getDataCopy: cvtype %d\\n\",depth);
+	//printf(\"getDataCopy: vl %d\\n\",vl);
 	if (vl > 0) {
 	try {vl=mw->vmat.size(); } catch (...) { vl=1;} // default to 0 if not a vector
+	//printf(\"getDataCopy: vl %d\\n\",vl);
 	} else vl = 1;
 	$gstr_l 
-	for (size_t v = 0; v<vl; v ++ ) { //  iterate over vmax;
+	//printf(\"getDataCopy: mw->mat %p\\n\",mw->mat);
+	//printf(\"getDataCopy: mw->vmat[0] %p\\n\",mw->vmat[0]);
+	for (ptrdiff_t v = 0; v<vl; v ++ ) { //  iterate over vmax;
 		frame=mw->vmat[v];
-		for ( size_t i = 0; i<cols; i++ ) {
-			for ( size_t j = 0; j<lins; j++ ) {
+		for ( ptrdiff_t i = 0; i<cols; i++ ) {
+			for ( ptrdiff_t j = 0; j<lins; j++ ) {
 				switch (depth) {
 				$gstr_l2
 				}
@@ -85,15 +96,15 @@ int get_ocvtype(const int datatype,const int planes ) {
 
 my $mstr="
 
-MatWrapper * newMat (const size_t cols, const size_t rows, const int type, const int planes, void * data) {
+MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data) {
 	int cvtype = map_types(type,planes);
 	MatWrapper * mw = new MatWrapper;
 	switch(type)
 	$mstr_l;
         mw->mat = frame;
-	mw->vmat = vector<Mat>(frame);
+	mw->vmat = vector<Mat>(1,frame);
         mw->dp=frame.data;
-        printf (\"mw->at 0 0 (newMat) %f\\n\",mw->mat.at<float>(0,0));
+        //printf (\"mw->at 0 0 (newMat) %f\\n\",mw->mat.at<float>(0,0));
         return  mw;
 }\n
 ";
@@ -125,6 +136,7 @@ sub gen_code {
 	my $opt =shift;
 	my @args; 
 	my @cvargs ;
+	# parse argument list and get mats
 	for my $j (0..$#_/2) {
 		#push @types,$s;
 		my $s=$_[2*$j];
@@ -151,7 +163,9 @@ sub gen_code {
 	$lh = "$$opt{cvret} cvret = " if $$opt{cvret};
 	$str.=$lh."mw->mat.$name ( $cvargs );\n" if $$opt{method};
 	$str.=$lh."$name ( mw->mat,$cvargs );\n" unless $$opt{method};
-	$str.= $$opt{post} || ("retval = cvret\n") if ($$opt{cvret} ) ;
+	say "generate code: post:\n$$opt{post}\n";
+	$str.= "// post: \n".$$opt{post};
+	 ("retval = cvret\n") if (!$$opt{post} && $$opt{cvret} ) ;
 	$str.= "\n return retval; \n}\n";
 	return ($hstr,$str);
 }

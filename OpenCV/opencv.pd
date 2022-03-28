@@ -58,8 +58,8 @@ if (mo==NULL) {
 
 matObj *
 nMat (c,r,p)
-int c
-int r
+PDL_Indx c
+PDL_Indx r
 SV * p
 CODE:
 int t;
@@ -88,7 +88,7 @@ RETVAL
 
 void  
 getD(mo, p)
-IV  mo
+matObj *  mo
 SV * p
 CODE:
 //mw = SvR
@@ -120,47 +120,50 @@ mat_DESTROY(mw)
 
 pp_def('vector_size',
 	Pars=>'indx [o] vs();',
-	OtherPars=>'MatWrapper * mw;',
-	Code=>'
-		$vs()=getSize(mw);
-	',
+	OtherPars=>'MatWrapper * mw;PDL_Indx s',
+	PMCode=>pp_line_numbers(__LINE__,'
+		sub vector_size {
+			my ($mw,$size) = @_;
+			$size = -1 unless $size>=0;
+			my $p=PDL->null;
+			_vector_size_int($p,$$mw,$size);
+			$p;
+		}
+	'),
+	Code=>pp_line_numbers(__LINE__,'
+		$vs()=vectorSize($COMP(mw),$COMP(s));
+	'),
 );
 
-pp_def('vread', # INCOMPLETE !!!
+pp_def('vread', 
 	Pars=>'m(c,r,f);',
-	GenericTypes=>[qw/A B S U L F D/ ],
-	#OtherPars=>'MatWrapper * mw',
-	#Pars=>'m(c,r];',
 	OtherPars=>'MatWrapper * mw; char * file',
-
-	#Pars=>'[o] m(c,r,f];',
-	#OtherPars=>'MatWrapper * mw; char * file',
-	#GenericTypes=>[qw/A B S U L F D/ ],
-	RedoDimsCode=>pp_line_numbers(__LINE__,'
-		PDL_Indx cols,rows,frames,ch;
-		$SIZE(c)=cols(mw,-1);
-		$SIZE(r)=rows(mw,-1);
-		$SIZE(f)=vread(mw,file); //,$P(m));
-		'),
-	Code=>pp_line_numbers(__LINE__,'
-		$PDL(m)->datatype=getDataCopy(mw,$P(m),$SIZE(f));
-		if (frames<=0) {barf "Failed to read video. %s.\n",file;}
-	'),
+	GenericTypes=>[qw/A B S U L F D/ ],
 	PMCode=>pp_line_numbers(__LINE__,'
 		sub vread {
 			my ($mw,$name,$p)=@_;
 			unless (ref ($p) =~ "PDL") {
 				#say "rows ",$mw->rows;
 				$p=PDL->null;
-				#$p=zeroes(sclr ($mw->cols),sclr ($mw->rows),$mw->vectorSize);
+				#$p=zeroes(sclr ($mw->cols),sclr ($mw->rows),$mw->vector_size();
 			}
 			barf "cannot read file!" unless (-f $name);
 			$p->make_physical;
 			_vread_int($p,$$mw,$name);
 			$p;
-		}'
+		}
+		'
 		),
-	);
+	Code=>pp_line_numbers(__LINE__,'
+		$PDL(m)->datatype=getDataCopy($COMP(mw),$P(m),$SIZE(f));
+		if ($SIZE(f)<=0) {barf ("Failed to read video. %s.\n",$COMP(file));}
+	'),
+	RedoDimsCode=>pp_line_numbers(__LINE__,'
+		$SIZE(c)=cols($COMP(mw),-1);
+		$SIZE(r)=rows($COMP(mw),-1);
+		$SIZE(f)=vread($COMP(mw),$COMP(file),$P(m));
+		'),
+		);
 
 pp_def('new_mat',
 	Pars=>'m(c,r);',
@@ -200,16 +203,17 @@ pp_def ('get_data',
 	'
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
-		int x = cols($COMP(mw),-1);
-		int y = rows($COMP(mw),-1);
+		PDL_Indx x = cols($COMP(mw),-1);
+		PDL_Indx y = rows($COMP(mw),-1);
 		//printf ("x %d : ks %d / y %d : ls %d\n ",x,ks,y,ls);
-		if ( x == ks && y == ls )
+		if (x == ks && y == ls )
 		{
 			//double * ptr =$P(m);
-			int t=getDataCopy($COMP(mw),$P(m),0); 
-			//printf ("get_data: type %d\n",t);
+			printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
+			int t=getDataCopy($COMP(mw),$P(m),1); 
+			printf ("get_data: type %d\n",t);
 			$PDL(m)->datatype=t;
-			//printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
+			printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
 			//$P(m)= ($PDL *) ptr;
 		} else {
 			$CROAK("Matrix size does not match!\n");
@@ -225,10 +229,10 @@ pp_def ('get_data',
 			}
 			$p->make_physical;
 			#$p->upd_data;
-			#say "ref to data" ,$p->get_dataref;
+			say "ref to data" ,$p->get_dataref;
 			_get_data_int($p,$$mw);
 			#say "data type ", $p->type;
-			#say "(get_data) 4,4: ",$p->slice("4","4");
+			say "(get_data) 4,4: ",$p->slice("4","4");
 			#say "ref to data after " ,$p->get_dataref;
 			#say "(get_data) 48,48: after",$p->slice("48","48");
 			$p->transpose;
@@ -339,7 +343,7 @@ pp_def('convertTo',
 EOPM
 
 	Code=>pp_line_numbers(__LINE__,
-		' cw_convertTo($COMP(mi),$COMP(mo),$COMP(type)); '),
+		'cw_convertTo($COMP(mi),$COMP(mo),$COMP(type)); '),
 	);
 
 pp_def('type',
@@ -393,7 +397,7 @@ sub ufunc {
     $func = $func->[0] if ref $func eq 'ARRAY';
     my $got_complex = PDL::Core::Dev::got_complex_version($func, 1);
     # handle exceptions
-    my $badcode = '$ISBAD(a())';
+    my $badcode; # = '$ISBAD(a())';
     if ( exists $extra{Exception} ) {
 #	$badcode .= " || $extra{Exception}";
 #	print "Warning: ignored exception for $name\n";
@@ -402,7 +406,7 @@ sub ufunc {
 	delete $extra{Exception};
     }
     my $codestr = '
-	//	printf ("ufunc: mw %p\n",$COMP(mw)); 
+		//printf ("ufunc: mw %p\n",$COMP(mw)); 
 		int res;
 		res = '.$func.'($COMP(mw),$COMP(v));
 		//printf ("res %d\n",res);
@@ -410,15 +414,15 @@ sub ufunc {
     pp_def($name,
 	   Pars => '[o]b()',
 	   OtherPars=>'MatWrapper * mw; PDL_Indx v',
-	   GenericTypes=>['U'],
+	   GenericTypes=>['N'],
 	   PMCode => pp_line_numbers(__LINE__, qq{
 		   sub $name {
 			   my (\$self,\$v) = \@\_;
 			   \$v = -1 unless defined \$v;
 			   my \$res=zeroes(ushort,1);
-			   #say "$name calling now (\$v)";
+			   say "$name calling now (\$v)";
 			   _$name\_int(\$res,\$\$self,\$v);
-			   #say "res \$res?";
+			   say "res \$res?";
 			   \$res;
 		   }
 	   },),
@@ -508,7 +512,7 @@ matObj * mo = NULL;
 int rows(mw)
 	matObj * mw;
 	CODE:
-	int r = rows(mw);
+	PDL_Indx r = rows(mw);
 	RETVAL r;
 	OUTPUT:
 	RETVAL
