@@ -1,3 +1,8 @@
+22-3-29		Support for vectors of Mat and channels.
+
+		Vide I/O
+
+
 22-3-23 	Version 0.02
 		
 		This is a basic working perl/PDL OpencCV binding release. 

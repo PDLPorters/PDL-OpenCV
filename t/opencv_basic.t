@@ -61,7 +61,7 @@ is( tapprox ($data->mv(2,0)-$mw2->get_data->(;-)),1,'getData2 ch 3');
 
 #my $dummy=ones($slice);
 my $ma; #=PDL::OpenCV->new_mat($dummy);
-$ma=$mw->convertTo(2);
+$ma=$mw->convert_to(2);
 #convertTo($mw,$ma,2);
 #say "Ma $ma";
 
@@ -70,15 +70,15 @@ my $h;
 $h=$ma->get_data();
 #say $h;
 is( $ma->type , short->numval,'data type conversion');
-is( tapprox ($data(,,0;-)->transpose-$h),1,'getData - converted');
+is( tapprox ($data(,,0;-)-$h(,;-)),1,'getData - converted');
 my $b=yvals($slice);
-$ma->set_data($b);
-$h=$ma->get_data();
-say ($b->squeeze,$h);
+#$ma->set_data($b);
+#$h=$ma->get_data();
+#say ($b->squeeze,$h);
 #is( tapprox ($b->transpose-$h),1,'getData - set_data');
 $ma=PDL::OpenCV->new_mat($b);
 $h=$ma->get_data();
-say ($b->squeeze,$h);
+#say ($b->squeeze,$h);
 is( tapprox ($b(;-)-$h(;-)),1,'getData - new_mat');
 done_testing();
 
