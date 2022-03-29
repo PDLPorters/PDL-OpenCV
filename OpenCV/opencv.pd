@@ -5,6 +5,32 @@ pp_addpm ({At=>'Top'},<<'EOPM');
 
 use 5.10.0;
 
+=title PDL::OpenCV
+
+This module interfaces perl/PDL and OpenCV. 
+
+=head1 SYNOPSIS
+
+	use PDL::OpenCV;
+	use PDL;
+	use PDL::NiceSlice;
+
+	... 
+
+	$mo=new_mat($data);
+	$mw->imshow();
+	...
+	$result=$mw->get_data;
+
+=head1 Description
+
+Use PDL::OpenCV to call OpenCV functions on your data using perl/PDL. This module
+is the glue between the two tools. OpenCV nad perl's C++ interface are not 
+compatible, a C layer is introduced and needs to be built separately, sse INSTALLATION.
+
+=head1 Functions
+
+=cut
 
 use Data::Dumper;
 
@@ -34,6 +60,22 @@ sub to_planes {
 }
 
 EOPM
+
+pp_addpm ({At=>'Bot'},<<'EOPM');
+=head1 Known issues
+
+The number of functions in OpenCV is large, if you do not encounter what is needed,
+there are fairly easy ways to create the wrappers. Look at ufunc/ofunc im OpenCV/opencv.pd
+and gen_code in cw/MakeFile.PL. Please file a report if you do so.
+
+There is a make_phsyical call before pointing the data to OpenCV. Both OpenCV
+and PDL use data flow, I have not investigated this, behaviour is not defined
+yet. 
+
+The threading behaviour is also not yet defined. Some things may work, some not.
+
+EOPM
+
 our $VERSION = 0.02;
 pp_setversion($VERSION);
 
@@ -155,6 +197,16 @@ pp_def('vector_size',
 	Code=>pp_line_numbers(__LINE__,'
 		$vs()=vectorSize($COMP(mw),$COMP(s));
 	'),
+	Doc=>'
+
+=head2 vector_size
+
+OpenCV uses std::vector<Mat> to store e.g. videos. The MatWrapper struct suports this. Using this method, 
+the size of the vector is manipulated and queried. This is useful in e.g. video I/O or per frames processing.
+
+=cut	
+
+	',
 );
 
 pp_def('create_video',
@@ -179,6 +231,16 @@ pp_def('create_video',
 		int res = newVector($COMP(mw),$SIZE(f),$SIZE(c), $SIZE(r) , $PDL(m)->datatype, $SIZE(l), $P(m), sz);
 
 	'),
+	Doc=>'
+
+=head 2 create_video 
+
+Stores a (colour,x,y,frame) piddle in a vector<Mat>. The object is the same as for a single Mat. 
+
+	$mo=create_video($piddle);
+
+=cut
+	',
 );
 
 pp_def('vread', 
@@ -236,10 +298,19 @@ pp_def('new_mat',
 
 =head2 new_mat - the constructor of a Mat() object.
 
-From a 2-D piddle, a Mat is created. Note, that rows and cols are swapped.
+From a piddle, a Mat is created. Note, that OpenCV is rows first. Colour planes
+are derived from the first dimension, I think OpenCV defaults to BGR(A), please
+checkout the OpenCV documentation. This is the basic constructor of the perl
+OpenCV Mat object. Use this whenever you need to send data to OpenCV.
+
+
+Only a subset of types is supported by OpenCV, see the docuemnation.
+
+for stacks of images, use create_video.
+
+=cut
 
 EOD
-
 );
 
 
@@ -303,10 +374,14 @@ pp_def ('get_data',
 			$p; #->transpose;
 		}
 		',),
-	Doc=><<"EOD",
+	Doc=><<'EOD',
 
-=head2 get_data - update data from a Mat object. Size and type should match.
+=head2 get_data - gets data from a Mat object into a piddle. If you use an exisitng piddle, size and type should match.
+The first dimension are color planes. Be aware that OpenCV is rows first wheres PDL is columns first.
 
+	my $image=$mw->get_data;
+
+=cut
 EOD
 
 	);
@@ -334,7 +409,11 @@ pp_def ('set_data',
 	'),
 	Doc=><<"EOD",
 
-=head2 set_data - update data of a Mat object. Size and type should match.
+=head2 set_data - update data of a Mat object. 
+
+WARNING: This ia a pointer update and is apparently not working properly, data is overwritten. Use new_mat instead!
+
+=cut
 
 EOD
 
@@ -358,14 +437,10 @@ sub data_ptr {
 	dataPtr($$mw);
 }
 
-sub mat2pdl {
-	my ($mw) = @_;
-	my $p=PDL->new;
-	$p->set_datatype($PDL_F);
-	$p->setdims( [$mw->cols,$mw->rows]);
-	my $dp=$p->get_dataref(data_ptr($mw));
-	$p->upd_data;
-}
+=head2 data_ptr - Returns the Mat.data pointer.
+
+=cut
+
 EOPM
 
 pp_def ('mat_at',
@@ -400,6 +475,14 @@ pp_def ('mat_at',
 		$o;
 	}
 	},
+	Doc=>'
+
+=head2 mat_at - Pixel value(s) at x,y.
+
+This returns the color vector at a given pixel (x,y).
+
+=cut
+	',
 	),
 );
 
@@ -415,14 +498,28 @@ pp_def('convert_to',
 			$mo=PDL::OpenCV::newMW();
 			bless($mo,'PDL::OpenCV');
 		}
+		$t=$t->numval if eval { $t->isa('PDL::Type'); };
 		barf "Not a valid data type $t\n" unless defined $t;
 		_convert_to_int($$mi,$$mo,$t);
 		$mo;
 	}
 EOPM
-
+	GenericTypes=>[qw/A B S U L F D/ ],
 	Code=>pp_line_numbers(__LINE__,
 		'cw_convertTo($COMP(mi),$COMP(mo),$COMP(type)); '),
+	Doc=>'
+
+=head2 Interface to the covnertTo method
+
+Changes the OpenCV data type and returns a new Mat object. It takes a PDL type
+(name or number) and sets the respective OpenCV data type. Planes are not
+effected. Not all PDL types are supported. See the OpenCV documentation. Essentially,
+real data types up to 32 bit long and 64 bit double, respectively.
+
+
+
+=cut
+	',
 	);
 
 pp_def('type',
@@ -454,6 +551,15 @@ pp_def('type',
 		}
 	}
 	),
+	Doc=>'
+
+=head2 type
+
+The method type returns the pdl data type number, as in $p->get_datatype, and the OpenCV data type of the Mat object.
+
+	($pdltype,$cvtype)=$mw->type();
+
+=cut',
 	);
 
 sub protect_chars {
@@ -523,7 +629,7 @@ This function is used to overload the unary C<$funcovp> operator/function.
 =cut
 
 EOD
-} # sub: ufunc()
+} # sub: ofunc()
 
 sub ufunc {
     my ($name,$func,$overload,$doc,%extra) = @_;
@@ -584,8 +690,8 @@ EOD
 } # sub: ufunc()
 
 # generate functions.
-map {ufunc($_,$_,0,"returns and optionally sets $_ of matrix. \n");} (qw/rows cols / );
-map {ofunc($_,$_,0,"returns and optionally sets $_ of matrix. \n");} (qw/cw_channels planes/ );
+map {ufunc($_,$_,0,"returns and optionally sets $_ of the Mat object. \n");} (qw/rows cols / );
+map {ofunc($_,$_,0,"returns $_ of the Mat object. \n");} (qw/cw_channels/ );
 
 
 pp_done();
