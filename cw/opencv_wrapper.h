@@ -63,9 +63,9 @@ int setMat (MatWrapper * Mat, void * data, const int type, const ptrdiff_t rows,
 //void MatSize (const MatWrapper * Mat, int * cols, int * rows);
 int  MatAt (const MatWrapper * mw,const ptrdiff_t x,const ptrdiff_t y,void * data);
 
-int init_tracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
-int update_tracker(TrackerWrapper *, MatWrapper *, bBox * box);
-int show_tracker (MatWrapper * frame, bBox * roi) ;
+int initTracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
+int updateTracker(TrackerWrapper *, MatWrapper *, bBox * box);
+int showTracker (MatWrapper * frame, bBox * roi) ;
 
 #ifdef __cplusplus
 }

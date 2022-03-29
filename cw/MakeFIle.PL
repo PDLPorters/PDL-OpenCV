@@ -17,6 +17,8 @@ my @funclist = (
 	},'MatWrapper *','out','int','type',],
 ['normalize',{},'MatWrapper *','out','int','start','int','end','int','type'],
 ['channels',{cvret=>'int',method=>1,postxx=>'printf("res channels %d\n",res);',},,],
+['minMaxIdx',{method=>0,post=>'//printf("c: min %f max %f\n",mymin[0],mymax[0]);'},"double *","mymin","double *","mymax"],
+#['minMaxLoc',{method=>0,},"double *","mymin","double *","mymax","int *","myminl","int *","mymaxl"],
 );
 
 my ($tstr_l,$mstr_l,$rstr_l,$gstr_l,$gstr_l2,$astr_l2);
@@ -173,7 +175,8 @@ sub gen_code {
 		#push @types,$s;
 		my $s=$_[2*$j];
 		my $v=$_[2*$j+1];
-		push @args, "$s $v";
+		#push @args, "$s $v";
+		($v=~ /^\&/) ? push (@args, "$s ".$v=~s/\&//r) : push @args, "$s $v";
 		($s=~ /.*Wrapper \*/) ? push (@cvargs, "$v\->mat") : push @cvargs, "$v";
 	}
 	my $ret=$$opt{ret} || "int";

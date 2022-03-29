@@ -2,6 +2,8 @@
 #include <opencv2/tracking.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/videoio.hpp>
+#include <opencv2/core/utility.hpp>
 #include "opencv_wrapper.h"
 #include <opencv2/videoio.hpp>
 
@@ -17,6 +19,8 @@ struct TrackerWrapper
 {
 	cv::Ptr<cv::Tracker> tracker; 
 } ;
+
+
 TrackerWrapper * newTracker(int trackerNumber) {
 	string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
 	string trackerType = trackerTypes[trackerNumber];
@@ -236,45 +240,6 @@ int setData (MatWrapper * mw, void * data, const int type){
 	return 1;
 }
 
-int init_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
-	Rect roi;
-	Mat frame;
-	roi.x=box->x;
-	roi.y=box->y;
-	roi.height=box->height;
-	roi.width=box->width;
-	
-	//minMaxIdx(mw->mat, &mymin, &mymax);
-	//printf ("set_data (at 3, 1) %f\n",MatAt(mw,3,1));
-        if ( mw->mat.type() > 4 ) {
-                normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
-        } else {
-                frame=mw->mat;
-        }
-	//printf ("set_data (at 3, 1) %f\n",MatAt(mw,3,1));
-
-	normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
-	//imshow("Image ",frame->mat);
-	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
-	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
-	if (roi.x == 0) {
-		namedWindow("tracker",WINDOW_NORMAL);
-		roi=selectROI("tracker",frame,true,false);
-	}
-	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
-	//printf ("at 48 48 (init_tracker %f\n",frame->mat.at<float>(48,48));
-	box->x=roi.x;
-	box->y=roi.y;
-	box->width=roi.width;
-	box->height=roi.height;
-	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
-	Tr->tracker->init(mw->mat,roi );
-	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
-	//printf("ROI x %d y %d width %d height %d\n",box->x,box->y,box->width,box->height);
-	return 1;
-}
-
-
 int vread(MatWrapper * mw,char * name,void * data) {
 	string str;
 	str=string(name);
@@ -308,27 +273,72 @@ ptrdiff_t vectorSize (MatWrapper * mw, ptrdiff_t vl) {
 	return  vl;
 }
 
-int update_tracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
+int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
+	Rect roi;
+	Mat frame;
+	roi.x=box->x;
+	roi.y=box->y;
+	roi.height=box->height;
+	roi.width=box->width;
+	double mymin,mymax;
+	
+	minMaxIdx(mw->mat, & mymin,& mymax);
+	double scale = 256/mymax;
+	mw->mat.convertTo(frame,CV_8UC3,scale);
+	if(frame.channels()==1) cvtColor(frame,frame,COLOR_GRAY2RGB);
+	if (roi.x == 0) {
+		namedWindow("ud",WINDOW_NORMAL);
+		roi=selectROI("ud",frame,true,false);
+	}
+	Tr->tracker->init(frame,roi );
+	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
+	//printf ("at 48 48 (init_tracker %f\n",frame->mat.at<float>(48,48));
+	box->x=roi.x;
+	box->y=roi.y;
+	box->width=roi.width;
+	box->height=roi.height;
+	return 1;
+}
+
+
+int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	Rect box;
 	Mat frame;
+	double mymin,mymax;
+	minMaxIdx(mw->mat, & mymin,& mymax);
+	double scale = 256/mymax;
+	mw->mat.convertTo(frame,CV_8UC3,scale);
+	if(frame.channels()==1) cvtColor(frame,frame,COLOR_GRAY2RGB);
+	//printf ("ud: min/max %f %f \n",mymin,mymax);
+	/*
 	if ( mw->mat.type() > 4 ) {
 		normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
 	} else {
-		frame=mw->mat.clone();
+		frame=256*256/mymax*mw->mat; //.clone();
 	}
-	//printf ("ud: box x/y %d %d \n",box.x ,box.y);
+	*/
+	//printf ("Empty matrix %d\n",frame.empty());
+	minMaxIdx(mw->mat, & mymin,& mymax);
+	//printf ("ud: after: min/max %f %f \n",mymin,mymax);
+	//printf ("Empty matrix %d\n",frame.empty());
+	int res = Tr->tracker->update(frame,box );
+	//printf ("upaate: found? %d\n",res);
+	//printf ("upaate: type? %d\n",frame.type());
+
+	rectangle( frame, box, Scalar( 255, 0, 0 ), 2, 1 );
 	imshow("ud",frame);
-	waitKey(500);
-	Tr->tracker->update(frame,box );
+	mw->mat=frame;
+	waitKey(10);
 	//printf ("ut: box %d %d \n",box.x ,box.y);
+	//printf ("ut: box %d %d \n",box.width ,box.height);
 	roi->x=box.x;
 	roi->y=box.y;
 	roi->height=box.height;
 	roi->width=box.width;
-	return 1;
+	return res;
 }
 
-int show_tracker (MatWrapper * mw, bBox * box) {
+int showTracker (MatWrapper * mw, bBox * box) {
 	Rect roi;
 	roi.x=box->x;
 	roi.y=box->y;

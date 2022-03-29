@@ -1,6 +1,6 @@
 #!perl
 
-
+use strict;
 pp_bless ("PDL::OpenCV::Tracking");
 pp_addpm ({At=>'Top'},<<"EOPM");
 
@@ -30,7 +30,7 @@ pp_def('init_tracker',
                 box.y=$b(j=>1);
                 box.width=$b(j=>2);
                 box.height=$b(j=>3);
-                int res=init_tracker($COMP(twi),$COMP(mwi),&box);
+                int res=initTracker($COMP(twi),$COMP(mwi),&box);
                 $b(j=>0)=box.x;
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
@@ -53,7 +53,7 @@ sub init_tracker{
         return ($tracker,$box,$mat);
 }
 EOP
-        Doc=><<"EOD",
+        Doc=><<'EOD',
 
 =head2 init_tracker - initialize OpenCV tracker 
 
@@ -74,17 +74,17 @@ EOD
 );
 
 pp_def('update_tracker',
-        Pars=>'float m(k,l); ushort [o] b(j=4);',
+        Pars=>'ushort [o] b(j=4);',
         OtherPars => "TrackerWrapper * twi; MatWrapper * mwi",
         Code =>pp_line_numbers(__LINE__,
         q{
-                printf ("twi %d \n",$COMP(twi));
+                //printf ("twi %d \n",$COMP(twi));
                 struct bBox  box;
                 MatWrapper * mw = $COMP(mwi);
                 TrackerWrapper * tw = $COMP(twi);
                 //setData(mw,$P(m),$PDL(m)->datatype);
-                update_tracker(tw,mw,& box);
-		printf ("after update box %d %d \n",box.x ,box.y);
+                updateTracker(tw,mw,& box);
+		//printf ("after update box %d %d \n",box.x ,box.y);
                 $b(j=>0)=box.x;
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
@@ -97,9 +97,12 @@ pp_def('update_tracker',
         sub update_tracker {
                 my ($tw,$mat)=@_;
 		my $mw=PDL::OpenCV->new_mat($mat);
-		say ($mat->at(20,40),$mw->mat_at(20,40));
-                _update_tracker_int($mat,$box,$$tw,$$mw);
-                $box;
+		#say "update tracker: at old/new: ",($mat->at(20,40),$mw->mat_at(20,40));
+		my $box=PDL->null;
+                _update_tracker_int($box,$$tw,$$mw);
+		#say "update tracker: at old/new: ",($mat->at(20,40),$mw->mat_at(20,40));
+		say $box->info,max $box;
+                $box,$mw;
         }
 EOPM
 ),
