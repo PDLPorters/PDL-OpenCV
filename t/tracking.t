@@ -28,7 +28,8 @@ my $data=float readflex('/data/ingo/daten/c-31p/7T_data/C31P_MRS_45-1/conv/c_007
 say $data(50,50,0;-);
 #say ("5,6,5,$dr");
 #my $mw=PDL::OpenCV->nMat(5,6,5,$slice) ; #->get_dataref);
-my ($tr,$box,$mw)=PDL::OpenCV::Tracking->init_tracker($data(,,0,;-),2,) ; #pdl(qw/20 20 30 10/));
+my $bx=pdl(qw/60 45 30 50/);
+my ($tr,$box,$mw)=PDL::OpenCV::Tracking->init_tracker($data(,,0,;-),2,$bx) ; #);
 #my ($tr,$box,$mw)=PDL::OpenCV::Tracking->init_tracker($data(,,0,;-),2) ;# ,pdl(qw/20 20 30 10/));
 
 say "new_mat completed. Starting tests";
@@ -40,7 +41,7 @@ for my $x (1..$data->dim(2)-1)  {
 	print "Next x $x ";
 	#say $mw->cv_minmax,$data(,,$x)->minmax;
 	($box,$mw) = $tr->update_tracker($data(,,$x;-));
-	is(all ($box) >0,1,'tracker found box.');
+	is(all ($box) >0,1,"tracker found box $x.");
 	say "x $x box $box";
 }
 

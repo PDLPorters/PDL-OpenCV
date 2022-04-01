@@ -20,7 +20,7 @@ WriteMakefile(
         'Test::More' => 0,
         'PDL'        => '2.4.4',
     },
-    CCFLAGS => " -I../tw ".`pkg-config --cflags opencv4`,
+    CCFLAGS => " -I../tw ", #.`pkg-config --cflags opencv4`,
 #    LDDLFLAGS => `pkg-config --libs opencv4`,
     PREREQ_FATAL        => 0,
     DIR                 => ['OpenCV', 'Tracking',],
@@ -30,12 +30,7 @@ WriteMakefile(
 
 sub MY::postamble {
     my $text =
-'
-install ::
-	@echo "Updating PDL documentation database ..."
-	@$(PERL) add_doc.pl
-
-';
+'';
 
     return $text;
 }

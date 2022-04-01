@@ -289,6 +289,7 @@ int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 	if (roi.x == 0) {
 		namedWindow("ud",WINDOW_NORMAL);
 		roi=selectROI("ud",frame,true,false);
+		destroyWindow("ud");
 	}
 	Tr->tracker->init(frame,roi );
 	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
