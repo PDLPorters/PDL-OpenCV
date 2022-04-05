@@ -102,7 +102,7 @@ pp_def('update_tracker',
                 _update_tracker_int($box,$$tw,$$mw);
 		#say "update tracker: at old/new: ",($mat->at(20,40),$mw->mat_at(20,40));
 		say $box->info,max $box;
-                $box,$mw;
+                return ($box,$mw);
         }
 EOPM
 ),
