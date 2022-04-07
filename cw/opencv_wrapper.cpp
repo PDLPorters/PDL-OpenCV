@@ -240,7 +240,7 @@ int setData (MatWrapper * mw, void * data, const int type){
 	return 1;
 }
 
-int vread(MatWrapper * mw,char * name,void * data) {
+ptrdiff_t vRead(MatWrapper * mw,char * name /*,void * data*/) {
 	string str;
 	str=string(name);
 	VideoCapture cap;
@@ -254,6 +254,7 @@ int vread(MatWrapper * mw,char * name,void * data) {
 	int j=0;
 	Mat frame;
 	for ( ;; ) {
+		printf ("vread: frame %d\n",j);
 		cap >> frame;
 		if(frame.rows==0 || frame.cols==0)
                         break;
@@ -264,6 +265,7 @@ int vread(MatWrapper * mw,char * name,void * data) {
 	mw->vmat= video;
 	mw->mat=video[0];
 	mw->dp=mp->data;
+	printf ("vread: frame %d\n",j);
 	return j;
 }
 

@@ -77,8 +77,8 @@ my $b=yvals($slice);
 #say ($b->squeeze,$h);
 #is( tapprox ($b->transpose-$h),1,'getData - set_data');
 $ma=PDL::OpenCV->new_mat($b);
-$h=$ma->get_data();
+my $haha=$ma->get_data();
 #say ($b->squeeze,$h);
-is( tapprox ($b(;-)-$h(;-)),1,'getData - new_mat');
+is( tapprox ($b(;-)-$haha(;-)),1,'getData - new_mat');
 done_testing();
 

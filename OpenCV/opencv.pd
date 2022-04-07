@@ -216,7 +216,7 @@ pp_def('create_video',
 	OtherPars=>'MatWrapper * mw; int bs',
 	GenericTypes=>[qw/A B S U L F D/ ],
 	PMCode=>pp_line_numbers(__LINE__,'
-		sub vread {
+		sub create_video {
 			my ($mo,$p)=@_;
 			if (ref $mo ne q/PDL::OpenCV/) {
 				$p=$mo;
@@ -246,34 +246,55 @@ Stores a (colour,x,y,frame) piddle in a vector<Mat>. The object is the same as f
 );
 
 pp_def('vread', 
-	Pars=>'m(l,c,r,f);',
+	Pars=>'[o] m(l,c,r,f);',
 	OtherPars=>'MatWrapper * mw; char * file',
 	GenericTypes=>[qw/A B S U L F D/ ],
 	PMCode=>pp_line_numbers(__LINE__,'
 		sub vread {
-			my ($mw,$name,$p)=@_;
+			my ($mo,$name,$p)=@_;
+			if (ref $mo ne q/PDL::OpenCV/) {
+				$name=$mo if defined $mo;
+				$mo=PDL::OpenCV::newMW();
+				bless($mo,"PDL::OpenCV");
+			}
 			unless (ref ($p) =~ "PDL") {
 				#say "rows ",$mw->rows;
 				$p=PDL->null;
 				#$p=zeroes(sclr ($mw->cols),sclr ($mw->rows),$mw->vector_size();
 			}
-			barf "cannot read file!" unless (-f $name);
+			barf "cannot read file $name!" unless (-f $name);
 			$p->make_physical;
-			_vread_int($p,$$mw,$name);
+			say $mo->get_data;
+			say "ref to data after " ,$p->get_dataref;
+			_vread_int($p,$$mo,$name);
 			$p;
 		}
 		'
 		),
+	RedoDimsCode=>pp_line_numbers(__LINE__,'
+		printf ("data pointer %p\n",$P(m));
+		printf ("data pointer %p\n",$PDL(m)->data);
+		printf ("data dim 0 %d\n",$PDL(m)->dims[0]);
+		PDL_Indx f=vRead($COMP(mw),$COMP(file)); //,$P(m));
+		PDL_Indx ch = cw_channels($COMP(mw));
+		$SIZE(l)=ch;
+		$SIZE(c)=cols($COMP(mw),-1);
+		$SIZE(r)=rows($COMP(mw),-1);
+		$SIZE(f)=f;
+		printf ("number of frames %d\n",$SIZE(f));
+		printf ("data dim 0 %d\n",$PDL(m)->dims[0]);
+		printf ("data dim 3 %d\n",$PDL(m)->dims[3]);
+		printf ("data pointer %p\n",$P(m));
+		printf ("vread: ch %d j; %d  k %d /  l %d\n ",ch,$SIZE(l),$SIZE(c),$SIZE(r));
+		'),
 	Code=>pp_line_numbers(__LINE__,'
+		printf ("data pointer %p\n",$P(m));
+		printf ("number of frames %d\n",$SIZE(f));
+		printf ("data pointer %p\n",$P(m));
 		$PDL(m)->datatype=getDataCopy($COMP(mw),$P(m),$SIZE(f));
 		if ($SIZE(f)<=0) {barf ("Failed to read video. %s.\n",$COMP(file));}
 	'),
-	RedoDimsCode=>pp_line_numbers(__LINE__,'
-		$SIZE(c)=cols($COMP(mw),-1);
-		$SIZE(r)=rows($COMP(mw),-1);
-		$SIZE(f)=vread($COMP(mw),$COMP(file),$P(m));
-		'),
-		);
+	);
 
 pp_def('new_mat',
 	Pars=>'m(c,r);',
@@ -324,6 +345,7 @@ pp_def ('get_data',
 	OtherPars=>'MatWrapper * mw;',
 	RedoDimsCode=>pp_line_numbers(__LINE__,
 	'
+		printf ("get_data: data pointer %p\n",$P(m));
 		PDL_Indx js = $SIZE(j);
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
@@ -348,10 +370,13 @@ pp_def ('get_data',
 	'
 			//double * ptr =$P(m);
 			printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
+			printf ("data pointer %p\n",$P(m));
 			int t=getDataCopy($COMP(mw),$P(m),1); 
 			printf ("get_data: type %d\n",t);
 			$PDL(m)->datatype=t;
 			printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
+		printf ("get_data: data pointer %p\n",$P(m));
+		PDL_Indx js = $SIZE(j);
 			//$P(m)= ($PDL *) ptr;
 	'),
 	PMCode=>pp_line_numbers(__LINE__,

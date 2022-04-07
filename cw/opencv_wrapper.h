@@ -46,7 +46,7 @@ ptrdiff_t rows (MatWrapper * mw, ptrdiff_t rows) ;
 ptrdiff_t cols (MatWrapper * mw, ptrdiff_t cols) ;
 int cwtype (MatWrapper * mw, int * pdltype) ;
 int planes (MatWrapper * mw ) ;
-int vread(MatWrapper * mw,char * name,void * data);
+ptrdiff_t vRead(MatWrapper * mw,char * name/*,void * data*/);
 int vwrite(MatWrapper * mw,char * name,void * data);
 //MatWrapper * newVector(const ptrdiff_t vs,const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
 int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data,const ptrdiff_t size);

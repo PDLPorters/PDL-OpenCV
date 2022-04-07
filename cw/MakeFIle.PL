@@ -18,6 +18,7 @@ my @funclist = (
 ['normalize',{},'MatWrapper *','out','int','start','int','end','int','type'],
 ['channels',{cvret=>'int',method=>1,postxx=>'printf("res channels %d\n",res);',},,],
 ['minMaxIdx',{method=>0,post=>'//printf("c: min %f max %f\n",mymin[0],mymax[0]);'},"double *","mymin","double *","mymax"],
+#['mult',{method=>0,post=>'//printf("c: min %f max %f\n",mymin[0],mymax[0]);'},"double *","mymin","double *","mymax"],
 #['minMaxLoc',{method=>0,},"double *","mymin","double *","mymax","int *","myminl","int *","mymaxl"],
 );
 
@@ -39,6 +40,7 @@ for my $type ( PDL::Types::types ) {
 	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
 	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n";
 	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[(j*cols+i)*ch+c] = frame.ptr<$ct>(j)[ch*i+c];\n
+	//printf(\"MatAt data at i %d j %d ch %d %g\\n\",i, j, ch,${ts}data[c] );
 	\t\t\t break;\n";
 	$astr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[c] = frame.ptr<$ct>(i)[ch*j+c];\n
 	//printf(\"MatAt data at i %d j %d ch %d %g\\n\",i, j, ch,${ts}data[c] );
@@ -72,14 +74,16 @@ int MatAt (const MatWrapper * mw,const ptrdiff_t j,const ptrdiff_t i,void * rdat
 # getDataCopy
 my $gstr="
 int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
+	printf(\"getDataCopy: vl %d\\n\",vl);
+	printf(\"getDataCopy: rdata %p\\n\",rdata);
 	ptrdiff_t lins=mw->mat.rows;
 	ptrdiff_t cols=mw->mat.cols;
 	int cvtype=mw->mat.type();
 	int ch=mw->mat.channels();
 	Mat frame;
 	uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
-	//printf(\"getDataCopy: cvtype %d\\n\",depth);
-	//printf(\"getDataCopy: vl %d\\n\",vl);
+	printf(\"getDataCopy: cvtype %d\\n\",depth);
+	printf(\"getDataCopy: vl %d\\n\",vl);
 	if (vl > 0) {
 	try {vl=mw->vmat.size(); } catch (...) { vl=1;} // default to 0 if not a vector
 	//printf(\"getDataCopy: vl %d\\n\",vl);
@@ -89,6 +93,7 @@ int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 	//printf(\"getDataCopy: mw->vmat[0] %p\\n\",mw->vmat[0]);
 	for (ptrdiff_t v = 0; v<vl; v ++ ) { //  iterate over vmax;
 		frame=mw->vmat[v];
+		printf(\"frame %d cols %d rows %d channels %d\\n\",v,frame.cols,frame.rows,frame.channels());
 		for ( ptrdiff_t i = 0; i<cols; i++ ) {
 			for ( ptrdiff_t j = 0; j<lins; j++ ) {
 				for (int c = 0; c<ch; c++) {

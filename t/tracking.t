@@ -22,9 +22,12 @@ sub tapprox {
 
 
 #my $data=rvals(128,128,74);
-my $data=float readflex('/data/ingo/daten/c-31p/7T_data/C31P_MRS_45-1/conv/c_0074')->squeeze;
+#my $data; #=float readflex('/data/ingo/daten/c-31p/7T_data/C31P_MRS_45-1/conv/c_0074')->squeeze;
+my $vfile='t/Megamind.avi';
+my $data=vread($vfile);
 #my $slice = float $data(,,0;-);
 #my $dr=$slice->get_dataref;
+say $data->info;
 say $data(50,50,0;-);
 #say ("5,6,5,$dr");
 #my $mw=PDL::OpenCV->nMat(5,6,5,$slice) ; #->get_dataref);
