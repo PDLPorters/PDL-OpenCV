@@ -28,7 +28,7 @@ my $data=vread($vfile);
 #my $slice = float $data(,,0;-);
 #my $dr=$slice->get_dataref;
 say $data->info;
-say $data(50,50,0;-);
+#say $data(50,50,0;-);
 #say ("5,6,5,$dr");
 #my $mw=PDL::OpenCV->nMat(5,6,5,$slice) ; #->get_dataref);
 my $bx=pdl(qw/60 45 30 50/);
@@ -37,7 +37,7 @@ my ($tr,$box,$mw)=PDL::OpenCV::Tracking->init_tracker($data(,,0,;-),2,$bx) ; #);
 
 say "new_mat completed. Starting tests";
 say "box $box";
-say "at ",$mw->mat_at(80,50),$data(80,50,0);
+#say "at ",$mw->mat_at(80,50),$data(80,50,0);
 say "at (get_data",$mw->get_data()->(,4,4);
 
 for my $x (1..$data->dim(2)-1)  {
