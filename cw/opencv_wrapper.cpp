@@ -172,12 +172,19 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data,ptrdiff_t size) {
 	int cvtype=get_ocvtype(type,planes);
 	vector<Mat> mv(vs);
+	//printf ("rows %d cols %d\n",rows,cols);
+	//printf ("type %d planes %d\n",type,planes);
 	for (ptrdiff_t j=0;j<vs;j++) {
-		mv.push_back(Mat(rows,cols,cvtype,data + j*size));
+		Mat frame = Mat(rows,cols,cvtype,data + j*size);
+		//cout<<"size (frame) "<< frame.size() << endl;
+		//mv.push_back(frame);
+		mv[j]=frame;
+		//cout<<"size (push_back) "<< mv[j].size() << endl;
 	}
 	mw->vmat = mv;
 	mw->mat = mv[0];
 	mw->dp=data;
+	//cout<<"size [0]"<< mw->vmat[0].size() << endl;
 	return 1;
 }
 void * getData (MatWrapper * frame) {
@@ -240,6 +247,23 @@ int setData (MatWrapper * mw, void * data, const int type){
 	return 1;
 }
 
+int vWrite(MatWrapper * mw,char * name, char * code, double fps) {
+	string str;
+	str=string(name);
+	cout<<"size "<< mw->vmat[0].size() << endl;
+	VideoWriter cap(str,VideoWriter::fourcc(code[0],code[1],code[2],code[3]),fps,mw->vmat[0].size(),mw->vmat[0].channels()-1);
+        if ( ! cap.isOpened() )
+        {
+                cout << "--(!)Error opening video capture\n";
+                return -1;
+        }
+        for (auto it = begin (mw->vmat); it != end (mw->vmat); ++it) {
+		cap.write(*it);
+	}
+	cap.release();
+	return 1;
+}
+
 ptrdiff_t vRead(MatWrapper * mw,char * name /*,void * data*/) {
 	string str;
 	str=string(name);
@@ -251,21 +275,33 @@ ptrdiff_t vRead(MatWrapper * mw,char * name /*,void * data*/) {
                 return -1;
         }
 	vector <Mat> video;
-	int j=0;
+	ptrdiff_t j=0;
 	Mat frame;
 	for ( ;; ) {
-		printf ("vread: frame %d\n",j);
+	//	printf ("vread: frame %d\n",j);
 		cap >> frame;
 		if(frame.rows==0 || frame.cols==0)
                         break;
-		video.push_back(frame);
+		//printf ("video %d 360 138 %d %d %d\n",j,frame.ptr<uchar>(368)[138*3+0],frame.ptr<uchar>(368)[13*3+1],frame.ptr<uchar>(368)[138*3+2]);
+		video.push_back(frame.clone());
+		//printf ("frame %d 360 138: ",j);
+		//cout << frame.at<uchar>(368,138)[0]<< endl;
+		//printf ("video %d 360 138 %d %d %d\n",j,video[j].ptr<uchar>(368)[138*3+0],video[j].ptr<uchar>(368)[13*3+1],video[j].ptr<uchar>(368)[138*3+2]);
 		j++;
 	}
 	Mat * mp = & video[0];
 	mw->vmat= video;
 	mw->mat=video[0];
 	mw->dp=mp->data;
+	int i=0;
+	printf ("video %d 360 138 %d %d %d\n",i,video[i].ptr<uchar>(368)[138*3+0],video[i].ptr<uchar>(368)[13*3+1],video[i].ptr<uchar>(368)[138*3+2]);
+	/*
 	printf ("vread: frame %d\n",j);
+	for (ptrdiff_t i =0 ; i<j; i++) {
+		printf ("video %d 360 138 %d %d %d\n",i,video[i].ptr<uchar>(368)[138*3+0],video[i].ptr<uchar>(368)[13*3+1],video[i].ptr<uchar>(368)[138*3+2]);
+		//printf ("mw %d 360 138 %d %d %d\n",i,mw->vmat[i].at<uchar>(368,138));
+	}
+	*/
 	return j;
 }
 

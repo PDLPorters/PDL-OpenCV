@@ -213,25 +213,42 @@ the size of the vector is manipulated and queried. This is useful in e.g. video 
 
 pp_def('create_video',
 	Pars=>'m(l,c,r,f)',
-	OtherPars=>'MatWrapper * mw; int bs',
+	OtherPars=>'MatWrapper * mw; int bs; char * file; char * code; double fps',
 	GenericTypes=>[qw/A B S U L F D/ ],
 	PMCode=>pp_line_numbers(__LINE__,'
 		sub create_video {
-			my ($mo,$p)=@_;
+			my ($mo)=shift;
 			if (ref $mo ne q/PDL::OpenCV/) {
 				$p=$mo;
 				$mo=PDL::OpenCV::newMW();
 				bless($mo,"PDL::OpenCV");
+			} else { $p=shift; }
+			my ($file,$fps,$code) = @_;
+			unless ($mode) {
+				$mode=-1;
+			} else { 
+				$mode=pack("cccc",$mode);
 			}
 			barf "No input piddle!\n" unless (ref ($p) =~ "PDL") ;
-			$size=howbig($p->type);
-			_create_video_int($p,$mo,$size);
+			barf "No file name given!\n" unless ($file) ;
+			$size=PDL::Core::howbig($p->type);
+			$p->make_physical;
+			_create_video_int($p,$$mo,$size,$file,$code,$fps);
 		}
 	'),
 	Code=>pp_line_numbers(__LINE__,'
+		printf ("code %4c",$COMP(code));
 		PDL_Indx sz = $SIZE(l)*$SIZE(c)*$SIZE(r)*$COMP(bs);
+		printf ("frames %d ",$SIZE(f));
+		printf ("cols %d ",$SIZE(c));
+		printf ("rows %d ",$SIZE(r));
+		printf ("planes %d ",$SIZE(l));
+		printf ("datatype %d\n",$PDL(m)->datatype);
+		printf ("size %d\n",sz);
 		int res = newVector($COMP(mw),$SIZE(f),$SIZE(c), $SIZE(r) , $PDL(m)->datatype, $SIZE(l), $P(m), sz);
-
+		printf ("code %4c",$COMP(code));
+		res = vWrite($COMP(mw),$COMP(file),$COMP(code),$COMP(fps));
+		printf ("code %4c",$COMP(code));
 	'),
 	Doc=>'
 
@@ -239,7 +256,24 @@ pp_def('create_video',
 
 Stores a (colour,x,y,frame) piddle in a vector<Mat>. The object is the same as for a single Mat. 
 
-	$mo=create_video($piddle);
+	$mo=create_video([$mw],$piddle,file,fps,[code]);
+
+For possible encodings see https://www.fourcc.org/codecs/. If not supplied, OpenCV will try to derive it from the file name.
+
+From the OpenCV documentation: 
+
+=over
+
+=item    With some backends fourcc=-1 pops up the codec selection dialog from the system.
+
+=item    To save image sequence use a proper filename (eg. img_%02d.jpg) and fourcc=0 OR fps=0. Use uncompressed image format (eg. img_%02d.BMP) to save raw frames.
+
+=item    Most codecs are lossy. If you want lossless video file you need to use a lossless codecs (eg. FFMPEG FFV1, Huffman HFYU, Lagarith LAGS, etc...)
+
+=item    If FFMPEG is enabled, using codec=0; fps=0; you can create an uncompressed (raw) video file.
+
+=back
+
 
 =cut
 	',
@@ -264,33 +298,39 @@ pp_def('vread',
 			}
 			barf "cannot read file $name!" unless (-f $name);
 			$p->make_physical;
-			say $mo->get_data;
-			say "ref to data after " ,$p->get_dataref;
+			#say $mo->get_data;
+			#say "ref to data after " ,$p->get_dataref;
 			_vread_int($p,$$mo,$name);
 			$p;
 		}
 		'
 		),
 	RedoDimsCode=>pp_line_numbers(__LINE__,'
+		/*
 		printf ("data pointer %p\n",$P(m));
 		printf ("data pointer %p\n",$PDL(m)->data);
 		printf ("data dim 0 %d\n",$PDL(m)->dims[0]);
+		*/
 		PDL_Indx f=vRead($COMP(mw),$COMP(file)); //,$P(m));
 		PDL_Indx ch = cw_channels($COMP(mw));
 		$SIZE(l)=ch;
 		$SIZE(c)=cols($COMP(mw),-1);
 		$SIZE(r)=rows($COMP(mw),-1);
 		$SIZE(f)=f;
+		/*
 		printf ("number of frames %d\n",$SIZE(f));
 		printf ("data dim 0 %d\n",$PDL(m)->dims[0]);
 		printf ("data dim 3 %d\n",$PDL(m)->dims[3]);
 		printf ("data pointer %p\n",$P(m));
 		printf ("vread: ch %d j; %d  k %d /  l %d\n ",ch,$SIZE(l),$SIZE(c),$SIZE(r));
+		*/
 		'),
 	Code=>pp_line_numbers(__LINE__,'
+		/*
 		printf ("data pointer %p\n",$P(m));
 		printf ("number of frames %d\n",$SIZE(f));
 		printf ("data pointer %p\n",$P(m));
+		*/
 		$PDL(m)->datatype=getDataCopy($COMP(mw),$P(m),$SIZE(f));
 		if ($SIZE(f)<=0) {barf ("Failed to read video. %s.\n",$COMP(file));}
 	'),
@@ -345,7 +385,7 @@ pp_def ('get_data',
 	OtherPars=>'MatWrapper * mw;',
 	RedoDimsCode=>pp_line_numbers(__LINE__,
 	'
-		printf ("get_data: data pointer %p\n",$P(m));
+		//printf ("get_data: data pointer %p\n",$P(m));
 		PDL_Indx js = $SIZE(j);
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);

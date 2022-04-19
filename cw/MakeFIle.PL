@@ -32,15 +32,17 @@ for my $type ( PDL::Types::types ) {
 	my $it = ( $type->integer ? '' : 'F');	
 	my $st = ( $type->unsigned ? 'U' : 'S');
 	my $tt = ( $type->integer ? $st.$it : $it);
-	my $s = PDL::Core::howbig($type)*8;
+	my $bs = PDL::Core::howbig($type);
+	my $s = 8*$bs;
 	$tstr_l.="\tcase $nt :
 		//printf(\"cv type %d\\n\",CV_$s$tt\C(planes));
 		return CV_$s$tt\C(planes); break;\n";
 	$mstr_l.="\tcase $nt : $ct * fdata = ($ct * ) data; break;\n";
 	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
-	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n";
-	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[(j*cols+i)*ch+c] = frame.ptr<$ct>(j)[ch*i+c];\n
-	//printf(\"MatAt data at i %d j %d ch %d %g\\n\",i, j, ch,${ts}data[c] );
+	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n
+	\t\t/*ptrdiff_t fs = $s * ch * lins * cols;*/ \n "; 
+	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[(j*cols+i)*ch+c+v*$bs*ch*lins*cols] = frame.ptr<$ct>(j)[ch*i+c];\n
+	//printf(\"MatAt data at frame %d i %d j %d ch %d: %d / %d\\n\",v,i, j, c,frame.ptr<$ct>(j)[ch*i+c],${ts}data[(j*cols+i)*ch+c+v*$bs*ch*lins*cols] );
 	\t\t\t break;\n";
 	$astr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[c] = frame.ptr<$ct>(i)[ch*j+c];\n
 	//printf(\"MatAt data at i %d j %d ch %d %g\\n\",i, j, ch,${ts}data[c] );
@@ -74,8 +76,10 @@ int MatAt (const MatWrapper * mw,const ptrdiff_t j,const ptrdiff_t i,void * rdat
 # getDataCopy
 my $gstr="
 int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
+	/*
 	printf(\"getDataCopy: vl %d\\n\",vl);
 	printf(\"getDataCopy: rdata %p\\n\",rdata);
+	*/
 	ptrdiff_t lins=mw->mat.rows;
 	ptrdiff_t cols=mw->mat.cols;
 	int cvtype=mw->mat.type();
@@ -93,7 +97,13 @@ int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 	//printf(\"getDataCopy: mw->vmat[0] %p\\n\",mw->vmat[0]);
 	for (ptrdiff_t v = 0; v<vl; v ++ ) { //  iterate over vmax;
 		frame=mw->vmat[v];
-		printf(\"frame %d cols %d rows %d channels %d\\n\",v,frame.cols,frame.rows,frame.channels());
+		//printf(\"frame %d cols %d rows %d channels %d\\n\",v,frame.cols,frame.rows,frame.channels());
+		/*
+		int i=360;
+		int j=138;
+		int c=1;
+		printf(\"MatAt data at frame %d i %d j %d ch %d: %d / %d\\n\",v,i, j, c,frame.ptr<unsigned char>(j)[ch*i+c],Bdata[(j*cols+i)*ch+c+v*1*ch*lins*cols] );
+		*/
 		for ( ptrdiff_t i = 0; i<cols; i++ ) {
 			for ( ptrdiff_t j = 0; j<lins; j++ ) {
 				for (int c = 0; c<ch; c++) {
@@ -103,6 +113,13 @@ int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 				}
 			}
 		}
+		/*
+		printf(\"frame %d cols %d rows %d channels %d\\n\",v,frame.cols,frame.rows,frame.channels());
+		i=360;
+		j=138;
+		c=1;
+		printf(\"after data at frame %d i %d j %d ch %d: %d / %d\\n\",v,i, j, c,frame.ptr<unsigned char>(j)[ch*i+c],Bdata[(j*cols+i)*ch+c+v*1*ch*lins*cols] );
+		*/
 	}
 	return get_pdltype(cvtype);
 }
