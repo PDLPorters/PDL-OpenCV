@@ -32,13 +32,13 @@ my ($cvtype,$pdltype)=$mw->type;
 
 #say "new_mat completed. Starting tests";
 #say "at ",$mw->mat_at(4,4),$data(4,4,0);
-is(approx($mw->mat_at(4,4),$data(4,4,0)),1,'MatAt');
-is(tapprox($mw2->mat_at(4,2),$data(4,2,;-)),1,'MatAt-planes');
+ok tapprox($mw->mat_at(4,4),$data(4,4,0)),'MatAt';
+ok tapprox($mw2->mat_at(4,2),$data(4,2,;-)),'MatAt-planes';
 
 for my $x (0..2)  {
 	for my $y (0..2) {
 		is( $slice->($x,$y), $mw->mat_at($x,$y),"mat_at $x, $y" );
-		is( tapprox($data($x,$y,;-)-$mw2->mat_at($x,$y)),1,"mat_at2 $x, $y" );
+		ok tapprox($data($x,$y,;-), $mw2->mat_at($x,$y)),"mat_at2 $x, $y";
 		#say ( $data($x,$y,;-), ", ",$mw2->mat_at($x,$y),"mat_at $x, $y" );
 	}
 }
@@ -52,12 +52,12 @@ my $g=zeroes($data(,,0));
 $mw->get_data($g);
 #say "val 4 4 ",$g(4,4);
 #say "$g ",$data(,,0);
-is( tapprox ($data(,,0;-)-$g(;-)),1,'getData');
-is( tapprox ($data(,,0;-)-$mw->get_data->(;-)),1,'getData2');
+ok tapprox($data(,,0;-), $g(;-)),'getData';
+ok tapprox($data(,,0;-), $mw->get_data->(;-)),'getData2';
 $g=zeroes($data)->mv(2,0);
 $mw2->get_data($g);
-is( tapprox ($data(,,;-)->mv(2,0)-$g(;-)),1,'getData ch 3');
-is( tapprox ($data->mv(2,0)-$mw2->get_data->(;-)),1,'getData2 ch 3');
+ok tapprox($data(,,;-)->mv(2,0), $g(;-)),'getData ch 3';
+ok tapprox($data->mv(2,0), $mw2->get_data->(;-)),'getData2 ch 3';
 
 #my $dummy=ones($slice);
 my $ma; #=PDL::OpenCV->new_mat($dummy);
@@ -70,15 +70,14 @@ my $h;
 $h=$ma->get_data();
 #say $h;
 is( $ma->type , short->numval,'data type conversion');
-is( tapprox ($data(,,0;-)-$h(,;-)),1,'getData - converted');
+ok tapprox($data(,,0;-), $h(,;-)),'getData - converted';
 my $b=yvals($slice);
 #$ma->set_data($b);
 #$h=$ma->get_data();
 #say ($b->squeeze,$h);
-#is( tapprox ($b->transpose-$h),1,'getData - set_data');
+#ok tapprox ($b->transpose, $h),'getData - set_data';
 $ma=PDL::OpenCV->new_mat($b);
 my $haha=$ma->get_data();
 #say ($b->squeeze,$h);
-is( tapprox ($b(;-)-$haha(;-)),1,'getData - new_mat');
+ok tapprox($b(;-), $haha(;-)),'getData - new_mat';
 done_testing();
-
