@@ -120,7 +120,7 @@ MatWrapper * emptyMat (const ptrdiff_t cols=1, const ptrdiff_t rows=1, const int
 	//printf ("rows %d cols %d\n",frame.rows,frame.cols);
 	//printf("empty mat %d\n", MatAt (mw,32,48) );
 	mw->mat=  frame; 
-	mw->vmat=vector(1,frame); 
+	mw->vmat=vector<Mat>(1,frame);
 	//printf("empty mat %d\n", MatAt (mw,32,48) );
 	//printf ("mw -> rows %d cols %d\n",mw->mat.rows,mw->mat.cols);
 	return mw;
@@ -141,7 +141,7 @@ int newMat2 (MatWrapper * mw,const ptrdiff_t cols, const ptrdiff_t rows, const i
 	//printf("norm.\n");
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat =  norm;
-	mw->vmat =  vector(1,norm);
+	mw->vmat =  vector<Mat>(1,norm);
 	mw->dp=norm.data;
 	//printf("assign. type %d\n",norm.type());
 	return  1;
@@ -162,7 +162,7 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 	//printf ("norm 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat =  frame;
-	mw->vmat  = vector(1, frame);
+	mw->vmat  = vector<Mat>(1, frame);
 	mw->dp=frame.data;
 	//printf ("at 0 0 (newMat) %f\n",MatAt(mw,0,0));
 	//printf ("mat type %d \n",mw->mat.type());
@@ -175,7 +175,7 @@ int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptr
 	//printf ("rows %d cols %d\n",rows,cols);
 	//printf ("type %d planes %d\n",type,planes);
 	for (ptrdiff_t j=0;j<vs;j++) {
-		Mat frame = Mat(rows,cols,cvtype,data + j*size);
+		Mat frame = Mat(rows,cols,cvtype,reinterpret_cast<char *>(data) + j*size);
 		//cout<<"size (frame) "<< frame.size() << endl;
 		//mv.push_back(frame);
 		mv[j]=frame;
@@ -341,7 +341,7 @@ int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 
 
 int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
-	Rect box;
+	Rect2d box;
 	Mat frame;
 	double mymin,mymax;
 	minMaxIdx(mw->mat, & mymin,& mymax);

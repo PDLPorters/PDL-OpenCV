@@ -12,7 +12,7 @@ my @funclist = (
 		try { out->mat.cols; } catch (...) { out = new MatWrapper; }; 
 		type=get_ocvtype(type,CV_MAT_CN(mw->mat.type()));',
 	post=>'
-		out->vmat=vector(1,out->mat); 
+		out->vmat=vector<Mat>(1,out->mat);
 		out->dp=out->mat.data;',
 	},'MatWrapper *','out','int','type',],
 ['normalize',{},'MatWrapper *','out','int','start','int','end','int','type'],
