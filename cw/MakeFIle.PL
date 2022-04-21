@@ -1,6 +1,6 @@
-#!perl
 use 5.10.0;
 use strict;
+use warnings;
 use PDL::Types;
 use PDL::Core qw/howbig/;
 
@@ -35,8 +35,8 @@ for my $type ( PDL::Types::types ) {
 	my $bs = PDL::Core::howbig($type);
 	my $s = 8*$bs;
 	$tstr_l.="\tcase $nt :
-		//printf(\"cv type %d\\n\",CV_$s$tt\C(planes));
-		return CV_$s$tt\C(planes); break;\n";
+		//printf(\"cv type %d\\n\",CV_$s${tt}C(planes));
+		return CV_$s${tt}C(planes); break;\n";
 	$mstr_l.="\tcase $nt : $ct * fdata = ($ct * ) data; break;\n";
 	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
 	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n
@@ -195,8 +195,8 @@ sub gen_code {
 	# parse argument list and get mats
 	for my $j (0..$#_/2) {
 		#push @types,$s;
-		my $s=$_[2*$j];
-		my $v=$_[2*$j+1];
+		my $s=$_[2*$j] || '';
+		my $v=$_[2*$j+1] || '';
 		#push @args, "$s $v";
 		($v=~ /^\&/) ? push (@args, "$s ".$v=~s/\&//r) : push @args, "$s $v";
 		($s=~ /.*Wrapper \*/) ? push (@cvargs, "$v\->mat") : push @cvargs, "$v";
@@ -209,29 +209,28 @@ sub gen_code {
 	$cvargs='' if ($cvargs =~ /^\s*,\s*$/);
 	$str .= ', '. $argstr unless ($argstr =~ /^\s*$/);
 	$str.= ") ";
-	$name=$$opt{fucntion} if $$opt{function};
+	$name=$$opt{function} if $$opt{function};
 	my $hstr = $str.";\n";
 	$str.="{\n$ret retval;\n";
 	if (ref ($$opt{map_args}) eq 'CODE') {
 		my $fun  = $$opt{map_args};
 		&fun($argstr);
 	}
-	$str.= $$opt{pre}."\n";
-	my $lh ; #= 'void ';
+	$str.= ($$opt{pre}||'')."\n";
+	my $lh = '';
 	# {cvret} is the return type. 
 	$lh = "$$opt{cvret} cvret = " if $$opt{cvret};
 	$str.=$lh."mw->mat.$name ( $cvargs );\n" if $$opt{method};
 	$cvargs=", $cvargs" if $cvargs;
 	$str.=$lh."$name ( mw->mat $cvargs );\n" unless $$opt{method};
-	say "generate code: post:\n$$opt{post}\n";
-	$str.= "// post: \n".$$opt{post};
+	$str.= "// post: \n".($$opt{post}||'');
 	$str.= ("retval = cvret;\n") if (!$$opt{post} && $$opt{cvret} ) ;
 	$str.= "\n return retval; \n}\n\n\n";
 	return ($hstr,$str);
 }
 
 say join ", ",@_;
-my $mkcmd = shift;
+my $mkcmd = shift || '';
 
 open my $fh,">generated_cvwrapper.h" ||die "cannot write header file\n";
 open my $fc,">generated_cvwrapper.cpp" ||die "cannot write header file\n";
