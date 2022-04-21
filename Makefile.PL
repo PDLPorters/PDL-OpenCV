@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use PDL::Core::Dev;            # Pick up development utilities
+use File::Spec::Functions;
 use ExtUtils::MakeMaker;
 
 my $package = ["opencv.pd",'OpenCV','PDL::OpenCV'];
@@ -18,7 +19,6 @@ $hash{LIBS}[0] .= $libs;
 $hash{INC} .= ' -Icw';
 
 use Config;
-$hash{LDFROM} .= ' $(OBJECT) cw/build/libopencv_wrapper'.$Config{lib_ext};
 $hash{NO_MYMETA} = 1;
 
 use ExtUtils::CppGuess;
@@ -32,6 +32,7 @@ $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
     CONFIGURE_REQUIRES => {
         'ExtUtils::CppGuess' => '0.21',
         'ExtUtils::MakeMaker' => '6.3002',
+        'Alien::cmake3' => '0',
     },
     TEST_REQUIRES => {
         'Test::More' => '0.88',
@@ -39,9 +40,14 @@ $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
     PREREQ_PM => {
         'PDL'        => '2.4.4',
     },
-    DIR                 => ['Tracking',],
-    clean               => { FILES => ['PDL-OpenCV-*'] },
+    DIR                 => ['cw','Tracking'],
+    MYEXTLIB => catfile(qw(cw build libopencv_wrapper$(LIB_EXT))),
 );
 WriteMakefile(%hash);
 
-sub MY::postamble { pdlpp_postamble($package); }
+sub MY::postamble {
+  my ($self) = @_;
+  pdlpp_postamble($package) .
+    sprintf "\n".'$(MYEXTLIB) : %s'."\n\t".$self->cd('cw', '$(MAKE) $(PASSTHRU)')."\n",
+      catfile(qw(cw $(FIRST_MAKEFILE)));
+}

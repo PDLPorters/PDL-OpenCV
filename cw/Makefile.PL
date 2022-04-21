@@ -1,6 +1,9 @@
-use 5.10.0;
 use strict;
 use warnings;
+use 5.010;
+use ExtUtils::MakeMaker;
+use File::Spec::Functions;
+use Alien::cmake3;
 use PDL::Types;
 use PDL::Core qw/howbig/;
 
@@ -229,7 +232,6 @@ sub gen_code {
 	return ($hstr,$str);
 }
 
-say join ", ",@_;
 my $mkcmd = shift || '';
 
 open my $fh,">generated_cvwrapper.h" ||die "cannot write header file\n";
@@ -293,6 +295,29 @@ print $fc '
 
 close $fh;
 close $fc;
-mkdir 'build' unless (-d 'build') ;
-chdir 'build';
-exit system "cmake .. && make $mkcmd";
+
+WriteMakefile(
+    NAME                => 'PDL::OpenCV::CWrapper',
+    SKIP   => [qw(all static dynamic install)],
+    clean => {FILES => 'build generated_cvwrapper.h generated_cvwrapper.cpp'},
+);
+
+sub MY::top_targets {
+  my ($self) = @_;
+  sprintf '
+all :: static
+
+pure_all :: static
+
+static :: %1$s
+
+%1$s :
+	$(MKPATH) build
+	%2$s
+	%3$s
+
+',
+  catfile(qw(build libopencv_wrapper$(LIB_EXT))),
+  $self->cd('build', catfile(Alien::cmake3->bin_dir, Alien::cmake3->exe).' ..'),
+  $self->cd('build', '$(MAKE) $(PASSTHRU)');
+}
