@@ -214,6 +214,7 @@ the size of the vector is manipulated and queried. This is useful in e.g. video 
 pp_def('create_video',
 	Pars=>'m(l,c,r,f)',
 	OtherPars=>'MatWrapper * mw; int bs; char * file; char * code; double fps',
+	NoPthread=>1,
 	GenericTypes=>[qw/A B S U L F D/ ],
 	PMCode=>pp_line_numbers(__LINE__,'
 		sub create_video {
@@ -283,6 +284,7 @@ pp_def('vread',
 	Pars=>'[o] m(l,c,r,f);',
 	OtherPars=>'MatWrapper * mw; char * file',
 	GenericTypes=>[qw/A B S U L F D/ ],
+	NoPthread=>1,
 	PMCode=>pp_line_numbers(__LINE__,'
 		sub vread {
 			my ($mo,$name,$p)=@_;
@@ -340,6 +342,7 @@ pp_def('new_mat',
 	Pars=>'m(c,r);',
 	GenericTypes=>[qw/A B S U L F D/ ],
 	OtherPars=>'MatWrapper * mwi',
+	NoPthread=>1,
 	Code=>pp_line_numbers(__LINE__,'
 		//setData($COMP(mwi),$P(m),0);
 		//printf ("after setData %f \n",MatAt($COMP(mwi),0,0));

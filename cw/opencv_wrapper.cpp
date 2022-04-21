@@ -150,7 +150,7 @@ int newMat2 (MatWrapper * mw,const ptrdiff_t cols, const ptrdiff_t rows, const i
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
 	cv::Mat frame,norm;
 	int cvtype = get_ocvtype(type,planes); 
-	//printf ("newMat data type mapped %d(%d): %d\n",type,planes, cvtype);
+	printf ("newMat data type mapped %d(%d): %d data=%p\n",type,planes, cvtype, data);
 	//if (type == CV_32FC) ) {
 		//float * fdata = (float * ) data;
 		frame=Mat (rows, cols, cvtype, data); //.clone();
