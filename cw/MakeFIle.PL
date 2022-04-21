@@ -87,7 +87,7 @@ int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 	Mat frame;
 	uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
 	printf(\"getDataCopy: cvtype %d\\n\",depth);
-	printf(\"getDataCopy: vl %d\\n\",vl);
+	printf(\"getDataCopy: vl %td\\n\",vl);
 	if (vl > 0) {
 	try {vl=mw->vmat.size(); } catch (...) { vl=1;} // default to 0 if not a vector
 	//printf(\"getDataCopy: vl %d\\n\",vl);
