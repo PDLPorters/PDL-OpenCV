@@ -341,7 +341,11 @@ int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 
 
 int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
+#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
+	Rect box;
+#else
 	Rect2d box;
+#endif
 	Mat frame;
 	double mymin,mymax;
 	minMaxIdx(mw->mat, & mymin,& mymax);

@@ -11,7 +11,6 @@ interface. Therefore, the installation needs two steps.
 This has built the OpenCV C wrapper layer. To build the perl bindings, go back
 
 	cd ..
-	cd ..
 	perl MakeFile.PL 
 	make test
 
