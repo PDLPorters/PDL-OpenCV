@@ -2,35 +2,21 @@ use strict;
 use warnings;
 use ExtUtils::MakeMaker;
 
-use Getopt::Long;
-
-my $force;
-my $result = GetOptions("force"=>\$force);
-
-
 WriteMakefile(
     NAME                => 'PDL::OpenCV',
     AUTHOR              => 'Ingo Schmid',
     VERSION_FROM        => 'OpenCV/opencv.pd',
-    ABSTRACT_FROM       => 'OpenCV/opencv.pd',
-    ($ExtUtils::MakeMaker::VERSION >= 6.3002
-      ? ('LICENSE'=> 'perl')
-      : ()),
+    LICENSE => 'perl',
+    CONFIGURE_REQUIRES => {
+        'ExtUtils::CppGuess' => '0.21',
+        'ExtUtils::MakeMaker' => '6.3002',
+    },
+    TEST_REQUIRES => {
+        'Test::More' => '0.88',
+    },
     PREREQ_PM => {
-        'Test::More' => 0,
         'PDL'        => '2.4.4',
     },
-    CCFLAGS => " -I../tw ", #.`pkg-config --cflags opencv4`,
-#    LDDLFLAGS => `pkg-config --libs opencv4`,
-    PREREQ_FATAL        => 0,
     DIR                 => ['OpenCV', 'Tracking',],
-    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => ['PDL-OpenCV-*'] },
 );
-
-sub MY::postamble {
-    my $text =
-'';
-
-    return $text;
-}

@@ -1,24 +1,20 @@
-
-
-This requires ExtUtils::MakeMaker and cmake, besides PDL and OpenCV v4. 
+This requires ExtUtils::MakeMaker and cmake, besides PDL and OpenCV v4.2+
 
 It is tested on Debian/Linux with a recent gcc. 
 
 The module consists of two parts. A C/C++ wrapper of OpenCV and the perl/PDL
-interface. Therefore, the installation needs two steps. To install, 
+interface. Therefore, the installation needs two steps.
 
 	cd cw
 	perl MakeFIle.PL
-	cd build
-	sudo make install
 
-This has installed the OpenCV C wrapper layer. To get the perl bindings, go back
+This has built the OpenCV C wrapper layer. To build the perl bindings, go back
 
 	cd ..
 	cd ..
 	perl MakeFile.PL 
 	make test
+
+To install the PDL::OpenCV module:
+
 	sudo make install
-
-and install the PDL::OpenCV module.
-

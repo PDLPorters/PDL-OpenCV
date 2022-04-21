@@ -296,8 +296,4 @@ close $fh;
 close $fc;
 mkdir 'build' unless (-d 'build') ;
 chdir 'build';
-my $exit = `cmake .. && make $mkcmd `;
-die "(c)make returned with exit code $exit\n" if ($exit);
-
-
-
+exit system "cmake .. && make $mkcmd";
