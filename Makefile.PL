@@ -9,10 +9,11 @@ my %hash = pdlpp_stdargs($package);
 $hash{clean}->{FILES} .= ' todelete_Ccode$(OBJ_EXT) ';
 $hash{'VERSION_FROM'} = 'opencv.pd';
 my @pkgs = qw(opencv4);
-$hash{LIBS}[0] .= (
+our $libs = (
   eval {require PkgConfig; join ' ', map PkgConfig->find($_)->get_ldflags, @pkgs} ||
   eval {require ExtUtils::PkgConfig; join ' ', map ExtUtils::PkgConfig->libs($_), @pkgs} ||
   `pkg-config @pkgs --libs`);
+$hash{LIBS}[0] .= $libs;
 
 $hash{INC} .= ' -Icw';
 
