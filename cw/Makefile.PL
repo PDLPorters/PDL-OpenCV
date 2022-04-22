@@ -289,10 +289,13 @@ print $fc '
 close $fh;
 close $fc;
 
+my $lib = catfile(qw(build libopencv_wrapper$(LIB_EXT)));
 WriteMakefile(
     NAME                => 'PDL::OpenCV::CWrapper',
     SKIP   => [qw(all static dynamic install)],
     clean => {FILES => 'build generated_cvwrapper.h generated_cvwrapper.cpp maptypes.h'},
+    depend => {$lib=>join(' ', glob '*.{cpp,h}')},
+    NO_MYMETA=>1,
 );
 
 sub MY::top_targets {
@@ -310,7 +313,7 @@ static :: %1$s
 	%3$s
 
 ',
-  catfile(qw(build libopencv_wrapper$(LIB_EXT))),
+  $lib,
   $self->cd('build', catfile(Alien::cmake3->bin_dir, Alien::cmake3->exe).' ..'),
   $self->cd('build', '$(MAKE) $(PASSTHRU)');
 }
