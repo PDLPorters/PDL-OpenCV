@@ -272,11 +272,8 @@ pp_def('vread',
 				$mo=PDL::OpenCV::newMW();
 				bless($mo,"PDL::OpenCV");
 			}
-			unless (ref ($p) =~ "PDL") {
-				$p=PDL->null;
-			}
+			$p=PDL->null unless UNIVERSAL::isa($p, "PDL");
 			barf "cannot read file $name!" unless (-f $name);
-			$p->make_physical;
 			_vread_int($p,$$mo,$name);
 			$p;
 		}

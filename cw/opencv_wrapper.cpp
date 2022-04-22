@@ -288,7 +288,6 @@ ptrdiff_t vRead(MatWrapper * mw,char * name) {
 	mw->vmat= video;
 	mw->mat=video[0];
 	mw->dp=mp->data;
-	int i=0;
 	return j;
 }
 
