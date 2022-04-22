@@ -71,9 +71,10 @@ There is a make_phsyical call before pointing the data to OpenCV. Both OpenCV
 and PDL use data flow, I have not investigated this, behaviour is not defined
 yet. 
 
-The threading behaviour is also not yet defined. Some things may work, some not.
-=cut
+The broadcasting behaviour is also not yet defined. Some things may work,
+some not.
 
+=cut
 EOPM
 
 our $VERSION = 0.02;
@@ -82,11 +83,9 @@ pp_setversion($VERSION);
 pp_bless("PDL::OpenCV");
 
 pp_addhdr << 'EOH';
- 	#include "opencv_wrapper.h"
- 	#include "generated_cvwrapper.h"
-	// typedef TrackerWrapper trackerObj;
+#include "opencv_wrapper.h"
+#include "generated_cvwrapper.h"
 	typedef MatWrapper matObj;
-	//MatWrapper * mw;
 EOH
 pp_addxs('','
 MODULE = PDL::OpenCV PACKAGE = PDL::OpenCV
@@ -98,7 +97,6 @@ CODE:
 	RETVAL = data_ptr;
 OUTPUT: 
 RETVAL
-
 
 matObj *
 newMW ()
