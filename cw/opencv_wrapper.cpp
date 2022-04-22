@@ -233,20 +233,6 @@ int setMat (MatWrapper * mw, void * data, const int type, const ptrdiff_t rows, 
 	mw->mat.data=(uchar *)data;	
 	return 1;
 }
-int setData (MatWrapper * mw, void * data, const int type){
-	int cvtype=get_ocvtype(type,CV_MAT_CN(mw->mat.type()));
-	//printf ("cvt %d t %d\n",cvtype,type); 
-	Mat out;
-	if (type && cvtype != mw->mat.type())  {
-		mw->mat.convertTo(mw->mat,cvtype);
-		//printf("Converting\n");
-	}
-	//mw->mat=out;
-	//mw->vmat[0]=out;
-	mw->mat.data=(uchar *)data;	
-	//printf ("set_data (at 3, 1) %f\n",MatAt(mw,3,1));
-	return 1;
-}
 
 int vWrite(MatWrapper * mw,char * name, char * code, double fps) {
 	string str;

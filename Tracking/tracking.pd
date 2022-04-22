@@ -79,7 +79,6 @@ pp_def('update_tracker',
                 struct bBox  box;
                 MatWrapper * mw = $COMP(mwi);
                 TrackerWrapper * tw = $COMP(twi);
-                //setData(mw,$P(m),$PDL(m)->datatype);
                 updateTracker(tw,mw,& box);
 		//printf ("after update box %d %d \n",box.x ,box.y);
                 $b(j=>0)=box.x;

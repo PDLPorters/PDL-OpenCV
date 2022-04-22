@@ -32,7 +32,6 @@ MatWrapper * emptyMW ();
 int deleteMat(MatWrapper * wrapper);
 void * getData (MatWrapper * Mat);
 int getDataCopy(const MatWrapper * frame,void * data, ptrdiff_t vl);
-int setData (MatWrapper * Mat, void * data, const int type);
 int setMat (MatWrapper * Mat, void * data, const int type, const ptrdiff_t rows, const ptrdiff_t cols);
 int  MatAt (const MatWrapper * mw,const ptrdiff_t x,const ptrdiff_t y,void * data);
 
