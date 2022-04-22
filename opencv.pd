@@ -262,20 +262,15 @@ pp_def('video_dims',
 
 pp_def('vread',
 	Pars=>'[o] m(l,c,r,f);',
-	OtherPars=>'MatWrapper * mw; char *file; int mattype; PDL_Indx ls; PDL_Indx cs; PDL_Indx rs; PDL_Indx fs',
+	OtherPars=>'char *file; int mattype; PDL_Indx ls; PDL_Indx cs; PDL_Indx rs; PDL_Indx fs',
 	GenericTypes=>[qw/A B S U L F D/ ],
 	NoPthread=>1,
 	PMCode=>pp_line_numbers(__LINE__,'
 		sub vread {
-			my ($mo,$name,$p)=@_;
-			if (ref $mo ne q/PDL::OpenCV/) {
-				$name=$mo if defined $mo;
-				$mo=PDL::OpenCV::newMW();
-				bless($mo,"PDL::OpenCV");
-			}
+			my ($name,$p)=@_;
 			$p=PDL->null unless UNIVERSAL::isa($p, "PDL");
 			barf "cannot read file $name!" unless -f $name;
-			_vread_int($p,$$mo,$name,video_dims($name)->list);
+			_vread_int($p,$name,video_dims($name)->list);
 			$p;
 		}
 		'
@@ -292,12 +287,13 @@ pp_def('vread',
 		  $PDL(m)->datatype = get_pdltype($COMP(mattype));
 		'),
 	Code=>pp_line_numbers(__LINE__,'
-		PDL_Indx f=vRead($COMP(mw),$COMP(file));
-		if (f<=0) {barf ("Failed to read video. %s.\n",$COMP(file));}
-		printf ("data pointer %p\n",$P(m));
-		int found_datatype = getDataCopy($COMP(mw),$P(m),$SIZE(f));
+		MatWrapper *mw=emptyMW();
+		PDL_Indx f=vRead(mw,$COMP(file));
+		if (f<=0) $CROAK("Failed to read video. %s.\n",$COMP(file));
+		int found_datatype = getDataCopy(mw,$P(m),$SIZE(f));
 		if (found_datatype != $PDL(m)->datatype)
 		  $CROAK("Got wrong datatype %d, ndarray type=%d", found_datatype, $PDL(m)->datatype);
+		deleteMat(mw);
 	'),
 );
 
