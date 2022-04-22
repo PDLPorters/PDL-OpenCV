@@ -25,7 +25,7 @@ my $slice2 = long $data(,,0:2;-)->mv(2,0);
 #my $mw=PDL::OpenCV->nMat(5,6,5,$slice) ; #->get_dataref);
 my $mw=PDL::OpenCV->new_mat($slice);
 my $mw2=PDL::OpenCV->new_mat($slice2);
-my ($cvtype,$pdltype)=$mw->type;
+my ($cvtype,$pdltype)=$mw->mat_type;
 #say "cvtype $cvtype pdltype $pdltype";
 
 #say "new_mat completed. Starting tests";
@@ -66,7 +66,7 @@ $ma=$mw->convert_to(2);
 my $h;
 $h=$ma->get_data();
 #say $h;
-is( $ma->type , short->numval,'data type conversion');
+is( $ma->mat_type , short->numval,'data type conversion');
 ok tapprox($data(,,0;-), $h(,;-)),'getData - converted';
 my $b=yvals($slice);
 #$ma->set_data($b);

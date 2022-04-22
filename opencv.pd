@@ -250,8 +250,7 @@ pp_def('create_video',
 		printf ("code %s\n",$COMP(code));
 	'),
 	Doc=>'
-
-=head 2 create_video 
+=for ref
 
 Stores a (colour,x,y,frame) piddle in a vector<Mat>. The object is the same as for a single Mat. 
 
@@ -273,9 +272,8 @@ From the OpenCV documentation:
 
 =back
 
-
 =cut
-	',
+',
 );
 
 pp_def('vread', 
@@ -538,7 +536,7 @@ pp_def ('mat_at',
 	q{
 	sub mat_at {
 		my ($mw,$x,$y)=@_;
-		my ($t,$ct) = $mw->type;
+		my ($t,$ct) = $mw->mat_type;
 		my $o=zeroes(sclr $mw->cw_channels);
 		#say "pointer $$mw";
 		_mat_at_int($o,$$mw,$x,$y);
@@ -593,7 +591,7 @@ real data types up to 32 bit long and 64 bit double, respectively.
 	',
 	);
 
-pp_def('type',
+pp_def('mat_type',
 	Pars=>'[io] cvt(); [io] pt();',
 	OtherPars=>'MatWrapper * mi; ',
 	Code=>pp_line_numbers(__LINE__, q{
@@ -608,13 +606,13 @@ pp_def('type',
 		$cvt()=ct;
 	} ),
 	PMCode=>pp_line_numbers(__LINE__, q{
-		sub type {
+		sub mat_type {
 			my ($mw,$t) =@_;
 			my $ct=pdl([-1]);
 			$t=pdl([-1]) unless defined $t;
 			#say $t->info,$ct->info;
 			#say "t $t ct $ct";
-			_type_int($t,$ct,$$mw,);
+			_mat_type_int($t,$ct,$$mw,);
 			$t=sclr $t;
 			$ct=sclr $ct;
 			#say "type $t cvtype $ct";
@@ -623,14 +621,12 @@ pp_def('type',
 	}
 	),
 	Doc=>'
+=for ref
 
-=head2 type
+Returns the pdl data type number, as in $p->get_datatype, and the OpenCV data type of the Mat object.
 
-The method type returns the pdl data type number, as in $p->get_datatype, and the OpenCV data type of the Mat object.
-
-	($pdltype,$cvtype)=$mw->type();
-
-=cut',
+	($pdltype,$cvtype)=$mw->mat_type();
+',
 	);
 
 sub protect_chars {
