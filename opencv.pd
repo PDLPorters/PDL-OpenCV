@@ -291,12 +291,12 @@ pp_def('vread',
 		printf ("data dim 0 %"IND_FLAG"\n",$PDL(m)->dims[0]);
 		printf ("data dim 3 %"IND_FLAG"\n",$PDL(m)->dims[3]);
 		printf ("data pointer %p\n",$P(m));
-		printf ("vread: ch %"IND_FLAG" j; %"IND_FLAG"  k %"IND_FLAG" /  l %"IND_FLAG"\n ",ch,$SIZE(l),$SIZE(c),$SIZE(r));
+		printf ("vread: t=%d l=%"IND_FLAG" c=%"IND_FLAG" r=%"IND_FLAG"\n ",$COMP(mattype),$SIZE(l),$SIZE(c),$SIZE(r));
 		if ($PDL(m)->state & PDL_MYDIMS_TRANS)
 		  $PDL(m)->datatype = get_pdltype($COMP(mattype));
 		'),
 	Code=>pp_line_numbers(__LINE__,'
-		printf ("number of frames %"IND_FLAG"\n",$SIZE(f));
+		printf ("Code number of frames %"IND_FLAG"\n",$SIZE(f));
 		printf ("data pointer %p\n",$P(m));
 		$PDL(m)->datatype=getDataCopy($COMP(mw),$P(m),$SIZE(f));
 		if ($SIZE(f)<=0) {barf ("Failed to read video. %s.\n",$COMP(file));}

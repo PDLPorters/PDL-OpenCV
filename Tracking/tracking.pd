@@ -51,22 +51,22 @@ sub init_tracker{
 }
 EOP
         Doc=><<'EOD',
+=for ref
 
-=head2 init_tracker - initialize OpenCV tracker 
+Initialize OpenCV tracker.
 
+=for example
 
-Call with 
-        
         ($tracker,$box) = init_tracker ( $img, $tn, [$box, [ $mat ]] );
 
-The first argument $img is the data, e.e. anything that fits a Mat object.
-$tn is the tracker, in this order, strarting with 0: 
-        
+The first argument $img is the data, e.g. anything that fits a Mat object.
+$tn is the tracker, in this order, starting with 0:
+
         ["BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
 
 $box is a 4-integer array (x,y,width,height) holding the bounding box.
 $mat is a reference to the Mat object.
-;tracker is a reference to the tracker object. 
+;tracker is a reference to the tracker object.
 EOD
 );
 
@@ -112,7 +112,7 @@ MODULE = PDL::OpenCV::Tracking PACKAGE = PDL::OpenCV::Tracking
 
 trackerObj * newT (tn)
         int tn
-CODE: 
+CODE:
         trackerObj * to = newTracker(tn);
   RETVAL = to;
  OUTPUT:
