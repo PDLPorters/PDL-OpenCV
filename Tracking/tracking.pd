@@ -106,16 +106,6 @@ EOPM
         Doc=>"update the tracker box.\n",
         );
 
-
-
-pp_add_boot (<< 'EOB');
-
-        //tw_init();
-        //printf ("init done (autoinclude)\n");
-
-
-EOB
-
 pp_addxs('','
 
 MODULE = PDL::OpenCV::Tracking PACKAGE = PDL::OpenCV::Tracking
@@ -140,4 +130,3 @@ track_DESTROY(to)
 );
 
 pp_done();
-

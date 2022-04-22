@@ -79,7 +79,7 @@ EOPM
 our $VERSION = 0.02;
 pp_setversion($VERSION);
 
-pp_bless ("PDL::OpenCV");
+pp_bless("PDL::OpenCV");
 
 pp_addhdr << 'EOH';
  	#include "opencv_wrapper.h"
@@ -87,7 +87,6 @@ pp_addhdr << 'EOH';
 	// typedef TrackerWrapper trackerObj;
 	typedef MatWrapper matObj;
 	//MatWrapper * mw;
-
 EOH
 pp_addxs('','
 MODULE = PDL::OpenCV PACKAGE = PDL::OpenCV
@@ -144,8 +143,6 @@ printf("cols %"IND_FLAG" rows %"IND_FLAG" type %d planes l %d ptr %p \n",c,r,t,l
 if (mo==NULL) {
 	barf("newMat returned null.\n");
 }
-//printf ("newM: mo %p\n",mo);
-//printf ("newM: data %p\n",getData(mo));
 RETVAL = mo;
 OUTPUT:
 RETVAL
@@ -485,19 +482,12 @@ EOD
 
 	);
 
-
-
-
 pp_add_boot (<< 'EOB');
-
 	cv_init();
 	//printf ("init done (autoinclude)\n");
-
-
 EOB
 
 pp_addpm(<<'EOPM');
-
 sub data_ptr {
 	my $mw=shift;
 	dataPtr($$mw);
@@ -791,68 +781,4 @@ EOD
 map {ufunc($_,$_,0,"returns and optionally sets $_ of the Mat object. \n");} (qw/rows cols / );
 map {ofunc($_,$_,0,"returns $_ of the Mat object. \n");} (qw/cw_channels/ );
 
-
 pp_done();
-
-
-__END__
-use Inline C => Config =>
-           enable => autowrap => LIBS => "-lopencv_wrapper" ;
- 
-use Inline C =>"#include <generated_cvwrapper.h>
-int cw_convertTo ( MatWrapper * mw ,  MatWrapper * out, int type) ;
-";
-
-pp_def('cols2',
-	Pars=>'[o] c();',
-	   OtherPars=>'MatWrapper * mw; PDL_Indx v',
-	GenericTypes=>['U'],
-	Code=>'
-		printf("cols2: (c) v: %"IND_FLAG"\n",$COMP(v));
-		printf("cols2: (c) mw: %p\n",$COMP(mw));
-		int r= cols($COMP(mw),$COMP(v));
-		printf("cols2: (c) r: %d\n",r);
-		$c()=r;',
-
-	PMCode=>'   sub cols2 {
-			   my ($self,$v) = @_;
-			   $v = -1 unless defined $v;
-			   my $res=zeroes(ushort,1);
-			   say "cols2 calling now ($v)";
-			   say "cols2 calling self ($$self)";
-			   _cols2_int($res,$$self,$v);
-			   say "res $res?";
-			   $res;
-		   }
-	'
-	);
-
-pp_addxs('','
-matObj *
-newM (c,r,t)
-        int c
-        int r
-        int t
- CODE:
-matObj * mo = NULL;
- t=cvT.f32c1;
- mo=emptyMat(c,r,t);
- if (mo==NULL) {
-         barf("emptyMat returned null.\n");
- }
-// printf ("newM: mo %p\n",mo);
-  RETVAL = mo;
- OUTPUT:
-  RETVAL
-
-
-');
-
-
-int rows(mw)
-	matObj * mw;
-	CODE:
-	PDL_Indx r = rows(mw);
-	RETVAL r;
-	OUTPUT:
-	RETVAL
