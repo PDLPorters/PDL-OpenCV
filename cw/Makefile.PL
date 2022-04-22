@@ -141,7 +141,7 @@ int get_pdltype(const int cvtype) {
 ";
 
 my $tstr="
-int get_ocvtype(const int datatype,const int planes ) { 
+int get_ocvtype(const int datatype,const int planes) {
 	switch (datatype) { \n
 		$tstr_l;
 \t}\n
@@ -174,12 +174,9 @@ struct MatWrapper
         cv::Mat mat;
         void * dp;
 	std::vector<cv::Mat> vmat;
-
 };
 
 ";
-print $fm $tstr;
-print $fm $rstr;
 print $fm "
 #endif\n";
 close $fm;
@@ -249,6 +246,8 @@ extern "C" {
 #include "maptypes.h"
 ';
 
+print $fc $tstr;
+print $fc $rstr;
 print $fc $gstr;
 print $fc $astr;
 
@@ -263,6 +262,8 @@ extern "C" {
 
 #include "opencv_wrapper.h"
 
+int get_pdltype(const int cvtype);
+int get_ocvtype(const int datatype,const int planes);
 ';
 
 for my $func (@funclist) {

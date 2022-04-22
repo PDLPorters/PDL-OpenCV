@@ -8,6 +8,7 @@
 #include <opencv2/videoio.hpp>
 
 #include "maptypes.h"
+#include "generated_cvwrapper.h"
 using namespace std;
 using namespace cv;
 /* use C name mangling */

@@ -274,7 +274,7 @@ pp_def('vread',
 				bless($mo,"PDL::OpenCV");
 			}
 			$p=PDL->null unless UNIVERSAL::isa($p, "PDL");
-			barf "cannot read file $name!" unless (-f $name);
+			barf "cannot read file $name!" unless -f $name;
 			_vread_int($p,$$mo,$name);
 			$p;
 		}
