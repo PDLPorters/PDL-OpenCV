@@ -1,5 +1,3 @@
-#!/usr/bin/perl 
-
 use strict;
 use warnings;
 use Test::More;
@@ -19,7 +17,6 @@ sub tapprox {
   ref $diff eq 'PDL' and $diff = $diff->max;
   return $diff < $eps;
 }
-
 
 #my $data=rvals(128,128,74);
 #my $data; #=float readflex('/data/ingo/daten/c-31p/7T_data/C31P_MRS_45-1/conv/c_0074')->squeeze;
@@ -57,4 +54,3 @@ for my $x (2..$data->dim(3)-1)  {
 }
 
 done_testing();
-

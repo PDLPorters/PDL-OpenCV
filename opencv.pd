@@ -1,5 +1,3 @@
-#!perl
-
 use strict;
 pp_addpm ({At=>'Top'},<<'EOPM');
 

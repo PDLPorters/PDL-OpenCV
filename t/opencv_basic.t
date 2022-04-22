@@ -1,5 +1,3 @@
-#!/usr/bin/perl 
-
 use strict;
 use warnings;
 use Test::More;
@@ -64,7 +62,6 @@ my $ma; #=PDL::OpenCV->new_mat($dummy);
 $ma=$mw->convert_to(2);
 #convertTo($mw,$ma,2);
 #say "Ma $ma";
-
 
 my $h;
 $h=$ma->get_data();
