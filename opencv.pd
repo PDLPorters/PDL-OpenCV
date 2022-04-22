@@ -194,27 +194,21 @@ the size of the vector is manipulated and queried. This is useful in e.g. video 
 
 pp_def('create_video',
 	Pars=>'m(l,c,r,f)',
-	OtherPars=>'MatWrapper * mw; int bs; char * file; char * code; double fps',
+	OtherPars=>'int bs; char * file; char * code; double fps',
 	NoPthread=>1,
 	GenericTypes=>[qw/A B S U L F D/ ],
 	PMCode=>pp_line_numbers(__LINE__,'
 		sub create_video {
-			my ($mo)=shift;
-			my $p;
-			if (ref $mo ne q/PDL::OpenCV/) {
-				$p=$mo;
-				$mo=PDL::OpenCV::newMW();
-				bless($mo,"PDL::OpenCV");
-			} else { $p=shift; }
-			my ($file,$fps,$code) = @_;
+			my ($p,$file,$fps,$code) = @_;
 			barf "No input piddle!\n" unless (ref ($p) =~ "PDL") ;
 			barf "No file name given!\n" unless ($file) ;
 			my $size=PDL::Core::howbig($p->type);
 			$p->make_physical;
-			_create_video_int($p,$$mo,$size,$file,$code,$fps);
+			_create_video_int($p,$size,$file,$code,$fps);
 		}
 	'),
 	Code=>pp_line_numbers(__LINE__,'
+		MatWrapper *mw=emptyMW();
 		PDL_Indx sz = $SIZE(l)*$SIZE(c)*$SIZE(r)*$COMP(bs);
 		printf ("code %s\n",$COMP(code));
 		printf ("frames %"IND_FLAG" ",$SIZE(f));
@@ -223,16 +217,17 @@ pp_def('create_video',
 		printf ("planes %"IND_FLAG" ",$SIZE(l));
 		printf ("datatype %d\n",$PDL(m)->datatype);
 		printf ("size %"IND_FLAG"\n",sz);
-		int res = newVector($COMP(mw),$SIZE(f),$SIZE(c), $SIZE(r) , $PDL(m)->datatype, $SIZE(l), $P(m), sz);
+		int res = newVector(mw,$SIZE(f),$SIZE(c), $SIZE(r) , $PDL(m)->datatype, $SIZE(l), $P(m), sz);
 		printf("code %s\n",$COMP(code));
-		res = vWrite($COMP(mw),$COMP(file),$COMP(code),$COMP(fps));
+		res = vWrite(mw,$COMP(file),$COMP(code),$COMP(fps));
+		deleteMat(mw);
 	'),
 	Doc=>'
 =for ref
 
 Stores a (colour,x,y,frame) piddle in a vector<Mat>. The object is the same as for a single Mat. 
 
-	$mo=create_video([$mw],$piddle,file,fps,[code]);
+	$mo=create_video($piddle,file,fps,[code]);
 
 For possible encodings see https://www.fourcc.org/codecs/. If not supplied, OpenCV will try to derive it from the file name.
 
