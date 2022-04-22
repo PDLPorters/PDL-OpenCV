@@ -262,7 +262,7 @@ pp_def('video_dims',
 
 pp_def('vread',
 	Pars=>'[o] m(l,c,r,f);',
-	OtherPars=>'MatWrapper * mw; char *file; int mattype',
+	OtherPars=>'MatWrapper * mw; char *file; int mattype; PDL_Indx ls; PDL_Indx cs; PDL_Indx rs; PDL_Indx fs',
 	GenericTypes=>[qw/A B S U L F D/ ],
 	NoPthread=>1,
 	PMCode=>pp_line_numbers(__LINE__,'
@@ -275,31 +275,29 @@ pp_def('vread',
 			}
 			$p=PDL->null unless UNIVERSAL::isa($p, "PDL");
 			barf "cannot read file $name!" unless -f $name;
-			_vread_int($p,$$mo,$name,video_dims($name)->slice("0")->sclr);
+			_vread_int($p,$$mo,$name,video_dims($name)->list);
 			$p;
 		}
 		'
 		),
 	RedoDimsCode=>pp_line_numbers(__LINE__,'
-		PDL_Indx f=vRead($COMP(mw),$COMP(file));
-		PDL_Indx ch = cw_channels($COMP(mw));
-		$SIZE(l)=ch;
-		$SIZE(c)=cols($COMP(mw),-1);
-		$SIZE(r)=rows($COMP(mw),-1);
-		$SIZE(f)=f;
+		$SIZE(l)=$COMP(ls);
+		$SIZE(c)=$COMP(cs);
+		$SIZE(r)=$COMP(rs);
+		$SIZE(f)=$COMP(fs);
 		printf ("number of frames %"IND_FLAG"\n",$SIZE(f));
-		printf ("data dim 0 %"IND_FLAG"\n",$PDL(m)->dims[0]);
-		printf ("data dim 3 %"IND_FLAG"\n",$PDL(m)->dims[3]);
 		printf ("data pointer %p\n",$P(m));
-		printf ("vread: t=%d l=%"IND_FLAG" c=%"IND_FLAG" r=%"IND_FLAG"\n ",$COMP(mattype),$SIZE(l),$SIZE(c),$SIZE(r));
+		printf ("vread: t=%d l=%"IND_FLAG" c=%"IND_FLAG" r=%"IND_FLAG"\n",$COMP(mattype),$SIZE(l),$SIZE(c),$SIZE(r));
 		if ($PDL(m)->state & PDL_MYDIMS_TRANS)
 		  $PDL(m)->datatype = get_pdltype($COMP(mattype));
 		'),
 	Code=>pp_line_numbers(__LINE__,'
-		printf ("Code number of frames %"IND_FLAG"\n",$SIZE(f));
+		PDL_Indx f=vRead($COMP(mw),$COMP(file));
+		if (f<=0) {barf ("Failed to read video. %s.\n",$COMP(file));}
 		printf ("data pointer %p\n",$P(m));
-		$PDL(m)->datatype=getDataCopy($COMP(mw),$P(m),$SIZE(f));
-		if ($SIZE(f)<=0) {barf ("Failed to read video. %s.\n",$COMP(file));}
+		int found_datatype = getDataCopy($COMP(mw),$P(m),$SIZE(f));
+		if (found_datatype != $PDL(m)->datatype)
+		  $CROAK("Got wrong datatype %d, ndarray type=%d", found_datatype, $PDL(m)->datatype);
 	'),
 );
 
