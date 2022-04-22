@@ -99,19 +99,6 @@ OUTPUT:
 RETVAL
 
 matObj *
-newMW ()
- CODE:
-matObj * mo= NULL;
-mo=emptyMW();
-if (mo==NULL) {
-	barf("emptyMat returned null.\n");
-}
-  RETVAL = mo;
- OUTPUT:
-  RETVAL
-
-
-matObj *
 nMat (pid)
 pdl * pid
 CODE:
