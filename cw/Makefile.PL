@@ -299,7 +299,7 @@ close $fc;
 WriteMakefile(
     NAME                => 'PDL::OpenCV::CWrapper',
     SKIP   => [qw(all static dynamic install)],
-    clean => {FILES => 'build generated_cvwrapper.h generated_cvwrapper.cpp'},
+    clean => {FILES => 'build generated_cvwrapper.h generated_cvwrapper.cpp maptypes.h'},
 );
 
 sub MY::top_targets {

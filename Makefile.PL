@@ -6,8 +6,7 @@ use ExtUtils::MakeMaker;
 
 my $package = ["opencv.pd",'OpenCV','PDL::OpenCV'];
 my %hash = pdlpp_stdargs($package);
-#$hash{OBJECT} .= ' additional_Ccode$(OBJ_EXT) ';
-$hash{clean}->{FILES} .= ' todelete_Ccode$(OBJ_EXT) ';
+$hash{clean}{FILES} .= ' t/test_write.avi ';
 $hash{'VERSION_FROM'} = 'opencv.pd';
 my @pkgs = qw(opencv4);
 our $libs = (
