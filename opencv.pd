@@ -254,8 +254,8 @@ pp_def('video_dims',
 		if (ret) $CROAK("Error in vDims: %s", ret);
 		$dims(n=>0)=t;
 		$dims(n=>1)=l;
-		$dims(n=>2)=r;
-		$dims(n=>3)=c;
+		$dims(n=>2)=c;
+		$dims(n=>3)=r;
 		$dims(n=>4)=f;
 	'),
 );
