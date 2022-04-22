@@ -47,5 +47,6 @@ WriteMakefile(%hash);
 sub MY::postamble {
   my ($self) = @_;
   pdlpp_postamble($package) .
-    sprintf "\n".'$(MYEXTLIB) : %s'."\n", catfile(qw(cw $(FIRST_MAKEFILE)));
+    sprintf "\n".'$(MYEXTLIB) : %s'."\n\t".$self->cd('cw', '$(MAKE) $(PASSTHRU)')."\n",
+      catfile(qw(cw $(FIRST_MAKEFILE)));
 }
