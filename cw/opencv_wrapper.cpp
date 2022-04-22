@@ -264,7 +264,7 @@ int vWrite(MatWrapper * mw,char * name, char * code, double fps) {
 	return 1;
 }
 
-ptrdiff_t vRead(MatWrapper * mw,char * name /*,void * data*/) {
+ptrdiff_t vRead(MatWrapper * mw,char * name) {
 	string str;
 	str=string(name);
 	VideoCapture cap;
@@ -278,15 +278,10 @@ ptrdiff_t vRead(MatWrapper * mw,char * name /*,void * data*/) {
 	ptrdiff_t j=0;
 	Mat frame;
 	for ( ;; ) {
-	//	printf ("vread: frame %d\n",j);
 		cap >> frame;
 		if(frame.rows==0 || frame.cols==0)
                         break;
-		//printf ("video %d 360 138 %d %d %d\n",j,frame.ptr<uchar>(368)[138*3+0],frame.ptr<uchar>(368)[13*3+1],frame.ptr<uchar>(368)[138*3+2]);
 		video.push_back(frame.clone());
-		//printf ("frame %d 360 138: ",j);
-		//cout << frame.at<uchar>(368,138)[0]<< endl;
-		//printf ("video %d 360 138 %d %d %d\n",j,video[j].ptr<uchar>(368)[138*3+0],video[j].ptr<uchar>(368)[13*3+1],video[j].ptr<uchar>(368)[138*3+2]);
 		j++;
 	}
 	Mat * mp = & video[0];

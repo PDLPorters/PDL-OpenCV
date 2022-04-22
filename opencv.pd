@@ -243,7 +243,7 @@ From the OpenCV documentation:
 ',
 );
 
-pp_def('vread', 
+pp_def('vread',
 	Pars=>'[o] m(l,c,r,f);',
 	OtherPars=>'MatWrapper * mw; char * file',
 	GenericTypes=>[qw/A B S U L F D/ ],
@@ -257,21 +257,17 @@ pp_def('vread',
 				bless($mo,"PDL::OpenCV");
 			}
 			unless (ref ($p) =~ "PDL") {
-				#say "rows ",$mw->rows;
 				$p=PDL->null;
-				#$p=zeroes(sclr ($mw->cols),sclr ($mw->rows),$mw->vector_size();
 			}
 			barf "cannot read file $name!" unless (-f $name);
 			$p->make_physical;
-			#say $mo->get_data;
-			#say "ref to data after " ,$p->get_dataref;
 			_vread_int($p,$$mo,$name);
 			$p;
 		}
 		'
 		),
 	RedoDimsCode=>pp_line_numbers(__LINE__,'
-		PDL_Indx f=vRead($COMP(mw),$COMP(file)); //,$P(m));
+		PDL_Indx f=vRead($COMP(mw),$COMP(file));
 		PDL_Indx ch = cw_channels($COMP(mw));
 		$SIZE(l)=ch;
 		$SIZE(c)=cols($COMP(mw),-1);
@@ -289,7 +285,7 @@ pp_def('vread',
 		$PDL(m)->datatype=getDataCopy($COMP(mw),$P(m),$SIZE(f));
 		if ($SIZE(f)<=0) {barf ("Failed to read video. %s.\n",$COMP(file));}
 	'),
-	);
+);
 
 pp_addpm(<<'EOF');
 sub new_mat {
