@@ -76,7 +76,6 @@ int MatAt (const MatWrapper * mw,const ptrdiff_t j,const ptrdiff_t i,void * rdat
 }
 ";
 
-# getDataCopy
 my $gstr="
 int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 	/*
@@ -128,7 +127,6 @@ int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 }
 ";
 
-# get_pdltype
 my $rstr="
 int get_pdltype(const int cvtype) {
         uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
@@ -142,8 +140,6 @@ int get_pdltype(const int cvtype) {
 }\n
 ";
 
-
-# get_ocvtype
 my $tstr="
 int get_ocvtype(const int datatype,const int planes ) { 
 	switch (datatype) { \n
@@ -154,7 +150,6 @@ int get_ocvtype(const int datatype,const int planes ) {
 ";
 
 my $mstr="
-
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data) {
 	int cvtype = map_types(type,planes);
 	MatWrapper * mw = new MatWrapper;
@@ -188,7 +183,6 @@ print $fm $rstr;
 print $fm "
 #endif\n";
 close $fm;
-
 
 sub gen_code { 
 	my $name =shift;
@@ -282,8 +276,7 @@ print $fh '
 }
 #endif
 
-
-#endif // 
+#endif
 ';
 
 print $fc '
