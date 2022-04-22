@@ -194,18 +194,12 @@ the size of the vector is manipulated and queried. This is useful in e.g. video 
 
 pp_def('create_video',
 	Pars=>'m(l,c,r,f)',
-	OtherPars=>'char *file; char *code; double fps',
+	OtherPars=>'char *file; double fps; char *code',
 	NoPthread=>1,
 	GenericTypes=>[qw/A B S U L F D/ ],
-	PMCode=>pp_line_numbers(__LINE__,'
-		sub create_video {
-			my ($p,$file,$fps,$code) = @_;
-			barf "No input piddle!\n" unless (ref ($p) =~ "PDL") ;
-			barf "No file name given!\n" unless ($file) ;
-			_create_video_int($p,$file,$code,$fps);
-		}
-	'),
 	Code=>pp_line_numbers(__LINE__,'
+	    if (!$COMP(file) || !strlen($COMP(file))) $CROAK("No file name given!");
+	    broadcastloop %{
 		MatWrapper *mw=emptyMW();
 		int bs=PDL->howbig($PDL(m)->datatype);
 		PDL_Indx sz = $SIZE(l)*$SIZE(c)*$SIZE(r)*bs;
@@ -220,6 +214,7 @@ pp_def('create_video',
 		printf("code %s\n",$COMP(code));
 		res = vWrite(mw,$COMP(file),$COMP(code),$COMP(fps));
 		deleteMat(mw);
+	    %}
 	'),
 	Doc=>'
 =for ref

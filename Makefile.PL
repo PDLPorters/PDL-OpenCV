@@ -32,12 +32,13 @@ $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
         'ExtUtils::CppGuess' => '0.21',
         'ExtUtils::MakeMaker' => '6.3002',
         'Alien::cmake3' => '0',
+        'PDL'        => '2.078', # broadcastloop
     },
     TEST_REQUIRES => {
         'Test::More' => '0.88',
     },
     PREREQ_PM => {
-        'PDL'        => '2.4.4',
+        'PDL'        => '2.078', # broadcastloop
     },
     DIR                 => ['cw','Tracking'],
     MYEXTLIB => catfile(qw(cw build libopencv_wrapper$(LIB_EXT))),
