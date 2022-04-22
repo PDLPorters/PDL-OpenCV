@@ -291,7 +291,7 @@ ptrdiff_t vRead(MatWrapper * mw,char * name) {
 	return j;
 }
 
-const char *vDims(char * name, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f) {
+const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f) {
 	string str = string(name);
 	VideoCapture cap;
 	cap.open( str );
@@ -301,6 +301,7 @@ const char *vDims(char * name, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff
 	*r = cap.get(CAP_PROP_FRAME_HEIGHT);
 	Mat frame;
 	cap >> frame;
+	*t = frame.type();
 	*l = frame.channels();
 	return NULL;
 }

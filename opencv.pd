@@ -244,18 +244,19 @@ From the OpenCV documentation:
 );
 
 pp_def('video_dims',
-	Pars=>'[o] dims(n=4);',
+	Pars=>'[o] dims(n=5);',
 	OtherPars=>'char * file',
 	GenericTypes=>[qw/N/],
 	NoPthread=>1,
 	Code=>pp_line_numbers(__LINE__,'
-		PDL_Indx l,c,r,f;
-		const char *ret = vDims($COMP(file), &l, &c, &r, &f);
+		PDL_Indx t,l,c,r,f;
+		const char *ret = vDims($COMP(file), &t, &l, &c, &r, &f);
 		if (ret) $CROAK("Error in vDims: %s", ret);
-		$dims(n=>0)=l;
-		$dims(n=>1)=r;
-		$dims(n=>2)=c;
-		$dims(n=>3)=f;
+		$dims(n=>0)=t;
+		$dims(n=>1)=l;
+		$dims(n=>2)=r;
+		$dims(n=>3)=c;
+		$dims(n=>4)=f;
 	'),
 );
 

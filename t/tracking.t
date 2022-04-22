@@ -16,7 +16,7 @@ sub tapprox {
 }
 
 my $vfile='t/Megamind.avi';
-is video_dims($vfile).'', '[3 528 720 270]', 'video_dims';
+is video_dims($vfile).'', '[16 3 528 720 270]', 'video_dims';
 my $data=vread($vfile);
 create_video($data,'t/test_write.avi',20,'MP4V');
 
