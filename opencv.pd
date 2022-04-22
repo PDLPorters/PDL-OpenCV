@@ -194,7 +194,7 @@ the size of the vector is manipulated and queried. This is useful in e.g. video 
 
 pp_def('create_video',
 	Pars=>'m(l,c,r,f)',
-	OtherPars=>'int bs; char * file; char * code; double fps',
+	OtherPars=>'char *file; char *code; double fps',
 	NoPthread=>1,
 	GenericTypes=>[qw/A B S U L F D/ ],
 	PMCode=>pp_line_numbers(__LINE__,'
@@ -202,22 +202,21 @@ pp_def('create_video',
 			my ($p,$file,$fps,$code) = @_;
 			barf "No input piddle!\n" unless (ref ($p) =~ "PDL") ;
 			barf "No file name given!\n" unless ($file) ;
-			my $size=PDL::Core::howbig($p->type);
-			$p->make_physical;
-			_create_video_int($p,$size,$file,$code,$fps);
+			_create_video_int($p,$file,$code,$fps);
 		}
 	'),
 	Code=>pp_line_numbers(__LINE__,'
 		MatWrapper *mw=emptyMW();
-		PDL_Indx sz = $SIZE(l)*$SIZE(c)*$SIZE(r)*$COMP(bs);
+		int bs=PDL->howbig($PDL(m)->datatype);
+		PDL_Indx sz = $SIZE(l)*$SIZE(c)*$SIZE(r)*bs;
 		printf ("code %s\n",$COMP(code));
 		printf ("frames %"IND_FLAG" ",$SIZE(f));
 		printf ("cols %"IND_FLAG" ",$SIZE(c));
 		printf ("rows %"IND_FLAG" ",$SIZE(r));
 		printf ("planes %"IND_FLAG" ",$SIZE(l));
-		printf ("datatype %d\n",$PDL(m)->datatype);
+		printf ("datatype %d\n",bs);
 		printf ("size %"IND_FLAG"\n",sz);
-		int res = newVector(mw,$SIZE(f),$SIZE(c), $SIZE(r) , $PDL(m)->datatype, $SIZE(l), $P(m), sz);
+		int res = newVector(mw,$SIZE(f),$SIZE(c), $SIZE(r), bs, $SIZE(l), $P(m), sz);
 		printf("code %s\n",$COMP(code));
 		res = vWrite(mw,$COMP(file),$COMP(code),$COMP(fps));
 		deleteMat(mw);
@@ -225,7 +224,7 @@ pp_def('create_video',
 	Doc=>'
 =for ref
 
-Stores a (colour,x,y,frame) piddle in a vector<Mat>. The object is the same as for a single Mat. 
+Stores a (colour,x,y,frame) ndarray in a file.
 
 	$mo=create_video($piddle,file,fps,[code]);
 
