@@ -43,12 +43,8 @@ $mw2->get_data($g);
 ok tapprox($data(,,;-)->mv(2,0), $g(;-)),'getData ch 3';
 ok tapprox($data->mv(2,0), $mw2->get_data->(;-)),'getData2 ch 3';
 
-my $ma=$mw->convert_to(2);
-my $h=$ma->get_data();
-is( $ma->mat_type , short->numval,'data type conversion');
-ok tapprox($data(,,0;-), $h(,;-)),'getData - converted';
 my $b=yvals($slice);
-$ma=PDL::OpenCV->new_mat($b);
+my $ma=PDL::OpenCV->new_mat($b);
 my $haha=$ma->get_data();
 ok tapprox($b(;-), $haha(;-)),'getData - new_mat';
 done_testing();

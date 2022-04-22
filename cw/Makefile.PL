@@ -10,14 +10,6 @@ use PDL::Core qw/howbig/;
 # define generated functions.
 # [ name , \%options , \@arguments
 my @funclist = (
-['convertTo',{method=>1,
-	pre=>'
-		try { out->mat.cols; } catch (...) { out = new MatWrapper; }; 
-		type=get_ocvtype(type,CV_MAT_CN(mw->mat.type()));',
-	post=>'
-		out->vmat=vector<Mat>(1,out->mat);
-		out->dp=out->mat.data;',
-	},'MatWrapper *','out','int','type',],
 ['normalize',{},'MatWrapper *','out','int','start','int','end','int','type'],
 ['channels',{cvret=>'int',method=>1,postxx=>'printf("res channels %d\n",res);',},,],
 ['minMaxIdx',{method=>0,post=>'//printf("c: min %f max %f\n",mymin[0],mymax[0]);'},"double *","mymin","double *","mymax"],
