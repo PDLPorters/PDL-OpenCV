@@ -3,13 +3,11 @@
 use strict;
 pp_bless ("PDL::OpenCV::Tracking");
 pp_addpm ({At=>'Top'},<<"EOPM");
-
 use 5.10.0;
+use strict;
+use warnings;
 
 use PDL::OpenCV;
-
-use Data::Dumper;
-
 
 EOPM
 
@@ -37,12 +35,11 @@ pp_def('init_tracker',
                 $b(j=>3)=box.height;
         }
          ),
-        PMCode => pp_line_numbers(__LINE__,
-<<'EOP'),
+        PMCode => pp_line_numbers(__LINE__, <<'EOP'),
 sub init_tracker{
         my ($class,$img, $tn, $box, $mat) = @_; 
         $box=zeroes(ushort,4) unless ( ref ($box) eq 'PDL');
-        my $mat=PDL::OpenCV->new_mat($img) unless $mat eq 'REF';
+        $mat ||= PDL::OpenCV->new_mat($img);
 	say "init_tracker: mat_at(50,50): ",$mat->mat_at(50,50);
         my $tracker=newT ($tn);
         say "tn $tn box $box";

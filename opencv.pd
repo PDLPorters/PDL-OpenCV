@@ -1,11 +1,12 @@
 use strict;
 pp_addpm ({At=>'Top'},<<'EOPM');
-
 use 5.10.0;
+use strict;
+use warnings;
 
-=title PDL::OpenCV
+=head1 NAME
 
-This module interfaces perl/PDL and OpenCV. 
+PDL::OpenCV - This module interfaces perl/PDL and OpenCV.
 
 =head1 SYNOPSIS
 
@@ -24,7 +25,7 @@ This module interfaces perl/PDL and OpenCV.
 
 Use PDL::OpenCV to call OpenCV functions on your data using perl/PDL. This module
 is the glue between the two tools. OpenCV nad perl's C++ interface are not 
-compatible, a C layer is introduced and needs to be built separately, sse INSTALLATION.
+compatible, a C layer is introduced and needs to be built separately, see INSTALLATION.
 
 =head1 Functions
 
@@ -217,20 +218,16 @@ pp_def('create_video',
 	PMCode=>pp_line_numbers(__LINE__,'
 		sub create_video {
 			my ($mo)=shift;
+			my $p;
 			if (ref $mo ne q/PDL::OpenCV/) {
 				$p=$mo;
 				$mo=PDL::OpenCV::newMW();
 				bless($mo,"PDL::OpenCV");
 			} else { $p=shift; }
 			my ($file,$fps,$code) = @_;
-			unless ($mode) {
-				$mode=-1;
-			} else { 
-				$mode=pack("cccc",$mode);
-			}
 			barf "No input piddle!\n" unless (ref ($p) =~ "PDL") ;
 			barf "No file name given!\n" unless ($file) ;
-			$size=PDL::Core::howbig($p->type);
+			my $size=PDL::Core::howbig($p->type);
 			$p->make_physical;
 			_create_video_int($p,$$mo,$size,$file,$code,$fps);
 		}
