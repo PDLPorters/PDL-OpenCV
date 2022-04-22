@@ -289,15 +289,21 @@ ptrdiff_t vRead(MatWrapper * mw,char * name) {
 	mw->mat=video[0];
 	mw->dp=mp->data;
 	int i=0;
-	printf ("video %d 360 138 %d %d %d\n",i,video[i].ptr<uchar>(368)[138*3+0],video[i].ptr<uchar>(368)[13*3+1],video[i].ptr<uchar>(368)[138*3+2]);
-	/*
-	printf ("vread: frame %d\n",j);
-	for (ptrdiff_t i =0 ; i<j; i++) {
-		printf ("video %d 360 138 %d %d %d\n",i,video[i].ptr<uchar>(368)[138*3+0],video[i].ptr<uchar>(368)[13*3+1],video[i].ptr<uchar>(368)[138*3+2]);
-		//printf ("mw %d 360 138 %d %d %d\n",i,mw->vmat[i].at<uchar>(368,138));
-	}
-	*/
 	return j;
+}
+
+const char *vDims(char * name, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f) {
+	string str = string(name);
+	VideoCapture cap;
+	cap.open( str );
+        if (!cap.isOpened()) return "Error opening video capture";
+	*f = cap.get(CAP_PROP_FRAME_COUNT);
+	*c = cap.get(CAP_PROP_FRAME_WIDTH);
+	*r = cap.get(CAP_PROP_FRAME_HEIGHT);
+	Mat frame;
+	cap >> frame;
+	*l = frame.channels();
+	return NULL;
 }
 
 ptrdiff_t vectorSize (MatWrapper * mw, ptrdiff_t vl) {
