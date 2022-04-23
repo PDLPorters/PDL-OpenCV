@@ -19,35 +19,37 @@ pp_addhdr << 'EOH';
 EOH
 
 pp_def('init_tracker',
-        Pars=>'ushort [o] b(j=4);',
-        OtherPars => 'TrackerWrapper *  twi; MatWrapper * mwi; ' ,#,struct MatWrapper * mw',
+        Pars=>'in(dim1,dim2,dim3); ushort [o] b(j=4);',
+        OtherPars => 'TrackerWrapper *twi',
         Code=>pp_line_numbers(__LINE__,
         q{
+                pdl *pid = $PDL(in);
+                PDL_Indx l = $SIZE(dim1), c = $SIZE(dim2), r = $SIZE(dim3);
+                if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
+                MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
+                if (!mw) $CROAK("newMat returned null.");
                 bBox box;
                 box.x=$b(j=>0);
                 box.y=$b(j=>1);
                 box.width=$b(j=>2);
                 box.height=$b(j=>3);
-                int res=initTracker($COMP(twi),$COMP(mwi),&box);
+                int res=initTracker($COMP(twi),mw,&box);
                 $b(j=>0)=box.x;
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
                 $b(j=>3)=box.height;
+                deleteMat(mw);
         }
          ),
         PMCode => pp_line_numbers(__LINE__, <<'EOP'),
 sub init_tracker{
-        my ($class,$img, $tn, $box, $mat) = @_; 
+        my ($class,$img, $tn, $box) = @_;
         $box=PDL->null unless UNIVERSAL::isa($box, 'PDL');
-        $mat ||= PDL::OpenCV->new_mat($img);
-	say "init_tracker: mat_at(50,50): ",$mat->mat_at(50,50);
         my $tracker=newT ($tn);
         say "tn $tn box $box";
-        _init_tracker_int($box,$$tracker,$$mat);
-        #say "tracker pointer $$tracker, mat pointer $$mat, box $box";
+        _init_tracker_int($img,$box,$$tracker);
 	bless $tracker,$class;
-	say "init_tracker: mat_at(50,50): ",$mat->mat_at(50,50);
-        return ($tracker,$box,$mat);
+        ($tracker,$box);
 }
 EOP
         Doc=><<'EOD',

@@ -22,13 +22,12 @@ create_video($data,'t/test_write.avi',20,'MP4V');
 
 note $data->info;
 my $bx=pdl(qw/169 88 192 257/);
-my ($tr,$box,$mw)=PDL::OpenCV::Tracking->init_tracker($data(,,,1,;-),2,$bx) ; #);
+my ($tr,$box)=PDL::OpenCV::Tracking->init_tracker($data(,,,1,;-),2,$bx);
 
 note "box $box";
-note "at (get_data",$mw->get_data()->(,4,4);
 
 for my $x (2..$data->dim(3)-1)  {
-	($box,$mw) = $tr->update_tracker($data(,,,$x;-));
+	($box,my $mw) = $tr->update_tracker($data(,,,$x;-));
 	if ($x<98 || $x > 153 && $x<200) {
 		is(all ($box) >0,1,"tracker found box $x.");
 	} else {
