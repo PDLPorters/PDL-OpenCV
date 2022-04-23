@@ -73,34 +73,32 @@ EOD
 );
 
 pp_def('update_tracker',
-        Pars=>'ushort [o] b(j=4);',
-        OtherPars => "TrackerWrapper * twi; MatWrapper * mwi",
+        Pars=>'in(dim1,dim2,dim3); ushort [o] b(j=4);',
+        OtherPars => 'TrackerWrapper *twi',
         Code =>pp_line_numbers(__LINE__,
         q{
-                //printf ("twi %d \n",$COMP(twi));
+                pdl *pid = $PDL(in);
+                PDL_Indx l = $SIZE(dim1), c = $SIZE(dim2), r = $SIZE(dim3);
+                if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
+                MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
+                if (!mw) $CROAK("newMat returned null.");
                 struct bBox  box;
-                MatWrapper * mw = $COMP(mwi);
                 TrackerWrapper * tw = $COMP(twi);
                 updateTracker(tw,mw,& box);
-		//printf ("after update box %d %d \n",box.x ,box.y);
                 $b(j=>0)=box.x;
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
                 $b(j=>3)=box.height;
-                //return;
+                deleteMat(mw);
         },
         ),
         PMCode => pp_line_numbers(__LINE__,
 <<'EOPM',
         sub update_tracker {
                 my ($tw,$mat)=@_;
-		my $mw=PDL::OpenCV->new_mat($mat);
-		#say "update tracker: at old/new: ",($mat->at(20,40),$mw->mat_at(20,40));
 		my $box=PDL->null;
-                _update_tracker_int($box,$$tw,$$mw);
-		#say "update tracker: at old/new: ",($mat->at(20,40),$mw->mat_at(20,40));
-		say $box->info,max $box;
-                return ($box,$mw);
+                _update_tracker_int($mat,$box,$$tw);
+                $box;
         }
 EOPM
 ),

@@ -27,7 +27,7 @@ my ($tr,$box)=PDL::OpenCV::Tracking->init_tracker($data(,,,1,;-),2,$bx);
 note "box $box";
 
 for my $x (2..$data->dim(3)-1)  {
-	($box,my $mw) = $tr->update_tracker($data(,,,$x;-));
+	$box = $tr->update_tracker($data(,,,$x;-));
 	if ($x<98 || $x > 153 && $x<200) {
 		is(all ($box) >0,1,"tracker found box $x.");
 	} else {

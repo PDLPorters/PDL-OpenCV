@@ -16,7 +16,6 @@ PDL::OpenCV - This module interfaces perl/PDL and OpenCV.
 
 	... 
 
-	$mo=new_mat($data);
 	$mw->imshow();
 	...
 	$result=$mw->get_data;
