@@ -19,7 +19,7 @@ pp_addhdr << 'EOH';
 EOH
 
 pp_def('init_tracker',
-        Pars=>'[o] b(j=4);',
+        Pars=>'ushort [o] b(j=4);',
         OtherPars => 'TrackerWrapper *  twi; MatWrapper * mwi; ' ,#,struct MatWrapper * mw',
         Code=>pp_line_numbers(__LINE__,
         q{
@@ -38,7 +38,7 @@ pp_def('init_tracker',
         PMCode => pp_line_numbers(__LINE__, <<'EOP'),
 sub init_tracker{
         my ($class,$img, $tn, $box, $mat) = @_; 
-        $box=zeroes(ushort,4) unless ( ref ($box) eq 'PDL');
+        $box=PDL->null unless UNIVERSAL::isa($box, 'PDL');
         $mat ||= PDL::OpenCV->new_mat($img);
 	say "init_tracker: mat_at(50,50): ",$mat->mat_at(50,50);
         my $tracker=newT ($tn);
