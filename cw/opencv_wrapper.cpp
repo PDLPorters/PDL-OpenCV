@@ -317,8 +317,8 @@ int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 		roi=selectROI("ud",frame,true,false);
 		destroyWindow("ud");
 	}
-	Tr->tracker->init(frame,roi );
-	//printf("ROI x %d y %d width %d height %d\n",roi.x,roi.y,roi.width,roi.height);
+	Tr->tracker->init(frame,roi);
+	printf("initTracker ROI x=%d y=%d width=%d height=%d frame c=%d r=%d\n",roi.x,roi.y,roi.width,roi.height,frame.cols,frame.rows); fflush(stdout);
 	//printf ("at 48 48 (init_tracker %f\n",frame->mat.at<float>(48,48));
 	box->x=roi.x;
 	box->y=roi.y;
@@ -339,6 +339,7 @@ int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	minMaxIdx(mw->mat, & mymin,& mymax);
 	double scale = 256/mymax;
 	mw->mat.convertTo(frame,CV_8UC3,scale);
+	printf ("updateTracker matrix c=%d r=%d\n", frame.cols, frame.rows); fflush(stdout);
 	if(frame.channels()==1) cvtColor(frame,frame,COLOR_GRAY2RGB);
 	//printf ("ud: min/max %f %f \n",mymin,mymax);
 	/*
@@ -355,7 +356,6 @@ int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	int res = Tr->tracker->update(frame,box );
 	//printf ("upaate: found? %d\n",res);
 	//printf ("upaate: type? %d\n",frame.type());
-
 	rectangle( frame, box, Scalar( 255, 0, 0 ), 2, 1 );
 	imshow("ud",frame);
 	mw->mat=frame;
