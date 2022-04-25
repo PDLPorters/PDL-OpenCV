@@ -248,11 +248,11 @@ print $fh '
 #ifndef GENERATED_CVWRAPPER_H
 #define GENERATED_CVWRAPPER_H
 
+#include "opencv_wrapper.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "opencv_wrapper.h"
 
 int get_pdltype(const int cvtype);
 int get_ocvtype(const int datatype,const int planes);
