@@ -7,7 +7,7 @@ use File::Spec::Functions;
 my $package = ["tracking.pd",'Tracking','PDL::OpenCV::Tracking'];
 my %hash = pdlpp_stdargs($package);
 $hash{VERSION_FROM} = '../opencv.pd';
-$hash{INC} .= ' -I../cw';
+$hash{INC} .= ' -I..';
 our $libs;
 $hash{LIBS}[0] .= $libs;
 
