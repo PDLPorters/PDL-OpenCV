@@ -6,9 +6,7 @@ use File::Spec::Functions;
 
 my $package = ["tracking.pd",'Tracking','PDL::OpenCV::Tracking'];
 my %hash = pdlpp_stdargs($package);
-#$hash{OBJECT} .= ' additional_Ccode$(OBJ_EXT) ';
-$hash{clean}->{FILES} .= ' todelete_Ccode$(OBJ_EXT) ';
-$hash{'VERSION_FROM'} = '../opencv.pd';
+$hash{VERSION_FROM} = '../opencv.pd';
 $hash{INC} .= ' -I../cw';
 our $libs;
 $hash{LIBS}[0] .= $libs;
