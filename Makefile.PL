@@ -53,6 +53,7 @@ WriteMakefile(%hash);
 sub MY::postamble {
   my ($self) = @_;
   pdlpp_postamble($package) .
+    join(' : ', @cw_objs) . "\n" . # sequence so no parallel-cd+build
     sprintf "\n".'$(MYEXTLIB) : %s'."\n\t".$self->cd('cw', '$(MAKE) $(PASSTHRU)')."\n",
       catfile(qw(cw $(FIRST_MAKEFILE)));
 }
