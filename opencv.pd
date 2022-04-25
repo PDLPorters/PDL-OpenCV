@@ -63,15 +63,8 @@ pp_addpm ({At=>'Bot'},<<'EOPM');
 =head1 Known issues
 
 The number of functions in OpenCV is large, if you do not encounter what is needed,
-there are fairly easy ways to create the wrappers. Look at ufunc/ofunc im OpenCV/opencv.pd
-and gen_code in cw/MakeFile.PL. Please file a report if you do so.
-
-There is a make_phsyical call before pointing the data to OpenCV. Both OpenCV
-and PDL use data flow, I have not investigated this, behaviour is not defined
-yet. 
-
-The broadcasting behaviour is also not yet defined. Some things may work,
-some not.
+there are fairly easy ways to create the wrappers. Look at ufunc/ofunc in opencv.pd
+and gen_code in genwrap.pl. Please file a report if you do so.
 
 =cut
 EOPM
