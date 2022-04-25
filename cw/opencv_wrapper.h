@@ -2,6 +2,15 @@
 #define OPENCV_WRAPPER_H
 
 #ifdef __cplusplus
+#include <vector>
+#include <opencv2/opencv.hpp>
+struct MatWrapper
+{
+        cv::Mat mat;
+        void * dp;
+        std::vector<cv::Mat> vmat;
+};
+
 extern "C" {
 #endif
 

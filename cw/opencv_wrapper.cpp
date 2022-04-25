@@ -4,11 +4,11 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/core/utility.hpp>
-#include "opencv_wrapper.h"
 #include <opencv2/videoio.hpp>
 
-#include "maptypes.h"
+#include "opencv_wrapper.h"
 #include "generated_cvwrapper.h"
+
 using namespace std;
 using namespace cv;
 /* use C name mangling */
@@ -20,7 +20,6 @@ struct TrackerWrapper
 {
 	cv::Ptr<cv::Tracker> tracker; 
 } ;
-
 
 TrackerWrapper * newTracker(int trackerNumber) {
 	string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
@@ -109,7 +108,6 @@ MatWrapper * emptyMW () {
 }
 	
 MatWrapper * emptyMat (const ptrdiff_t cols=1, const ptrdiff_t rows=1, const int type=CV_32FC1 ) {
-//int emptyMat (MatWrapper * mw,const int cols, const int rows, const int type ) {
 	MatWrapper * mw = new MatWrapper;
 	//printf ("rows %d cols %d\n",rows,cols);
 	//printf ("rs %d cs %d\n",rows,cols);
@@ -394,6 +392,3 @@ int cv_init() {
 #ifdef __cplusplus
 }
 #endif
-
-
-

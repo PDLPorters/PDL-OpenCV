@@ -155,24 +155,6 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 }\n
 ";
 
-open my $fm, ">maptypes.h";
-print $fm "
-#ifndef MAP_DATATYPES_H
-#define MAP_DATATYPES_H
-
-#include <vector>
-struct MatWrapper
-{
-        cv::Mat mat;
-        void * dp;
-	std::vector<cv::Mat> vmat;
-};
-
-";
-print $fm "
-#endif\n";
-close $fm;
-
 sub gen_code { 
 	my $name =shift;
 	my $opt =shift;
@@ -235,7 +217,6 @@ using namespace cv;
 extern "C" {
 #endif
 
-#include "maptypes.h"
 ';
 
 print $fc $tstr;
@@ -286,7 +267,7 @@ my $lib = catfile(qw(build libopencv_wrapper$(LIB_EXT)));
 WriteMakefile(
     NAME                => 'PDL::OpenCV::CWrapper',
     SKIP   => [qw(all static dynamic install)],
-    clean => {FILES => 'build generated_cvwrapper.h generated_cvwrapper.cpp maptypes.h'},
+    clean => {FILES => 'build generated_cvwrapper.h generated_cvwrapper.cpp'},
     depend => {$lib=>join(' ', glob '*.{cpp,h}')},
     NO_MYMETA=>1,
 );
