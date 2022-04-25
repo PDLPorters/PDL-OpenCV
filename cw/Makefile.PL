@@ -3,7 +3,7 @@ use warnings;
 use 5.010;
 use ExtUtils::MakeMaker;
 use File::Spec::Functions;
-use Alien::cmake3;
+use ExtUtils::CppGuess;
 use PDL::Types;
 use PDL::Core qw/howbig/;
 
@@ -263,31 +263,26 @@ print $fc '
 close $fh;
 close $fc;
 
-my $lib = catfile(qw(build libopencv_wrapper$(LIB_EXT)));
+my $lib = q(libopencv_wrapper$(LIB_EXT));
+our $inc;
 WriteMakefile(
     NAME                => 'PDL::OpenCV::CWrapper',
     SKIP   => [qw(all static dynamic install)],
     clean => {FILES => 'build generated_cvwrapper.h generated_cvwrapper.cpp'},
+    OBJECT => 'generated_cvwrapper$(OBJ_EXT) opencv_wrapper$(OBJ_EXT)',
     depend => {$lib=>join(' ', glob '*.{cpp,h}')},
+    INC => $inc,
+    ExtUtils::CppGuess->new->makemaker_options,
     NO_MYMETA=>1,
 );
 
 sub MY::top_targets {
   my ($self) = @_;
-  sprintf '
+  '
 all :: static
 
 pure_all :: static
 
-static :: %1$s
-
-%1$s :
-	$(MKPATH) build
-	%2$s
-	%3$s
-
-',
-  $lib,
-  $self->cd('build', catfile(Alien::cmake3->bin_dir, Alien::cmake3->exe).' ..'),
-  $self->cd('build', '$(MAKE) $(PASSTHRU)');
+static :: $(OBJECT)
+';
 }

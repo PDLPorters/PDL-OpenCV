@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
-use Config;
+use File::Spec::Functions;
 
 my $package = ["tracking.pd",'Tracking','PDL::OpenCV::Tracking'];
 my %hash = pdlpp_stdargs($package);
@@ -13,8 +13,8 @@ $hash{INC} .= ' -I../cw';
 our $libs;
 $hash{LIBS}[0] .= $libs;
 
-use Config;
-$hash{LDFROM} .= ' $(OBJECT) ../cw/build/libopencv_wrapper'.$Config{lib_ext};
+our @cw_objs;
+$hash{LDFROM} .= join ' ', '', '$(OBJECT)', map catfile(updir, $_), @cw_objs;
 $hash{NO_MYMETA} = 1;
 
 use ExtUtils::CppGuess;

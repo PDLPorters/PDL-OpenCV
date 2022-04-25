@@ -14,6 +14,10 @@ our $libs = (
   eval {require ExtUtils::PkgConfig; join ' ', map ExtUtils::PkgConfig->libs($_), @pkgs} ||
   `pkg-config @pkgs --libs`);
 $hash{LIBS}[0] .= $libs;
+our $inc = (
+  eval {require PkgConfig; join ' ', map PkgConfig->find($_)->get_cflags, @pkgs} ||
+  eval {require ExtUtils::PkgConfig; join ' ', map ExtUtils::PkgConfig->cflags($_), @pkgs} ||
+  `pkg-config @pkgs --cflags`);
 
 $hash{INC} .= ' -Icw';
 
@@ -24,6 +28,8 @@ use ExtUtils::CppGuess;
 my %cpp_opts = ExtUtils::CppGuess->new->makemaker_options;
 $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
 
+our @cw_objs = map catfile(qw(cw), $_.'$(OBJ_EXT)'), qw(generated_cvwrapper opencv_wrapper);
+
 %hash = (%hash,
     NAME                => 'PDL::OpenCV',
     AUTHOR              => 'Ingo Schmid',
@@ -31,7 +37,6 @@ $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
     CONFIGURE_REQUIRES => {
         'ExtUtils::CppGuess' => '0.21',
         'ExtUtils::MakeMaker' => '6.3002',
-        'Alien::cmake3' => '0',
         'PDL'        => '2.078', # broadcastloop
     },
     TEST_REQUIRES => {
@@ -41,7 +46,7 @@ $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
         'PDL'        => '2.078', # broadcastloop
     },
     DIR                 => ['cw','Tracking'],
-    MYEXTLIB => catfile(qw(cw build libopencv_wrapper$(LIB_EXT))),
+    MYEXTLIB => join(' ', @cw_objs),
 );
 WriteMakefile(%hash);
 
