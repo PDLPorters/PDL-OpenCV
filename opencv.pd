@@ -124,33 +124,6 @@ mat_DESTROY(mw)
 
 ');
 
-pp_def('vector_size',
-	Pars=>'indx [o] vs();',
-	OtherPars=>'MatWrapper * mw;PDL_Indx s',
-	PMCode=>pp_line_numbers(__LINE__,'
-		sub vector_size {
-			my ($mw,$size) = @_;
-			$size = -1 unless $size>=0;
-			my $p=PDL->null;
-			_vector_size_int($p,$$mw,$size);
-			$p;
-		}
-	'),
-	Code=>pp_line_numbers(__LINE__,'
-		$vs()=vectorSize($COMP(mw),$COMP(s));
-	'),
-	Doc=>'
-
-=head2 vector_size
-
-OpenCV uses std::vector<Mat> to store e.g. videos. The MatWrapper struct suports this. Using this method, 
-the size of the vector is manipulated and queried. This is useful in e.g. video I/O or per frames processing.
-
-=cut	
-
-	',
-);
-
 pp_def('create_video',
 	Pars=>'m(l,c,r,f)',
 	OtherPars=>'char *file; double fps; char *code',

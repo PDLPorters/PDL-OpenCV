@@ -394,12 +394,6 @@ const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff
 	return NULL;
 }
 
-ptrdiff_t vectorSize (MatWrapper * mw, ptrdiff_t vl) {
-	if (vl>=0) mw->vmat.reserve(vl);
-	try {vl=mw->vmat.size(); } catch (...) { }
-	return  vl;
-}
-
 int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 	Rect roi;
 	Mat frame;
@@ -522,7 +516,6 @@ const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff
 int vWrite(MatWrapper * mw,char * name, char * code, double fps) ;
 
 int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data,const ptrdiff_t size);
-ptrdiff_t vectorSize (MatWrapper * mw, ptrdiff_t size) ;
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();
 int deleteMat(MatWrapper * wrapper);
