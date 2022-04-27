@@ -16,10 +16,9 @@ using namespace cv;
 extern "C" {
 #endif
 
-struct TrackerWrapper
-{
+struct TrackerWrapper {
 	cv::Ptr<cv::Tracker> tracker; 
-} ;
+};
 
 TrackerWrapper * newTracker(int trackerNumber) {
 	string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
@@ -55,49 +54,10 @@ int deleteTracker(TrackerWrapper * wrapper) {
 	return 1;
 }
 
-/* struct MatWrapper {
-	cv::Mat mat;
-	void * dp;
-};
-*/
 int deleteMat(MatWrapper * wrapper) {
 	delete wrapper;
 	return 1;
 }
-/*
-void MatSize (const MatWrapper * Mat, int * cols, int * rows)
-{
-	cols = & Mat->mat.cols;
-	rows = & Mat->mat.rows;
-	printf ("cols %d\n",cols[0]);
-	printf ("cols %d\n",(*cols));
-}
-*/
-
-/*
-void * MatAt (const MatWrapper * mw,const ptrdiff_t y,const ptrdiff_t x) {
-	int type=mw->mat.type();
-	printf("MatAt: data pointer %p\n",mw->mat.data);
-	//printf("MatAt: data tyep %d\n",type);
-	uchar depth = CV_MAT_DEPTH(type); //	type & CV_MAT_DEPTH_MASK;
-	uchar chans = 1 + (type >> CV_CN_SHIFT);
-	printf ("depth %d chans %d\n",depth,chans);
-	Mat frame=mw->mat;
-	void * f;
-	switch ( depth ) {
-		f = & frame.data[frame.channels()*(frame.cols*y + x) + 0];
-		case CV_8S:  f =mw->mat.at<char*>(x,y); break;
-		case CV_8U:  f =mw->mat.at<unsigned char*>(x,y); break;
-		case CV_16U: f =mw->mat.at<unsigned short>(x,y); break;
-		case CV_16S: f =mw->mat.at<short>(x,y); break;
-		case CV_32S: f =mw->mat.at<long>(x,y); break;
-		case CV_32F: f =mw->mat.at<float>(x,y); break;
-		case CV_64F: f =mw->mat.at<double>(x,y); break;
-	}
-	printf("MatAt: f %f\n",f[1]);
-	return f;
-}
-*/
 
 MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
@@ -378,14 +338,6 @@ int showTracker (MatWrapper * mw, bBox * box) {
 }
 
 int cv_init() {
-	/*
-	cvT.u8c3 = CV_8UC3;
-	cvT.u8c1 = CV_8UC1;
-	cvT.f32c3 = CV_32FC3;
-	cvT.f32c1 = CV_32FC1;
-	printf ("cvt.f32c3 %d.\n",cvT.f32c3);
-	printf ("tw_init done.\n");
-	*/
 	return 1;
 }
 
