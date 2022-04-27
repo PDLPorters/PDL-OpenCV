@@ -17,7 +17,7 @@ my $package = ["opencv.pd",'OpenCV','PDL::OpenCV'];
 my %hash = pdlpp_stdargs($package);
 $hash{clean}{FILES} .= ' opencv_wrapper.h opencv_wrapper.cpp';
 $hash{LIBS}[0] .= $libs;
-$hash{INC} .= " -I. $inc";
+$hash{INC} .= " $inc";
 
 use ExtUtils::CppGuess;
 my %cpp_opts = ExtUtils::CppGuess->new->makemaker_options;
