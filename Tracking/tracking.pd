@@ -73,8 +73,7 @@ EOD
 pp_def('update_tracker',
         Pars=>'in(dim1,dim2,dim3); ushort [o] b(j=4);',
         OtherPars => 'TrackerWrapper *twi',
-        Code =>pp_line_numbers(__LINE__,
-        q{
+        Code =>pp_line_numbers(__LINE__, q{
                 pdl *pid = $PDL(in);
                 PDL_Indx l = $SIZE(dim1), c = $SIZE(dim2), r = $SIZE(dim3);
                 if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
@@ -88,14 +87,12 @@ pp_def('update_tracker',
                 $b(j=>2)=box.width;
                 $b(j=>3)=box.height;
                 deleteMat(mw);
-        },
-        ),
+        }),
         PMCode => pp_line_numbers(__LINE__,
 <<'EOPM',
         sub update_tracker {
                 my ($tw,$mat)=@_;
-		my $box=PDL->null;
-                _update_tracker_int($mat,$box,$$tw);
+                _update_tracker_int($mat,my $box=PDL->null,$$tw);
                 $box;
         }
 EOPM
