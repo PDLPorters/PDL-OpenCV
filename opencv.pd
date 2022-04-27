@@ -456,77 +456,27 @@ sub protect_chars {
 }
 
 sub ofunc {
-    my ($name,$func,$overload,$doc,%extra) = @_;
+    my ($name,$func,$overload,$addv,$doc,%extra) = @_;
     my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
     my $funcovp = protect_chars $funcov;
     $func = $func->[0] if ref $func eq 'ARRAY';
-    my $codestr = '
-		//printf ("ofunc: mw %p\n",$COMP(mw)); 
-		int res;
-		res = '.$func.'($COMP(mw));
-		//printf ("res %d\n",res);
-		$b() = res;' ;
+    my $codestr = pp_line_numbers __LINE__, sprintf <<'EOF', $func, $addv ? ',$COMP(v)' : '';
+		$b() = %s($COMP(mw)%s);
+EOF
+    my $args = $addv ? ',$v' : '';
     pp_def($name,
 	   Pars => '[o]b()',
-	   OtherPars=>'MatWrapper * mw; ',
-	   GenericTypes=>['N','D'],
-	   PMCode => pp_line_numbers(__LINE__, qq{
-		   sub $name {
-			   my (\$self) = \@\_;
-			   my \$res=zeroes(ushort,1);
-			   _$name\_int(\$res,\$\$self,);
-			   say "res \$res?";
-			   \$res;
-		   }
-	   },),
-	   Code => pp_line_numbers(__LINE__, qq{
-	           $codestr
-	   }),
-	   %extra,
-	   Doc => << "EOD");
-=for ref
-
-$doc
-
-=for example
-
-   \$y = $funcov () ;
-   \$x->inplace->$name;  # modify \$x inplace
-
-It can be made to work inplace with the C<\$x-E<gt>inplace> syntax.
-This function is used to overload the unary C<$funcovp> operator/function.
-EOD
-}
-
-sub ufunc {
-    my ($name,$func,$overload,$doc,%extra) = @_;
-    my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
-    my $funcovp = protect_chars $funcov;
-    $func = $func->[0] if ref $func eq 'ARRAY';
-    my $codestr = '
-		//printf ("ufunc: mw %p\n",$COMP(mw));
-		int res;
-		res = '.$func.'($COMP(mw),$COMP(v));
-		//printf ("res %d\n",res);
-		$b() = res;' ;
-    pp_def($name,
-	   Pars => '[o]b()',
-	   OtherPars=>'MatWrapper * mw; PDL_Indx v',
+	   OtherPars=>'MatWrapper * mw'.($addv ? '; PDL_Indx v' : ''),
 	   GenericTypes=>['N'],
-	   PMCode => pp_line_numbers(__LINE__, qq{
+	   PMCode => pp_line_numbers(__LINE__-1, qq{
 		   sub $name {
-			   my (\$self,\$v) = \@\_;
-			   \$v = -1 unless defined \$v;
+			   my (\$self,\$v) = \@_; \$v //= -1;
 			   my \$res=zeroes(ushort,1);
-			   #say "$name calling now (\$v)";
-			   _$name\_int(\$res,\$\$self,\$v);
-			   #say "res \$res?";
+			   _${name}_int(\$res,\$\$self$args);
 			   \$res;
 		   }
 	   },),
-	   Code => pp_line_numbers(__LINE__, qq{
-	           $codestr
-	   }),
+	   Code => $codestr,
 	   %extra,
 	   Doc => << "EOD");
 =for ref
@@ -544,7 +494,7 @@ EOD
 }
 
 # generate functions.
-map {ufunc($_,$_,0,"returns and optionally sets $_ of the Mat object. \n");} (qw/rows cols / );
-map {ofunc($_,$_,0,"returns $_ of the Mat object. \n");} (qw/cw_channels/ );
+map {ofunc($_,$_,0,1,"returns and optionally sets $_ of the Mat object. \n");} (qw/rows cols / );
+map {ofunc($_,$_,0,0,"returns $_ of the Mat object. \n");} (qw/cw_channels/ );
 
 pp_done();
