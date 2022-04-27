@@ -349,11 +349,6 @@ EOD
 
 	);
 
-pp_add_boot (<< 'EOB');
-	cv_init();
-	//printf ("init done (autoinclude)\n");
-EOB
-
 pp_addpm(<<'EOPM');
 sub data_ptr {
 	my $mw=shift;

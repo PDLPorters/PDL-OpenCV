@@ -265,43 +265,6 @@ MatWrapper * emptyMW () {
 	return mw;
 }
 
-MatWrapper * emptyMat (const ptrdiff_t cols=1, const ptrdiff_t rows=1, const int type=CV_32FC1 ) {
-	MatWrapper * mw = new MatWrapper;
-	//printf ("rows %d cols %d\n",rows,cols);
-	//printf ("rs %d cs %d\n",rows,cols);
-	Mat frame;
-	try {
-		frame=Mat(rows, cols,CV_32FC1);
-	} catch (...) { printf ("Mat could not be created.\n"); }
-	//printf ("rows %d cols %d\n",frame.rows,frame.cols);
-	//printf ("rows %d cols %d\n",frame.rows,frame.cols);
-	//printf("empty mat %d\n", MatAt (mw,32,48) );
-	mw->mat=  frame;
-	mw->vmat=vector<Mat>(1,frame);
-	//printf("empty mat %d\n", MatAt (mw,32,48) );
-	//printf ("mw -> rows %d cols %d\n",mw->mat.rows,mw->mat.cols);
-	return mw;
-}
-
-int newMat2 (MatWrapper * mw,const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
-	cv::Mat frame,norm;
-	//printf ("data type %d\n",type);
-	if ((type == CV_32FC1) || (type == CV_32FC3)) {
-		float * fdata = (float * ) data;
-		frame=Mat (rows, cols, type, fdata);
-		//printf("set float data.\n");
-	}
-	//frame.data =(uchar*) data;
-	normalize(frame,norm, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
-	//printf("norm.\n");
-	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
-	mw->mat =  norm;
-	mw->vmat =  vector<Mat>(1,norm);
-	mw->dp=norm.data;
-	//printf("assign. type %d\n",norm.type());
-	return  1;
-}
-
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
 	cv::Mat frame,norm;
 	int cvtype = get_ocvtype(type,planes);
@@ -347,7 +310,6 @@ void * getData (MatWrapper * frame) {
 	return frame->mat.data;
 }
 
-
 ptrdiff_t cols (MatWrapper * mw, ptrdiff_t cols) {
 	//printf ("cols(): %d, %d\n",mw->mat.cols,cols);
 	if ( cols>=0 ) { mw->mat.cols=cols; }
@@ -371,20 +333,6 @@ int cwtype (MatWrapper * mw, int * pdltype) {
 		pdltype[0]=get_pdltype(mw->mat.type());
 	}
 	return mw->mat.type();
-}
-
-int planes (MatWrapper * mw) {
-	return mw->mat.channels();
-}
-
-int setMat (MatWrapper * mw, void * data, const int type, const ptrdiff_t rows, const ptrdiff_t cols ){
-	mw->mat.rows = rows;
-	mw->mat.cols = cols;
-	if (type >=0 && type != mw->mat.type())  {
-		mw->mat.convertTo(mw->mat,type);
-	}
-	mw->mat.data=(uchar *)data;
-	return 1;
 }
 
 int vWrite(MatWrapper * mw,char * name, char * code, double fps) {
@@ -529,10 +477,6 @@ int showTracker (MatWrapper * mw, bBox * box) {
 	rectangle( mw->mat, roi, Scalar( 255, 0, 0 ), 2, 1 );
 	return 1;
 }
-
-int cv_init() {
-	return 1;
-}
 EOF
 
 print $fc $tstr;
@@ -561,7 +505,6 @@ extern "C" {
 
 #include <stddef.h>
 
-int  cv_init();
 typedef struct TrackerWrapper TrackerWrapper;
 struct TrackerWrapper * newTracker (int tracker_type);
 int  deleteTracker (struct TrackerWrapper *);
@@ -574,7 +517,6 @@ typedef struct MatWrapper  MatWrapper ;
 ptrdiff_t rows (MatWrapper * mw, ptrdiff_t rows) ;
 ptrdiff_t cols (MatWrapper * mw, ptrdiff_t cols) ;
 int cwtype (MatWrapper * mw, int * pdltype) ;
-int planes (MatWrapper * mw ) ;
 ptrdiff_t vRead(MatWrapper * mw,char * name);
 const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f);
 int vWrite(MatWrapper * mw,char * name, char * code, double fps) ;
@@ -586,7 +528,6 @@ MatWrapper * emptyMW ();
 int deleteMat(MatWrapper * wrapper);
 void * getData (MatWrapper * Mat);
 int getDataCopy(const MatWrapper * frame,void * data, ptrdiff_t vl);
-int setMat (MatWrapper * Mat, void * data, const int type, const ptrdiff_t rows, const ptrdiff_t cols);
 int  MatAt (const MatWrapper * mw,const ptrdiff_t x,const ptrdiff_t y,void * data);
 
 int initTracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
