@@ -113,7 +113,6 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 	$mstr_l;
         mw->mat = frame;
 	mw->vmat = vector<Mat>(1,frame);
-        mw->dp=frame.data;
         //printf (\"mw->at 0 0 (newMat) %f\\n\",mw->mat.at<float>(0,0));
         return  mw;
 }\n
@@ -227,7 +226,6 @@ int deleteMat(MatWrapper * wrapper) {
 MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
 	mw->mat=Mat();
-	mw->dp=mw->mat.data;
 	mw->vmat = vector<Mat>(1,mw->mat);
 	return mw;
 }
@@ -248,7 +246,6 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat =  frame;
 	mw->vmat  = vector<Mat>(1, frame);
-	mw->dp=frame.data;
 	//printf ("mat type %d \n",mw->mat.type());
 	return  mw;
 }
@@ -267,12 +264,10 @@ int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptr
 	}
 	mw->vmat = mv;
 	mw->mat = mv[0];
-	mw->dp=data;
 	//cout<<"size [0]"<< mw->vmat[0].size() << endl;
 	return 1;
 }
 void * getData (MatWrapper * frame) {
-	if (frame->mat.data != frame->dp) frame->dp=frame->mat.data;
 	return frame->mat.data;
 }
 
@@ -341,7 +336,6 @@ ptrdiff_t vRead(MatWrapper * mw,char * name) {
 	Mat * mp = & video[0];
 	mw->vmat= video;
 	mw->mat=video[0];
-	mw->dp=mp->data;
 	return j;
 }
 
@@ -453,7 +447,6 @@ print $fh <<'EOF';
 struct MatWrapper
 {
         cv::Mat mat;
-        void * dp;
         std::vector<cv::Mat> vmat;
 };
 #endif
