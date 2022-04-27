@@ -267,9 +267,6 @@ int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptr
 	//cout<<"size [0]"<< mw->vmat[0].size() << endl;
 	return 1;
 }
-void * getData (MatWrapper * frame) {
-	return frame->mat.data;
-}
 
 ptrdiff_t cols (MatWrapper * mw) {
 	return mw->mat.cols;
@@ -473,7 +470,6 @@ int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptr
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();
 int deleteMat(MatWrapper * wrapper);
-void * getData (MatWrapper * Mat);
 int getDataCopy(const MatWrapper * frame,void * data, ptrdiff_t vl);
 
 int initTracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
