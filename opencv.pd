@@ -334,47 +334,6 @@ sub data_ptr {
 
 EOPM
 
-pp_def ('mat_at',
-	Pars=>'double [o] m(j);',
-	OtherPars=>'MatWrapper * mwi;int x;int y;',
-	Code=>pp_line_numbers(__LINE__,
-	'
-		//printf ("Hello Mat!\n");
-		//cwtype ( $COMP(mwi), pdltype);
-		$PDL(m)->datatype= MatAt($COMP(mwi),$COMP(x),$COMP(y),$P(m));
-		//printf ("mat_at: pointer %p\n",$P(m));
-		//printf ("mat_at: data type %d\n",$PDL(m)->datatype);
-		//printf ("mat_at: %f\n",$P(m)[0]);
-		//$P(m)=vec;
-		/*
-		loop(j) %{
-			$m()=frame.data[cw_channels($COMP(mwi))*(cols($COMP(mwi)*$COMP(y) + $COMP(x)) + j];
-		%}
-		*/
-	',),
-	PMCode=>pp_line_numbers(__LINE__,
-	q{
-	sub mat_at {
-		my ($mw,$x,$y)=@_;
-		my ($t,$ct) = $mw->mat_type;
-		my $o=zeroes(sclr $mw->cw_channels);
-		#say "pointer $$mw";
-		_mat_at_int($o,$$mw,$x,$y);
-		#say "mat_at value $o";
-		$o;
-	}
-	},
-	Doc=>'
-
-=head2 mat_at - Pixel value(s) at x,y.
-
-This returns the color vector at a given pixel (x,y).
-
-=cut
-	',
-	),
-);
-
 pp_def('mat_type',
 	Pars=>'[io] cvt(); [io] pt();',
 	OtherPars=>'MatWrapper * mi; ',

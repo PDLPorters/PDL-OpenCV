@@ -14,7 +14,7 @@ my @funclist = (
 #['minMaxLoc',{method=>0,},"double *","mymin","double *","mymax","int *","myminl","int *","mymaxl"],
 );
 
-my ($tstr_l,$mstr_l,$rstr_l,$gstr_l,$gstr_l2,$astr_l2);
+my ($tstr_l,$mstr_l,$rstr_l,$gstr_l,$gstr_l2);
 for my $type ( PDL::Types::types ) {
 	next unless $type->real;
 	my $ts=$type->ppsym;
@@ -34,36 +34,9 @@ for my $type ( PDL::Types::types ) {
 	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n
 	\t\t/*ptrdiff_t fs = $s * ch * lins * cols;*/ \n ";
 	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[(j*cols+i)*ch+c+v*$bs*ch*lins*cols] = frame.ptr<$ct>(j)[ch*i+c];\n
-	//printf(\"MatAt data at frame %d i %d j %d ch %d: %d / %d\\n\",v,i, j, c,frame.ptr<$ct>(j)[ch*i+c],${ts}data[(j*cols+i)*ch+c+v*$bs*ch*lins*cols] );
-	\t\t\t break;\n";
-	$astr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[c] = frame.ptr<$ct>(i)[ch*j+c];\n
-	//printf(\"MatAt data at i %d j %d ch %d %g\\n\",i, j, ch,${ts}data[c] );
 	\t\t\t break;\n";
 	#$astr_l.="\t\t\tcase CV_$s$tt : ${ts}data = frame.data[frame.channels()*(frame.cols*y + x) + 0];
 }
-
-my $astr="
-int MatAt (const MatWrapper * mw,const ptrdiff_t j,const ptrdiff_t i,void * rdata) {
-	ptrdiff_t lins=mw->mat.rows;
-	ptrdiff_t cols=mw->mat.cols;
-	int type=mw->mat.type();
-	int cvtype=mw->mat.type();
-	int ch=mw->mat.channels();
-	//printf(\"MatAt: data pointer %p\\n\",mw->mat.data);
-	//printf(\"MatAt: piddle data pointer %p\\n\",rdata);
-	//printf(\"MatAt: data tyep %d\\n\",type);
-	uchar depth = CV_MAT_DEPTH(type); //	type & CV_MAT_DEPTH_MASK;
-	uchar chans = 1 + (type >> CV_CN_SHIFT);
-	cv::Mat frame=mw->mat;
-	$gstr_l;
-	for (int c = 0; c<ch; c++) {
-		switch ( depth ) {
-		$astr_l2;
-		}
-	}
-	return get_pdltype(cvtype);
-}
-";
 
 my $gstr="
 int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
@@ -89,12 +62,6 @@ int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 	for (ptrdiff_t v = 0; v<vl; v ++ ) { //  iterate over vmax;
 		frame=mw->vmat[v];
 		//printf(\"frame %d cols %d rows %d channels %d\\n\",v,frame.cols,frame.rows,frame.channels());
-		/*
-		int i=360;
-		int j=138;
-		int c=1;
-		printf(\"MatAt data at frame %d i %d j %d ch %d: %d / %d\\n\",v,i, j, c,frame.ptr<unsigned char>(j)[ch*i+c],Bdata[(j*cols+i)*ch+c+v*1*ch*lins*cols] );
-		*/
 		for ( ptrdiff_t i = 0; i<cols; i++ ) {
 			for ( ptrdiff_t j = 0; j<lins; j++ ) {
 				for (int c = 0; c<ch; c++) {
@@ -282,7 +249,6 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 	mw->mat =  frame;
 	mw->vmat  = vector<Mat>(1, frame);
 	mw->dp=frame.data;
-	//printf ("at 0 0 (newMat) %f\n",MatAt(mw,0,0));
 	//printf ("mat type %d \n",mw->mat.type());
 	return  mw;
 }
@@ -476,7 +442,6 @@ EOF
 print $fc $tstr;
 print $fc $rstr;
 print $fc $gstr;
-print $fc $astr;
 
 print $fh <<'EOF';
 #ifndef OPENCV_WRAPPER_H
@@ -521,7 +486,6 @@ MatWrapper * emptyMW ();
 int deleteMat(MatWrapper * wrapper);
 void * getData (MatWrapper * Mat);
 int getDataCopy(const MatWrapper * frame,void * data, ptrdiff_t vl);
-int  MatAt (const MatWrapper * mw,const ptrdiff_t x,const ptrdiff_t y,void * data);
 
 int initTracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
 int updateTracker(TrackerWrapper *, MatWrapper *, bBox * box);
