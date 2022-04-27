@@ -291,8 +291,6 @@ pp_def ('get_data',
 			my ($mw,$p,) = @_;
 			my @d;
 			unless (ref ($p) =~ "PDL") {
-				#say "rows ",$mw->rows;
-				#$p=zeroes(sclr $mw->cw_channels ,sclr ($mw->cols),sclr ($mw->rows));
 				$p=PDL->null;
 			} else {
 				#$p=$p->transpose;
@@ -420,18 +418,26 @@ sub ofunc {
     my $funcovp = protect_chars $funcov;
     $func = $func->[0] if ref $func eq 'ARRAY';
     my $codestr = pp_line_numbers __LINE__, sprintf <<'EOF', $func, $addv ? ',$COMP(v)' : '';
-		$b() = %s($COMP(mw)%s);
+		pdl *pid = $PDL(in);
+		PDL_Indx l = $SIZE(dim1), c = $SIZE(dim2), r = $SIZE(dim3);
+		if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
+		MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
+		if (!mw) $CROAK("newMat returned null.");
+		$b() = %s(mw%s);
+		deleteMat(mw);
 EOF
     my $args = $addv ? ',$v' : '';
+    my $args_default = $addv ? '$v //= -1;' : '';
     pp_def($name,
-	   Pars => '[o]b()',
-	   OtherPars=>'MatWrapper * mw'.($addv ? '; PDL_Indx v' : ''),
-	   GenericTypes=>['N'],
+	   Pars => 'in(dim1,dim2,dim3); [o]b()',
+	   OtherPars=>($addv ? 'PDL_Indx v' : ''),
+	   GenericTypes=>['N','D'],
+	   NoPthread=>1,
 	   PMCode => pp_line_numbers(__LINE__-1, qq{
 		   sub $name {
-			   my (\$self,\$v) = \@_; \$v //= -1;
+			   my (\$self$args) = \@_; $args_default
 			   my \$res=zeroes(ushort,1);
-			   _${name}_int(\$res,\$\$self$args);
+			   _${name}_int(\$self,\$res$args);
 			   \$res;
 		   }
 	   },),

@@ -22,10 +22,10 @@ my ($cvtype,$pdltype)=$mw->mat_type;
 
 my $mw2=PDL::OpenCV->new_mat($slice2);
 
-is( $mw->rows(), $data->dim(1),'rows' );
-is( $mw2->rows(), $data->dim(1),'rows planes' );
-is( $mw->cols() , $data->dim(0),'cols' );
-is( $mw2->cols() , $data->dim(0),'cols planes' );
+is( PDL::OpenCV::rows($slice), $data->dim(1),'rows' );
+is( PDL::OpenCV::rows($slice2), $data->dim(1),'rows planes' );
+is( PDL::OpenCV::cols($slice) , $data->dim(0),'cols' );
+is( PDL::OpenCV::cols($slice2) , $data->dim(0),'cols planes' );
 my $g=zeroes($data(,,0));
 $mw->get_data($g);
 ok tapprox($data(,,0;-), $g(;-)),'getData';
