@@ -285,8 +285,6 @@ MatWrapper * emptyMat (const ptrdiff_t cols=1, const ptrdiff_t rows=1, const int
 
 int newMat2 (MatWrapper * mw,const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
 	cv::Mat frame,norm;
-	try { mw->mat.cols; } catch (...) { mw = new MatWrapper; } // if undefined, return new object.
-
 	//printf ("data type %d\n",type);
 	if ((type == CV_32FC1) || (type == CV_32FC3)) {
 		float * fdata = (float * ) data;
