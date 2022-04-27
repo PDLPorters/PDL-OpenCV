@@ -1,7 +1,7 @@
 #!perl
 
 use strict;
-pp_bless ("PDL::OpenCV::Tracking");
+pp_bless ("PDL::OpenCV::Tracker");
 pp_addpm ({At=>'Top'},<<"EOPM");
 use 5.10.0;
 use strict;
@@ -13,12 +13,12 @@ EOPM
 
 pp_addhdr << 'EOH';
 #include "opencv_wrapper.h"
-typedef TrackerWrapper trackerObj;
+typedef TrackerWrapper *PDL__OpenCV__Tracker;
 EOH
 
 pp_def('init_tracker',
         Pars=>'in(dim1,dim2,dim3); ushort [o] b(j=4);',
-        OtherPars => 'TrackerWrapper *twi',
+        OtherPars => 'PDL__OpenCV__Tracker twi',
         Code=>pp_line_numbers(__LINE__,
         q{
                 pdl *pid = $PDL(in);
@@ -44,8 +44,8 @@ sub init_tracker{
         my ($class,$img, $tn, $box) = @_;
         $box=PDL->null unless UNIVERSAL::isa($box, 'PDL');
         my $tracker=newT ($tn);
-        say "tn $tn box $box";
-        _init_tracker_int($img,$box,$$tracker);
+        say "tn $tn box $box tracker=$tracker";
+        _init_tracker_int($img,$box,$tracker);
 	bless $tracker,$class;
         ($tracker,$box);
 }
@@ -72,7 +72,7 @@ EOD
 
 pp_def('update_tracker',
         Pars=>'in(dim1,dim2,dim3); ushort [o] b(j=4);',
-        OtherPars => 'TrackerWrapper *twi',
+        OtherPars => 'PDL__OpenCV__Tracker twi',
         Code =>pp_line_numbers(__LINE__, q{
                 pdl *pid = $PDL(in);
                 PDL_Indx l = $SIZE(dim1), c = $SIZE(dim2), r = $SIZE(dim3);
@@ -92,7 +92,7 @@ pp_def('update_tracker',
 <<'EOPM',
         sub update_tracker {
                 my ($tw,$mat)=@_;
-                _update_tracker_int($mat,my $box=PDL->null,$$tw);
+                _update_tracker_int($mat,my $box=PDL->null,$tw);
                 $box;
         }
 EOPM
@@ -101,25 +101,18 @@ EOPM
         );
 
 pp_addxs('','
-
-MODULE = PDL::OpenCV::Tracking PACKAGE = PDL::OpenCV::Tracking
-
-trackerObj * newT (tn)
+PDL__OpenCV__Tracker newT (tn)
         int tn
 CODE:
-        trackerObj * to = newTracker(tn);
-  RETVAL = to;
+  RETVAL = newTracker(tn);
  OUTPUT:
   RETVAL
 
-MODULE = PDL::OpenCV::Tracking PACKAGE = trackerObj PREFIX = track_
-
 void
-track_DESTROY(to)
-  trackerObj * to
+DESTROY(to)
+  PDL__OpenCV__Tracker to
  CODE:
   deleteTracker(to);
-  free (to);
 ',
 );
 

@@ -4,7 +4,7 @@ use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
 use File::Spec::Functions;
 
-my $package = ["tracking.pd",'Tracking','PDL::OpenCV::Tracking'];
+my $package = ["tracker.pd",'Tracker','PDL::OpenCV::Tracker'];
 my %hash = pdlpp_stdargs($package);
 $hash{VERSION_FROM} = '../opencv.pd';
 $hash{INC} .= ' -I..';

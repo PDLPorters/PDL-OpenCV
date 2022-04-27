@@ -5,7 +5,7 @@ use Test::More;
 use PDL::LiteF;
 use PDL::NiceSlice;
 use PDL::OpenCV;
-use PDL::OpenCV::Tracking;
+use PDL::OpenCV::Tracker;
 use File::Temp qw(tempfile);
 
 sub tapprox {
@@ -24,7 +24,7 @@ create_video($data,$outfile,20,'MP4V');
 
 note $data->info;
 my $bx=pdl(qw/169 88 192 257/);
-my ($tr,$box)=PDL::OpenCV::Tracking->init_tracker($data(,,,1,;-),2,$bx);
+my ($tr,$box)=PDL::OpenCV::Tracker->init_tracker($data(,,,1,;-),2,$bx);
 
 note "box $box";
 
