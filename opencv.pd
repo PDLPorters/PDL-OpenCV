@@ -371,36 +371,26 @@ Returns the pdl data type number, as in $p->get_datatype, and the OpenCV data ty
 	);
 
 pp_def('cv_minmax',
-	Pars=>'double [o] m(k);',
-	RedoDimsCode=>'
-		//$SIZE(c)=chs;
-		$SIZE(k)=4;
-	',
-	OtherPars=>'MatWrapper * mw',
+	Pars => 'in(dim1,dim2,dim3); [o]m(k=4)',
 	Code=>pp_line_numbers(__LINE__,'
-		int chs=cw_channels($COMP(mw));
-		//printf("chs %d \n",chs);
-		if (chs>1) {barf ( "minMaxIdx only works on single channel (%d) arrays. \n",chs);}
+		pdl *pid = $PDL(in);
+		PDL_Indx l = $SIZE(dim1), c = $SIZE(dim2), r = $SIZE(dim3);
+		if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
+		if (l>1) $CROAK( "minMaxIdx only works on single channel (%d) arrays. \n",l);
+		MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
+		if (!mw) $CROAK("newMat returned null.");
 		double mymin;
 		double mymax;
 		//int * mil,mal;
 		//printf("min %f max %f\n",mymin,mymax);
-		cw_minMaxIdx($COMP(mw),& mymin,& mymax); //,mil,mal);
+		cw_minMaxIdx(mw,& mymin,& mymax); //,mil,mal);
+		deleteMat(mw);
 		//printf("min %f max %f\n",mymin,mymax);
 		$m(k=>0)=mymin;
 		$m(k=>1)=mymax;
 		//$m(k=>2)=mil;
 		//$m(k=>3)=mal;
 	'),
-	PMCode=>pp_line_numbers(__LINE__,'
-		sub cv_minmax {
-			my ($mw) =@_;
-			my $p=PDL->null;
-			_cv_minmax_int($p,$$mw);
-			#say "p: minmax: ",$p;
-			$p;
-		}
-	')
 	);
 
 sub protect_chars {
