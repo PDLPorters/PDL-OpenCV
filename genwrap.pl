@@ -47,7 +47,7 @@ int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
 	ptrdiff_t cols=mw->mat.cols;
 	int cvtype=mw->mat.type();
 	int ch=mw->mat.channels();
-	Mat frame;
+	cv::Mat frame;
 	uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
 	printf(\"getDataCopy: cvtype %d\\n\",depth);
 	printf(\"getDataCopy: vl %td\\n\",vl);
@@ -161,7 +161,6 @@ print $fc <<'EOF';
 #include <opencv2/videoio.hpp>
 
 using namespace std;
-using namespace cv;
 /* use C name mangling */
 #ifdef __cplusplus
 extern "C" {
@@ -178,22 +177,22 @@ TrackerWrapper * newTracker(int trackerNumber) {
 	cv::Ptr<cv::Tracker> tracker;
 	// create a tracker object
 	//if (trackerType == "BOOSTING")
-		//tracker = TrackerBoosting::create();
+		//tracker = cv::TrackerBoosting::create();
 	if (trackerType == "MIL")
-		tracker = TrackerMIL::create();
+		tracker = cv::TrackerMIL::create();
 	if (trackerType == "KCF")
-		tracker = TrackerKCF::create();
+		tracker = cv::TrackerKCF::create();
 	/*if (trackerType == "TLD")
-		tracker = TrackerTLD::create();
+		tracker = cv::TrackerTLD::create();
 	if (trackerType == "MEDIANFLOW")
-		tracker = TrackerMedianFlow::create();*/
+		tracker = cv::TrackerMedianFlow::create();*/
 	if (trackerType == "GOTURN")
-		tracker = TrackerGOTURN::create();
+		tracker = cv::TrackerGOTURN::create();
 	//if (trackerType == "MOSSE")
-		//tracker = TrackerMOSSE::create();
+		//tracker = cv::TrackerMOSSE::create();
 	if (trackerType == "CSRT")
-		tracker = TrackerCSRT::create();
-	// Ptr<Tracker> tracker = TrackerKCF::create();
+		tracker = cv::TrackerCSRT::create();
+	// Ptr<Tracker> tracker = cv::TrackerKCF::create();
 	TrackerWrapper * Tr= new TrackerWrapper;
 	Tr->tracker = tracker;
 	//printf ("init tracker done.\n");
@@ -212,8 +211,8 @@ int deleteMat(MatWrapper * wrapper) {
 
 MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
-	mw->mat=Mat();
-	mw->vmat = vector<Mat>(1,mw->mat);
+	mw->mat=cv::Mat();
+	mw->vmat = vector<cv::Mat>(1,mw->mat);
 	return mw;
 }
 
@@ -223,7 +222,7 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 	printf ("newMat data type mapped %d(%d): %d data=%p\n",type,planes, cvtype, data);
 	//if (type == CV_32FC) ) {
 		//float * fdata = (float * ) data;
-		frame=Mat (rows, cols, cvtype, data); //.clone();
+		frame=cv::Mat (rows, cols, cvtype, data); //.clone();
 		//printf("set float data.\n");
 	//}
 	//frame.data =(uchar*) data;
@@ -232,18 +231,18 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 	//printf ("norm 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat =  frame;
-	mw->vmat  = vector<Mat>(1, frame);
+	mw->vmat  = vector<cv::Mat>(1, frame);
 	//printf ("mat type %d \n",mw->mat.type());
 	return  mw;
 }
 
 int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data,ptrdiff_t size) {
 	int cvtype=get_ocvtype(type,planes);
-	vector<Mat> mv(vs);
+	vector<cv::Mat> mv(vs);
 	//printf ("rows %d cols %d\n",rows,cols);
 	//printf ("type %d planes %d\n",type,planes);
 	for (ptrdiff_t j=0;j<vs;j++) {
-		Mat frame = Mat(rows,cols,cvtype,reinterpret_cast<char *>(data) + j*size);
+		cv::Mat frame = cv::Mat(rows,cols,cvtype,reinterpret_cast<char *>(data) + j*size);
 		//cout<<"size (frame) "<< frame.size() << endl;
 		//mv.push_back(frame);
 		mv[j]=frame;
@@ -280,7 +279,7 @@ int vWrite(MatWrapper * mw,char * name, char * code, double fps) {
 	string str;
 	str=string(name);
 	cout<<"size "<< mw->vmat[0].size() << endl;
-	VideoWriter cap(str,VideoWriter::fourcc(code[0],code[1],code[2],code[3]),fps,mw->vmat[0].size(),mw->vmat[0].channels()-1);
+	cv::VideoWriter cap(str,cv::VideoWriter::fourcc(code[0],code[1],code[2],code[3]),fps,mw->vmat[0].size(),mw->vmat[0].channels()-1);
         if ( ! cap.isOpened() )
         {
                 cout << "--(!)Error opening video capture\n";
@@ -296,16 +295,16 @@ int vWrite(MatWrapper * mw,char * name, char * code, double fps) {
 ptrdiff_t vRead(MatWrapper * mw,char * name) {
 	string str;
 	str=string(name);
-	VideoCapture cap;
+	cv::VideoCapture cap;
 	cap.open( str );
         if ( ! cap.isOpened() )
         {
                 cout << "--(!)Error opening video capture\n";
                 return -1;
         }
-	vector <Mat> video;
+	vector <cv::Mat> video;
 	ptrdiff_t j=0;
-	Mat frame;
+	cv::Mat frame;
 	for ( ;; ) {
 		cap >> frame;
 		if(frame.rows==0 || frame.cols==0)
@@ -313,7 +312,7 @@ ptrdiff_t vRead(MatWrapper * mw,char * name) {
 		video.push_back(frame.clone());
 		j++;
 	}
-	Mat * mp = & video[0];
+	cv::Mat * mp = & video[0];
 	mw->vmat= video;
 	mw->mat=video[0];
 	return j;
@@ -321,13 +320,13 @@ ptrdiff_t vRead(MatWrapper * mw,char * name) {
 
 const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f) {
 	string str = string(name);
-	VideoCapture cap;
+	cv::VideoCapture cap;
 	cap.open( str );
         if (!cap.isOpened()) return "Error opening video capture";
-	*f = cap.get(CAP_PROP_FRAME_COUNT);
-	*c = cap.get(CAP_PROP_FRAME_WIDTH);
-	*r = cap.get(CAP_PROP_FRAME_HEIGHT);
-	Mat frame;
+	*f = cap.get(cv::CAP_PROP_FRAME_COUNT);
+	*c = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+	*r = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+	cv::Mat frame;
 	cap >> frame;
 	*t = frame.type();
 	*l = frame.channels();
@@ -335,8 +334,8 @@ const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff
 }
 
 int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
-	Rect roi;
-	Mat frame;
+	cv::Rect roi;
+	cv::Mat frame;
 	roi.x=box->x;
 	roi.y=box->y;
 	roi.height=box->height;
@@ -345,11 +344,11 @@ int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 	minMaxIdx(mw->mat, & mymin,& mymax);
 	double scale = 256/mymax;
 	mw->mat.convertTo(frame,CV_8UC3,scale);
-	if(frame.channels()==1) cvtColor(frame,frame,COLOR_GRAY2RGB);
+	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
 	if (roi.x == 0) {
-		namedWindow("ud",WINDOW_NORMAL);
-		roi=selectROI("ud",frame,true,false);
-		destroyWindow("ud");
+		cv::namedWindow("ud",cv::WINDOW_NORMAL);
+		roi=cv::selectROI("ud",frame,true,false);
+		cv::destroyWindow("ud");
 	}
 	Tr->tracker->init(frame,roi);
 	printf("initTracker ROI x=%d y=%d width=%d height=%d frame c=%d r=%d\n",roi.x,roi.y,roi.width,roi.height,frame.cols,frame.rows); fflush(stdout);
@@ -363,21 +362,21 @@ int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 
 int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 #if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
-	Rect box;
+	cv::Rect box;
 #else
-	Rect2d box;
+	cv::Rect2d box;
 #endif
-	Mat frame;
+	cv::Mat frame;
 	double mymin,mymax;
 	minMaxIdx(mw->mat, & mymin,& mymax);
 	double scale = 256/mymax;
 	mw->mat.convertTo(frame,CV_8UC3,scale);
 	printf ("updateTracker matrix c=%d r=%d\n", frame.cols, frame.rows); fflush(stdout);
-	if(frame.channels()==1) cvtColor(frame,frame,COLOR_GRAY2RGB);
+	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
 	//printf ("ud: min/max %f %f \n",mymin,mymax);
 	/*
 	if ( mw->mat.type() > 4 ) {
-		normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
+		cv::normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
 	} else {
 		frame=256*256/mymax*mw->mat; //.clone();
 	}
@@ -389,10 +388,10 @@ int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	int res = Tr->tracker->update(frame,box );
 	//printf ("upaate: found? %d\n",res);
 	//printf ("upaate: type? %d\n",frame.type());
-	rectangle( frame, box, Scalar( 255, 0, 0 ), 2, 1 );
-	imshow("ud",frame);
+	cv::rectangle( frame, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
+	cv::imshow("ud",frame);
 	mw->mat=frame;
-	waitKey(10);
+	cv::waitKey(10);
 	//printf ("ut: box %d %d \n",box.x ,box.y);
 	//printf ("ut: box %d %d \n",box.width ,box.height);
 	roi->x=box.x;
@@ -403,12 +402,12 @@ int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 }
 
 int showTracker (MatWrapper * mw, bBox * box) {
-	Rect roi;
+	cv::Rect roi;
 	roi.x=box->x;
 	roi.y=box->y;
 	roi.height=box->height;
 	roi.width=box->width;
-	rectangle( mw->mat, roi, Scalar( 255, 0, 0 ), 2, 1 );
+	cv::rectangle( mw->mat, roi, cv::Scalar( 255, 0, 0 ), 2, 1 );
 	return 1;
 }
 EOF
