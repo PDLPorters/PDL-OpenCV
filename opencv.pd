@@ -14,7 +14,7 @@ PDL::OpenCV - This module interfaces perl/PDL and OpenCV.
 	use PDL;
 	use PDL::NiceSlice;
 
-	... 
+	...
 
 	$mw->imshow();
 	...
@@ -23,7 +23,7 @@ PDL::OpenCV - This module interfaces perl/PDL and OpenCV.
 =head1 Description
 
 Use PDL::OpenCV to call OpenCV functions on your data using perl/PDL. This module
-is the glue between the two tools. OpenCV nad perl's C++ interface are not 
+is the glue between the two tools. OpenCV nad perl's C++ interface are not
 compatible, a C layer is introduced and needs to be built separately, see INSTALLATION.
 
 =head1 Functions
@@ -86,7 +86,7 @@ void * dataPtr (mo)
 CODE:
 	void * data_ptr = getData(mo);
 	RETVAL = data_ptr;
-OUTPUT: 
+OUTPUT:
 RETVAL
 
 matObj *
@@ -100,7 +100,7 @@ if (RETVAL==NULL) barf("newMat returned null.\n");
 OUTPUT:
 RETVAL
 
-void  
+void
 getD(mo, pid)
 matObj *  mo
 pdl * pid
@@ -157,7 +157,7 @@ Stores a (colour,x,y,frame) ndarray in a file.
 
 For possible encodings see https://www.fourcc.org/codecs/. If not supplied, OpenCV will try to derive it from the file name.
 
-From the OpenCV documentation: 
+From the OpenCV documentation:
 
 =over
 
@@ -264,7 +264,7 @@ pp_def ('get_data',
 		PDL_Indx ch = cw_channels($COMP(mw));
 		PDL_Indx x = cols($COMP(mw),-1);
 		PDL_Indx y = rows($COMP(mw),-1);
-		//if (js > 3 && ks == y && js == x) { 
+		//if (js > 3 && ks == y && js == x) {
 			//$PDL(m)->ndims++;
 			$SIZE(j)=ch;
 			$SIZE(k)=x;
@@ -277,7 +277,7 @@ pp_def ('get_data',
 			//double * ptr =$P(m);
 			printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
 			printf ("data pointer %p\n",$P(m));
-			int t=getDataCopy($COMP(mw),$P(m),1); 
+			int t=getDataCopy($COMP(mw),$P(m),1);
 			printf ("get_data: type %d\n",t);
 			$PDL(m)->datatype=t;
 			printf ("get_data: piddle type %d\n",$PDL(m)->datatype);
@@ -342,14 +342,12 @@ pp_def ('mat_at',
 		//printf ("Hello Mat!\n");
 		//cwtype ( $COMP(mwi), pdltype);
 		$PDL(m)->datatype= MatAt($COMP(mwi),$COMP(x),$COMP(y),$P(m));
-		
-
 		//printf ("mat_at: pointer %p\n",$P(m));
 		//printf ("mat_at: data type %d\n",$PDL(m)->datatype);
 		//printf ("mat_at: %f\n",$P(m)[0]);
 		//$P(m)=vec;
 		/*
-		loop(j) %{ 
+		loop(j) %{
 			$m()=frame.data[cw_channels($COMP(mwi))*(cols($COMP(mwi)*$COMP(y) + $COMP(x)) + j];
 		%}
 		*/
@@ -415,6 +413,39 @@ Returns the pdl data type number, as in $p->get_datatype, and the OpenCV data ty
 ',
 	);
 
+pp_def('cv_minmax',
+	Pars=>'double [o] m(k);',
+	RedoDimsCode=>'
+		//$SIZE(c)=chs;
+		$SIZE(k)=4;
+	',
+	OtherPars=>'MatWrapper * mw',
+	Code=>pp_line_numbers(__LINE__,'
+		int chs=cw_channels($COMP(mw));
+		//printf("chs %d \n",chs);
+		if (chs>1) {barf ( "minMaxIdx only works on single channel (%d) arrays. \n",chs);}
+		double mymin;
+		double mymax;
+		//int * mil,mal;
+		//printf("min %f max %f\n",mymin,mymax);
+		cw_minMaxIdx($COMP(mw),& mymin,& mymax); //,mil,mal);
+		//printf("min %f max %f\n",mymin,mymax);
+		$m(k=>0)=mymin;
+		$m(k=>1)=mymax;
+		//$m(k=>2)=mil;
+		//$m(k=>3)=mal;
+	'),
+	PMCode=>pp_line_numbers(__LINE__,'
+		sub cv_minmax {
+			my ($mw) =@_;
+			my $p=PDL->null;
+			_cv_minmax_int($p,$$mw);
+			#say "p: minmax: ",$p;
+			$p;
+		}
+	')
+	);
+
 sub protect_chars {
 	my ($txt) = @_;
 	$txt =~ s/>/E;gt#/g;
@@ -467,46 +498,13 @@ This function is used to overload the unary C<$funcovp> operator/function.
 EOD
 }
 
-pp_def('cv_minmax',
-	Pars=>'double [o] m(k);',
-	RedoDimsCode=>'
-		//$SIZE(c)=chs; 
-		$SIZE(k)=4; 
-	',
-	OtherPars=>'MatWrapper * mw',
-	Code=>pp_line_numbers(__LINE__,'
-		int chs=cw_channels($COMP(mw));
-		//printf("chs %d \n",chs);
-		if (chs>1) {barf ( "minMaxIdx only works on single channel (%d) arrays. \n",chs);}
-		double mymin;
-		double mymax;
-		//int * mil,mal;
-		//printf("min %f max %f\n",mymin,mymax); 
-		cw_minMaxIdx($COMP(mw),& mymin,& mymax); //,mil,mal);
-		//printf("min %f max %f\n",mymin,mymax); 
-		$m(k=>0)=mymin;
-		$m(k=>1)=mymax;
-		//$m(k=>2)=mil;
-		//$m(k=>3)=mal;
-	'),
-	PMCode=>pp_line_numbers(__LINE__,'
-		sub cv_minmax {
-			my ($mw) =@_;
-			my $p=PDL->null;
-			_cv_minmax_int($p,$$mw);
-			#say "p: minmax: ",$p;
-			$p;
-		}
-	')
-	);	
-
 sub ufunc {
     my ($name,$func,$overload,$doc,%extra) = @_;
     my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
     my $funcovp = protect_chars $funcov;
     $func = $func->[0] if ref $func eq 'ARRAY';
     my $codestr = '
-		//printf ("ufunc: mw %p\n",$COMP(mw)); 
+		//printf ("ufunc: mw %p\n",$COMP(mw));
 		int res;
 		res = '.$func.'($COMP(mw),$COMP(v));
 		//printf ("res %d\n",res);
