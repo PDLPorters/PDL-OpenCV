@@ -22,6 +22,7 @@ $hash{INC} .= " $inc";
 use ExtUtils::CppGuess;
 my %cpp_opts = ExtUtils::CppGuess->new->makemaker_options;
 $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
+our ($cppg_cc, $cppg_cflags) = @cpp_opts{qw(CC CCFLAGS)};
 
 our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
 
@@ -41,25 +42,31 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
         'PDL'        => '2.078', # broadcastloop
     },
     MYEXTLIB => join(' ', @cw_objs),
-    depend => {"@cw_objs"=>'opencv_wrapper.h'},
+    depend => {
+      'opencv_wrapper$(OBJ_EXT)'=>'opencv_wrapper.h',
+    },
 );
 WriteMakefile(%hash);
 
-sub MY::postamble {
-  my ($self) = @_;
+sub cxx_cmd {
+  my ($self, $cppg_cc, $cppg_cflags) = @_;
   my $cccmd = $self->const_cccmd;
   $cccmd =~ s/CCCMD/CXXCMD/;
-  $cccmd =~ s/\$\(CC\)/$cpp_opts{CC}/;
-  $cccmd =~ s/(\$\(OPTIMIZE\)).*/$cpp_opts{CCFLAGS} $1/s;
+  $cccmd =~ s/\$\(CC\)/$cppg_cc/;
+  $cccmd =~ s/(\$\(OPTIMIZE\)).*/$cppg_cflags $1\n/s;
+  $cccmd;
+}
+sub cpp_comp {
+  join "\n", map "$_\$(OBJ_EXT) : $_.cpp\n\t\$(CXXCMD) \$(CCCDLFLAGS) $_.cpp\n", @_;
+}
+sub MY::postamble {
+  my ($self) = @_;
+  my $cxx_cmd = cxx_cmd($self, $cppg_cc, $cppg_cflags);
+  my $cxx_compile = cpp_comp(@cw_objs);
   pdlpp_postamble($package) .
-    sprintf <<'EOF', $cccmd;
-%1$s
-
+    "\n" . <<'EOF' . "\n" . $cxx_cmd . $cxx_compile;
 opencv_wrapper.cpp : opencv_wrapper.h # impose sequence so only run once
 opencv_wrapper.h : genwrap.pl
 	$(PERLRUN) genwrap.pl
-
-opencv_wrapper$(OBJ_EXT) : opencv_wrapper.cpp
-	$(CXXCMD) $(CCCDLFLAGS) opencv_wrapper.cpp
 EOF
 }
