@@ -3,21 +3,20 @@ use warnings;
 use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
 
-my $package = ["opencv.pd",'OpenCV','PDL::OpenCV'];
-my %hash = pdlpp_stdargs($package);
-$hash{clean}{FILES} .= ' t/test_write.avi generated_cvwrapper.h generated_cvwrapper.cpp';
-$hash{VERSION_FROM} = 'opencv.pd';
 my @pkgs = qw(opencv4);
 our $libs = (
   eval {require PkgConfig; join ' ', map PkgConfig->find($_)->get_ldflags, @pkgs} ||
   eval {require ExtUtils::PkgConfig; join ' ', map ExtUtils::PkgConfig->libs($_), @pkgs} ||
   `pkg-config @pkgs --libs`);
-$hash{LIBS}[0] .= $libs;
 our $inc = (
   eval {require PkgConfig; join ' ', map PkgConfig->find($_)->get_cflags, @pkgs} ||
   eval {require ExtUtils::PkgConfig; join ' ', map ExtUtils::PkgConfig->cflags($_), @pkgs} ||
   `pkg-config @pkgs --cflags`);
 
+my $package = ["opencv.pd",'OpenCV','PDL::OpenCV'];
+my %hash = pdlpp_stdargs($package);
+$hash{clean}{FILES} .= ' opencv_wrapper.h opencv_wrapper.cpp';
+$hash{LIBS}[0] .= $libs;
 $hash{INC} .= " -I. $inc";
 
 use ExtUtils::CppGuess;

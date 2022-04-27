@@ -6,6 +6,7 @@ use PDL::LiteF;
 use PDL::NiceSlice;
 use PDL::OpenCV;
 use PDL::OpenCV::Tracking;
+use File::Temp qw(tempfile);
 
 sub tapprox {
   my($a,$b, $eps) = @_;
@@ -18,7 +19,8 @@ sub tapprox {
 my $vfile='t/Megamind.avi';
 is video_dims($vfile).'', '[16 3 720 528 270]', 'video_dims';
 my $data=vread($vfile);
-create_video($data,'t/test_write.avi',20,'MP4V');
+(undef, my $outfile) = tempfile(SUFFIX=>'.avi');
+create_video($data,$outfile,20,'MP4V');
 
 note $data->info;
 my $bx=pdl(qw/169 88 192 257/);
@@ -31,7 +33,7 @@ for my $x (2..$data->dim(3)-1)  {
 	if ($x<98 || $x > 153 && $x<200) {
 		is(all ($box) >0,1,"tracker found box $x.");
 	} else {
-		is(all ($box) == 0,1,"tracker did not fiund box $x.");
+		is(all ($box) == 0,1,"tracker did not find box $x.");
 	}
 	note "x $x box $box";
 }
