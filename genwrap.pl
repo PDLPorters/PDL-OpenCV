@@ -14,7 +14,7 @@ my @funclist = (
 #['minMaxLoc',{method=>0,},"double *","mymin","double *","mymax","int *","myminl","int *","mymaxl"],
 );
 
-my ($tstr_l,$mstr_l,$rstr_l,$gstr_l,$gstr_l2);
+my ($tstr_l,$rstr_l,$gstr_l,$gstr_l2);
 for my $type ( PDL::Types::types ) {
 	next unless $type->real;
 	my $ts=$type->ppsym;
@@ -29,7 +29,6 @@ for my $type ( PDL::Types::types ) {
 	$tstr_l.="\tcase $nt :
 		//printf(\"cv type %d\\n\",CV_$s${tt}C(planes));
 		return CV_$s${tt}C(planes); break;\n";
-	$mstr_l.="\tcase $nt : $ct * fdata = ($ct * ) data; break;\n";
 	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
 	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n
 	\t\t/*ptrdiff_t fs = $s * ch * lins * cols;*/ \n ";
@@ -102,19 +101,6 @@ int get_ocvtype(const int datatype,const int planes) {
 		$tstr_l;
 \t}\n
 	return -1;
-}\n
-";
-
-my $mstr="
-MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data) {
-	int cvtype = map_types(type,planes);
-	MatWrapper * mw = new MatWrapper;
-	switch(type)
-	$mstr_l;
-        mw->mat = frame;
-	mw->vmat = vector<Mat>(1,frame);
-        //printf (\"mw->at 0 0 (newMat) %f\\n\",mw->mat.at<float>(0,0));
-        return  mw;
 }\n
 ";
 
