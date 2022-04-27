@@ -42,7 +42,6 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(generated_cvwrapper opencv_wrapper);
         'PDL'        => '2.078', # broadcastloop
     },
     MYEXTLIB => join(' ', @cw_objs),
-    DIR                 => ['Tracking'],
     depend => {"@cw_objs"=>'opencv_wrapper.h generated_cvwrapper.h'},
 );
 WriteMakefile(%hash);
