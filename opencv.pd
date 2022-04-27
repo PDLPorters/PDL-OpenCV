@@ -451,25 +451,11 @@ sub protect_chars {
 	return $txt;
 }
 
-
-
-
-
 sub ofunc {
     my ($name,$func,$overload,$doc,%extra) = @_;
     my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
     my $funcovp = protect_chars $funcov;
     $func = $func->[0] if ref $func eq 'ARRAY';
-    my $got_complex = PDL::Core::Dev::got_complex_version($func, 0);
-    # handle exceptions
-    my $badcode; # = '$ISBAD(a())';
-    if ( exists $extra{Exception} ) {
-#	$badcode .= " || $extra{Exception}";
-#	print "Warning: ignored exception for $name\n";
-	# NOTE This option is unused ($badcode is commented out above).
-	#      See also `biop()`.
-	delete $extra{Exception};
-    }
     my $codestr = '
 		//printf ("ofunc: mw %p\n",$COMP(mw)); 
 		int res;
@@ -505,12 +491,8 @@ $doc
 
 It can be made to work inplace with the C<\$x-E<gt>inplace> syntax.
 This function is used to overload the unary C<$funcovp> operator/function.
-
-=cut
-
 EOD
-} # sub: ofunc()
-
+}
 
 pp_def('cv_minmax',
 	Pars=>'double [o] m(k);',
@@ -550,16 +532,6 @@ sub ufunc {
     my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
     my $funcovp = protect_chars $funcov;
     $func = $func->[0] if ref $func eq 'ARRAY';
-    my $got_complex = PDL::Core::Dev::got_complex_version($func, 1);
-    # handle exceptions
-    my $badcode; # = '$ISBAD(a())';
-    if ( exists $extra{Exception} ) {
-#	$badcode .= " || $extra{Exception}";
-#	print "Warning: ignored exception for $name\n";
-	# NOTE This option is unused ($badcode is commented out above).
-	#      See also `biop()`.
-	delete $extra{Exception};
-    }
     my $codestr = '
 		//printf ("ufunc: mw %p\n",$COMP(mw)); 
 		int res;
@@ -597,11 +569,8 @@ $doc
 
 It can be made to work inplace with the C<\$x-E<gt>inplace> syntax.
 This function is used to overload the unary C<$funcovp> operator/function.
-
-=cut
-
 EOD
-} # sub: ufunc()
+}
 
 # generate functions.
 map {ufunc($_,$_,0,"returns and optionally sets $_ of the Mat object. \n");} (qw/rows cols / );
