@@ -18,10 +18,10 @@ my $data=xvals(5,8,3)+10*yvals(5,8,3)+zvals(1,1,3);
 my $slice = float $data(,,0;-);
 my $slice2 = long $data(,,0:2;-)->mv(2,0);
 my $mw=PDL::OpenCV->new_mat($slice);
-my $mw2=PDL::OpenCV->new_mat($slice2);
+ok tapprox($mw->mat_at(4,4),$data(4,4,0)),'MatAt';
 my ($cvtype,$pdltype)=$mw->mat_type;
 
-ok tapprox($mw->mat_at(4,4),$data(4,4,0)),'MatAt';
+my $mw2=PDL::OpenCV->new_mat($slice2);
 ok tapprox($mw2->mat_at(4,2),$data(4,2,;-)),'MatAt-planes';
 
 for my $x (0..2)  {
