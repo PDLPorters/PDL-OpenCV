@@ -271,15 +271,11 @@ void * getData (MatWrapper * frame) {
 	return frame->mat.data;
 }
 
-ptrdiff_t cols (MatWrapper * mw, ptrdiff_t cols) {
-	//printf ("cols(): %d, %d\n",mw->mat.cols,cols);
-	if ( cols>=0 ) { mw->mat.cols=cols; }
-	//printf ("cols(): after set %d\n",mw->mat.cols);
+ptrdiff_t cols (MatWrapper * mw) {
 	return mw->mat.cols;
 }
 
-ptrdiff_t rows (MatWrapper * mw, ptrdiff_t rows) {
-	if ( rows>=0 ) mw->mat.rows=rows;
+ptrdiff_t rows (MatWrapper * mw) {
 	return mw->mat.rows;
 }
 
@@ -466,8 +462,8 @@ typedef struct bBox{
 } bBox;
 
 typedef struct MatWrapper  MatWrapper ;
-ptrdiff_t rows (MatWrapper * mw, ptrdiff_t rows) ;
-ptrdiff_t cols (MatWrapper * mw, ptrdiff_t cols) ;
+ptrdiff_t rows (MatWrapper * mw) ;
+ptrdiff_t cols (MatWrapper * mw) ;
 int cwtype (MatWrapper * mw, int * pdltype) ;
 ptrdiff_t vRead(MatWrapper * mw,char * name);
 const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f);

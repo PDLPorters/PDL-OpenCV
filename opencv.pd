@@ -262,8 +262,8 @@ pp_def ('get_data',
 		PDL_Indx ks = $SIZE(k);
 		PDL_Indx ls = $SIZE(l);
 		PDL_Indx ch = cw_channels($COMP(mw));
-		PDL_Indx x = cols($COMP(mw),-1);
-		PDL_Indx y = rows($COMP(mw),-1);
+		PDL_Indx x = cols($COMP(mw));
+		PDL_Indx y = rows($COMP(mw));
 		//if (js > 3 && ks == y && js == x) {
 			//$PDL(m)->ndims++;
 			$SIZE(j)=ch;
@@ -403,31 +403,28 @@ sub protect_chars {
 }
 
 sub ofunc {
-    my ($name,$func,$overload,$addv,$doc,%extra) = @_;
+    my ($name,$func,$doc,%extra) = @_;
     my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
     my $funcovp = protect_chars $funcov;
     $func = $func->[0] if ref $func eq 'ARRAY';
-    my $codestr = pp_line_numbers __LINE__, sprintf <<'EOF', $func, $addv ? ',$COMP(v)' : '';
+    my $codestr = pp_line_numbers __LINE__, sprintf <<'EOF', $func;
 		pdl *pid = $PDL(in);
 		PDL_Indx l = $SIZE(dim1), c = $SIZE(dim2), r = $SIZE(dim3);
 		if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
 		MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
 		if (!mw) $CROAK("newMat returned null.");
-		$b() = %s(mw%s);
+		$b() = %s(mw);
 		deleteMat(mw);
 EOF
-    my $args = $addv ? ',$v' : '';
-    my $args_default = $addv ? '$v //= -1;' : '';
     pp_def($name,
 	   Pars => 'in(dim1,dim2,dim3); [o]b()',
-	   OtherPars=>($addv ? 'PDL_Indx v' : ''),
 	   GenericTypes=>['N','D'],
 	   NoPthread=>1,
 	   PMCode => pp_line_numbers(__LINE__-1, qq{
 		   sub $name {
-			   my (\$self$args) = \@_; $args_default
+			   my (\$self) = \@_;
 			   my \$res=zeroes(ushort,1);
-			   _${name}_int(\$self,\$res$args);
+			   _${name}_int(\$self,\$res);
 			   \$res;
 		   }
 	   },),
@@ -449,7 +446,6 @@ EOD
 }
 
 # generate functions.
-map {ofunc($_,$_,0,1,"returns and optionally sets $_ of the Mat object. \n");} (qw/rows cols / );
-map {ofunc($_,$_,0,0,"returns $_ of the Mat object. \n");} (qw/cw_channels/ );
+ofunc($_,$_,"returns $_ of the Mat object. \n") for qw/rows cols cw_channels/;
 
 pp_done();
