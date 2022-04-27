@@ -11,4 +11,4 @@ blib
 
 pm_to_blib
 MYMETA*
-generated*
+opencv_wrapper.*

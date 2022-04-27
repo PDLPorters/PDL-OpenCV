@@ -12,10 +12,8 @@ use PDL::OpenCV;
 EOPM
 
 pp_addhdr << 'EOH';
-        #include "generated_cvwrapper.h"
-        #include "opencv_wrapper.h"
-        typedef TrackerWrapper trackerObj;
-
+#include "opencv_wrapper.h"
+typedef TrackerWrapper trackerObj;
 EOH
 
 pp_def('init_tracker',

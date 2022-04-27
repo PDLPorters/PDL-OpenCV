@@ -23,7 +23,7 @@ use ExtUtils::CppGuess;
 my %cpp_opts = ExtUtils::CppGuess->new->makemaker_options;
 $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
 
-our @cw_objs = map $_.'$(OBJ_EXT)', qw(generated_cvwrapper opencv_wrapper);
+our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
 
 %hash = (%hash,
     NAME                => 'PDL::OpenCV',
@@ -41,7 +41,7 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(generated_cvwrapper opencv_wrapper);
         'PDL'        => '2.078', # broadcastloop
     },
     MYEXTLIB => join(' ', @cw_objs),
-    depend => {"@cw_objs"=>'opencv_wrapper.h generated_cvwrapper.h'},
+    depend => {"@cw_objs"=>'opencv_wrapper.h'},
 );
 WriteMakefile(%hash);
 
@@ -55,12 +55,9 @@ sub MY::postamble {
     sprintf <<'EOF', $cccmd;
 %1$s
 
-generated_cvwrapper.cpp : generated_cvwrapper.h # impose sequence so only run once
-generated_cvwrapper.h : genwrap.pl
+opencv_wrapper.cpp : opencv_wrapper.h # impose sequence so only run once
+opencv_wrapper.h : genwrap.pl
 	$(PERLRUN) genwrap.pl
-
-generated_cvwrapper$(OBJ_EXT) : generated_cvwrapper.cpp
-	$(CXXCMD) $(CCCDLFLAGS) generated_cvwrapper.cpp
 
 opencv_wrapper$(OBJ_EXT) : opencv_wrapper.cpp
 	$(CXXCMD) $(CCCDLFLAGS) opencv_wrapper.cpp
