@@ -1,0 +1,86 @@
+use strict;
+pp_bless ("PDL::OpenCV::VideoCapture");
+pp_addpm ({At=>'Top'},<<"EOPM");
+use strict;
+use warnings;
+EOPM
+
+pp_addhdr << 'EOH';
+#include "opencv_wrapper.h"
+typedef VideoCaptureWrapper *PDL__OpenCV__VideoCapture;
+EOH
+
+pp_addpm(<<'EOD');
+=head2 new_uri
+
+=for ref
+
+Initialize OpenCV videocapture.
+
+=for example
+
+        $capture = PDL::OpenCV::VideoCapture->new_uri($uri);
+EOD
+
+pp_addxs(<<'EOF');
+PDL__OpenCV__VideoCapture new_uri(klass,uri)
+        char *klass
+        char *uri
+CODE:
+  RETVAL = newVideoCapture();
+  if (RETVAL) {
+    const char *ret = openVideoCaptureURI(RETVAL, uri);
+    if (ret) {
+      deleteVideoCapture(RETVAL);
+      PDL->pdl_barf("Error opening URI '%s': %s", uri, ret);
+    }
+  }
+ OUTPUT:
+  RETVAL
+
+void
+DESTROY(self)
+  PDL__OpenCV__VideoCapture self
+ CODE:
+  deleteVideoCapture(self);
+EOF
+
+pp_def('read',
+        Pars=>'[oca] m(l,c,r);',
+        OtherPars => 'PDL__OpenCV__VideoCapture wr',
+        HaveBroadcasting=>0, NoPthread=>1, # I/O
+        Comp => 'MatWrapper *mw;',
+        MakeComp => <<'EOF',
+                if (!($COMP(mw) = emptyMW()))
+                  $CROAK("emptyMW returned null.");
+                if (!readVideoCapture($COMP(wr), $COMP(mw)))
+                  $CROAK("failed to read");
+EOF
+        CompFreeCodeComp => 'if ($COMP(mw)) deleteMat($COMP(mw));',
+        RedoDimsCode=>pp_line_numbers(__LINE__, <<'EOF'),
+                PDL_Indx t,l,c,r;
+                const char *ret = vDims($COMP(mw), &t, &l, &c, &r);
+                if (ret) $CROAK("Error in vDims: %s", ret);
+                $SIZE(l)=l;
+                $SIZE(c)=c;
+                $SIZE(r)=r;
+                $PDL(m)->datatype = get_pdltype(t);
+EOF
+        Code =>pp_line_numbers(__LINE__, <<'EOF'),
+                PDL_Indx d[] = { $SIZE(l), $SIZE(c), $SIZE(r) };
+                pdl *pid = $PDL(m);
+                PDL->setdims(pid, d, 3);
+                PDL->make_physical(pid);
+                /* no $P(m) because was NULL on entry */
+                memmove(pid->data, matData($COMP(mw)), pid->nbytes);
+EOF
+        PMCode => pp_line_numbers(__LINE__, <<'EOPM'),
+        sub read {
+                _read_int(my $o = PDL->null, $_[0]);
+                $o;
+        }
+EOPM
+        Doc=>"Read a frame from the source.",
+);
+
+pp_done();

@@ -312,6 +312,10 @@ ptrdiff_t rows (MatWrapper * mw) {
 	return mw->mat.rows;
 }
 
+void *matData (MatWrapper * mw) {
+	return mw->mat.ptr();
+}
+
 int cwtype (MatWrapper * mw, int * pdltype) {
 	int type = pdltype [0]; //
 	if (type >=0) {
@@ -323,6 +327,14 @@ int cwtype (MatWrapper * mw, int * pdltype) {
 		pdltype[0]=get_pdltype(mw->mat.type());
 	}
 	return mw->mat.type();
+}
+
+const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
+	*c = wrapper->mat.cols;
+	*r = wrapper->mat.rows;
+	*t = wrapper->mat.type();
+	*l = wrapper->mat.channels();
+	return NULL;
 }
 
 struct VideoWriterWrapper {
@@ -395,14 +407,6 @@ ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper) {
 bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw) {
 	return wrapper->capture.read(mw->mat);
 }
-
-const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
-	*c = wrapper->mat.cols;
-	*r = wrapper->mat.rows;
-	*t = wrapper->mat.type();
-	*l = wrapper->mat.channels();
-	return NULL;
-}
 EOF
 
 print $fc $tstr;
@@ -437,7 +441,9 @@ typedef struct bBox{
 typedef struct MatWrapper  MatWrapper ;
 ptrdiff_t rows (MatWrapper * mw) ;
 ptrdiff_t cols (MatWrapper * mw) ;
+void *matData(MatWrapper * mw);
 int cwtype (MatWrapper * mw, int * pdltype) ;
+const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 typedef struct VideoWriterWrapper VideoWriterWrapper;
 VideoWriterWrapper *newVideoWriter();
@@ -452,7 +458,6 @@ const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
 const char *vRead(MatWrapper * mw,VideoCaptureWrapper * name, ptrdiff_t *);
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
 bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw);
-const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 typedef struct TrackerWrapper TrackerWrapper;
 TrackerWrapper * newTracker (int tracker_type);
