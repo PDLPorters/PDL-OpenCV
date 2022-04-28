@@ -78,57 +78,6 @@ pp_addhdr << 'EOH';
 #include "opencv_wrapper.h"
 EOH
 
-pp_def('create_video',
-	Pars=>'[phys]m(l,c,r,f)',
-	OtherPars=>'char *file; double fps; char *code',
-	NoPthread=>1,
-	GenericTypes=>[qw/A B S U L F D/ ],
-	Code=>pp_line_numbers(__LINE__, <<'EOF'),
-	    if (!$COMP(file) || !strlen($COMP(file))) $CROAK("No file name given!");
-	    VideoWriterWrapper *vw = newVideoWriter();
-	    const char *ret = openVideoWriter(vw, $COMP(file), $COMP(code), $COMP(fps), $SIZE(c), $SIZE(r), $SIZE(l) > 1);
-	    if (ret) {
-	      deleteVideoWriter(vw);
-	      $CROAK("Error in openVideoWriter: %s", ret);
-	    }
-	    pdl *pid = $PDL(m);
-	    broadcastloop %{
-		loop (f) %{
-		  MatWrapper *mw = newMat($SIZE(c),$SIZE(r),pid->datatype,$SIZE(l),&$m(l=>0,c=>0,r=>0));
-		  if (!mw) $CROAK("newMat returned null.");
-		  writeVideoWriter(vw, mw);
-		  deleteMat(mw);
-		%}
-	    %}
-	    deleteVideoWriter(vw);
-EOF
-	Doc=>'
-=for ref
-
-Stores a (colour,x,y,frame) ndarray in a file.
-
-	$mo=create_video($piddle,file,fps,[code]);
-
-For possible encodings see https://www.fourcc.org/codecs/. If not supplied, OpenCV will try to derive it from the file name.
-
-From the OpenCV documentation:
-
-=over
-
-=item    With some backends fourcc=-1 pops up the codec selection dialog from the system.
-
-=item    To save image sequence use a proper filename (eg. img_%02d.jpg) and fourcc=0 OR fps=0. Use uncompressed image format (eg. img_%02d.BMP) to save raw frames.
-
-=item    Most codecs are lossy. If you want lossless video file you need to use a lossless codecs (eg. FFMPEG FFV1, Huffman HFYU, Lagarith LAGS, etc...)
-
-=item    If FFMPEG is enabled, using codec=0; fps=0; you can create an uncompressed (raw) video file.
-
-=back
-
-=cut
-',
-);
-
 pp_def('video_dims',
 	Pars=>'[o] dims(n=5);',
 	OtherPars=>'char * file',
