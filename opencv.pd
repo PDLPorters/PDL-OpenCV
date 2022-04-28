@@ -174,8 +174,9 @@ pp_def('vread',
 		'),
 	Code=>pp_line_numbers(__LINE__,'
 		MatWrapper *mw=emptyMW();
-		PDL_Indx f=vRead(mw,$COMP(file));
-		if (f<=0) $CROAK("Failed to read video. %s.\n",$COMP(file));
+		PDL_Indx f;
+		const char *ret = vRead(mw,$COMP(file),&f);
+		if (ret) $CROAK("Failed to read video \'%s\': \n",$COMP(file),ret);
 		int found_datatype = getDataCopy(mw,$P(m),$SIZE(f));
 		if (found_datatype != $PDL(m)->datatype)
 		  $CROAK("Got wrong datatype %d, ndarray type=%d", found_datatype, $PDL(m)->datatype);

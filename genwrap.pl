@@ -360,30 +360,26 @@ int vWrite(MatWrapper * mw,char * name, char * code, double fps) {
 	return 1;
 }
 
-ptrdiff_t vRead(MatWrapper * mw,char * name) {
+const char *vRead(MatWrapper * mw,char * name, ptrdiff_t *j) {
 	string str;
 	str=string(name);
 	cv::VideoCapture cap;
 	cap.open( str );
         if ( ! cap.isOpened() )
-        {
-                cout << "--(!)Error opening video capture\n";
-                return -1;
-        }
+                return "--(!)Error opening video capture\n";
 	vector <cv::Mat> video;
-	ptrdiff_t j=0;
+	*j=0;
 	cv::Mat frame;
 	for ( ;; ) {
 		cap >> frame;
 		if(frame.rows==0 || frame.cols==0)
                         break;
 		video.push_back(frame.clone());
-		j++;
+		*j++;
 	}
-	cv::Mat * mp = & video[0];
 	mw->vmat= video;
 	mw->mat=video[0];
-	return j;
+	return NULL;
 }
 
 const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f) {
@@ -435,13 +431,13 @@ typedef struct MatWrapper  MatWrapper ;
 ptrdiff_t rows (MatWrapper * mw) ;
 ptrdiff_t cols (MatWrapper * mw) ;
 int cwtype (MatWrapper * mw, int * pdltype) ;
-ptrdiff_t vRead(MatWrapper * mw,char * name);
+const char *vRead(MatWrapper * mw,char * name, ptrdiff_t *);
 const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f);
 int vWrite(MatWrapper * mw,char * name, char * code, double fps) ;
 
 typedef struct TrackerWrapper TrackerWrapper;
-struct TrackerWrapper * newTracker (int tracker_type);
-int  deleteTracker (struct TrackerWrapper *);
+TrackerWrapper * newTracker (int tracker_type);
+int  deleteTracker (TrackerWrapper *);
 int initTracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
 int updateTracker(TrackerWrapper *, MatWrapper *, bBox * box);
 
