@@ -400,16 +400,6 @@ int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	roi->width=box.width;
 	return res;
 }
-
-int showTracker (MatWrapper * mw, bBox * box) {
-	cv::Rect roi;
-	roi.x=box->x;
-	roi.y=box->y;
-	roi.height=box->height;
-	roi.width=box->width;
-	cv::rectangle( mw->mat, roi, cv::Scalar( 255, 0, 0 ), 2, 1 );
-	return 1;
-}
 EOF
 
 print $fc $tstr;
@@ -461,7 +451,6 @@ int getDataCopy(const MatWrapper * frame,void * data, ptrdiff_t vl);
 
 int initTracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
 int updateTracker(TrackerWrapper *, MatWrapper *, bBox * box);
-int showTracker (MatWrapper * frame, bBox * roi) ;
 
 int get_pdltype(const int cvtype);
 int get_ocvtype(const int datatype,const int planes);
