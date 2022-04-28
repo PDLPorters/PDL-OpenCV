@@ -136,7 +136,14 @@ pp_def('video_dims',
 	NoPthread=>1,
 	Code=>pp_line_numbers(__LINE__,'
 		PDL_Indx t,l,c,r,f;
-		const char *ret = vDims($COMP(file), &t, &l, &c, &r, &f);
+		VideoCaptureWrapper *cw = newVideoCapture();
+		const char *ret = openVideoCaptureURI(cw, $COMP(file));
+		if (ret) {
+		  deleteVideoCapture(cw);
+		  $CROAK("Error in openVideoCaptureURI: %s", ret);
+		}
+		ret = vDims(cw, &t, &l, &c, &r, &f);
+		deleteVideoCapture(cw);
 		if (ret) $CROAK("Error in vDims: %s", ret);
 		$dims(n=>0)=t;
 		$dims(n=>1)=l;
@@ -173,10 +180,20 @@ pp_def('vread',
 		  $PDL(m)->datatype = get_pdltype($COMP(mattype));
 		'),
 	Code=>pp_line_numbers(__LINE__,'
+		VideoCaptureWrapper *cw = newVideoCapture();
+		const char *ret = openVideoCaptureURI(cw, $COMP(file));
+		if (ret) {
+		  deleteVideoCapture(cw);
+		  $CROAK("Error in openVideoCaptureURI: %s", ret);
+		}
 		MatWrapper *mw=emptyMW();
 		PDL_Indx f;
-		const char *ret = vRead(mw,$COMP(file),&f);
-		if (ret) $CROAK("Failed to read video \'%s\': \n",$COMP(file),ret);
+		ret = vRead(mw,cw,&f);
+		deleteVideoCapture(cw);
+		if (ret) {
+		  deleteMat(mw);
+		  $CROAK("Failed to read video \'%s\': %s\n",$COMP(file),ret);
+		}
 		int found_datatype = getDataCopy(mw,$P(m),$SIZE(f));
 		if (found_datatype != $PDL(m)->datatype)
 		  $CROAK("Got wrong datatype %d, ndarray type=%d", found_datatype, $PDL(m)->datatype);

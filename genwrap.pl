@@ -360,18 +360,31 @@ int vWrite(MatWrapper * mw,char * name, char * code, double fps) {
 	return 1;
 }
 
-const char *vRead(MatWrapper * mw,char * name, ptrdiff_t *j) {
-	string str;
-	str=string(name);
-	cv::VideoCapture cap;
-	cap.open( str );
-        if ( ! cap.isOpened() )
-                return "--(!)Error opening video capture\n";
+struct VideoCaptureWrapper {
+	cv::VideoCapture capture;
+};
+
+VideoCaptureWrapper *newVideoCapture() {
+	return new VideoCaptureWrapper;
+}
+
+int deleteVideoCapture(VideoCaptureWrapper * wrapper) {
+	delete wrapper;
+	return 1;
+}
+
+const char *openVideoCaptureURI(VideoCaptureWrapper *wrapper, const char *uri) {
+	wrapper->capture.open( uri );
+	if (!wrapper->capture.isOpened()) return "Error opening video capture";
+	return NULL;
+}
+
+const char *vRead(MatWrapper * mw,VideoCaptureWrapper * cw, ptrdiff_t *j) {
 	vector <cv::Mat> video;
 	*j=0;
 	cv::Mat frame;
 	for ( ;; ) {
-		cap >> frame;
+		cw->capture >> frame;
 		if(frame.rows==0 || frame.cols==0)
                         break;
 		video.push_back(frame.clone());
@@ -382,16 +395,12 @@ const char *vRead(MatWrapper * mw,char * name, ptrdiff_t *j) {
 	return NULL;
 }
 
-const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f) {
-	string str = string(name);
-	cv::VideoCapture cap;
-	cap.open( str );
-        if (!cap.isOpened()) return "Error opening video capture";
-	*f = cap.get(cv::CAP_PROP_FRAME_COUNT);
-	*c = cap.get(cv::CAP_PROP_FRAME_WIDTH);
-	*r = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+const char *vDims(VideoCaptureWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f) {
+	*f = wrapper->capture.get(cv::CAP_PROP_FRAME_COUNT);
+	*c = wrapper->capture.get(cv::CAP_PROP_FRAME_WIDTH);
+	*r = wrapper->capture.get(cv::CAP_PROP_FRAME_HEIGHT);
 	cv::Mat frame;
-	cap >> frame;
+	wrapper->capture >> frame;
 	*t = frame.type();
 	*l = frame.channels();
 	return NULL;
@@ -431,9 +440,14 @@ typedef struct MatWrapper  MatWrapper ;
 ptrdiff_t rows (MatWrapper * mw) ;
 ptrdiff_t cols (MatWrapper * mw) ;
 int cwtype (MatWrapper * mw, int * pdltype) ;
-const char *vRead(MatWrapper * mw,char * name, ptrdiff_t *);
-const char *vDims(char * name, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f);
 int vWrite(MatWrapper * mw,char * name, char * code, double fps) ;
+
+typedef struct VideoCaptureWrapper VideoCaptureWrapper;
+VideoCaptureWrapper *newVideoCapture();
+int deleteVideoCapture (VideoCaptureWrapper *);
+const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
+const char *vRead(MatWrapper * mw,VideoCaptureWrapper * name, ptrdiff_t *);
+const char *vDims(VideoCaptureWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f);
 
 typedef struct TrackerWrapper TrackerWrapper;
 TrackerWrapper * newTracker (int tracker_type);
