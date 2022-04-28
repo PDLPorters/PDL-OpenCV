@@ -304,24 +304,6 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 	return  mw;
 }
 
-int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data,ptrdiff_t size) {
-	int cvtype=get_ocvtype(type,planes);
-	vector<cv::Mat> mv(vs);
-	//printf ("rows %d cols %d\n",rows,cols);
-	//printf ("type %d planes %d\n",type,planes);
-	for (ptrdiff_t j=0;j<vs;j++) {
-		cv::Mat frame = cv::Mat(rows,cols,cvtype,reinterpret_cast<char *>(data) + j*size);
-		//cout<<"size (frame) "<< frame.size() << endl;
-		//mv.push_back(frame);
-		mv[j]=frame;
-		//cout<<"size (push_back) "<< mv[j].size() << endl;
-	}
-	mw->vmat = mv;
-	mw->mat = mv[0];
-	//cout<<"size [0]"<< mw->vmat[0].size() << endl;
-	return 1;
-}
-
 ptrdiff_t cols (MatWrapper * mw) {
 	return mw->mat.cols;
 }
@@ -343,21 +325,32 @@ int cwtype (MatWrapper * mw, int * pdltype) {
 	return mw->mat.type();
 }
 
-int vWrite(MatWrapper * mw,char * name, char * code, double fps) {
-	string str;
-	str=string(name);
-	cout<<"size "<< mw->vmat[0].size() << endl;
-	cv::VideoWriter cap(str,cv::VideoWriter::fourcc(code[0],code[1],code[2],code[3]),fps,mw->vmat[0].size(),mw->vmat[0].channels()-1);
-        if ( ! cap.isOpened() )
-        {
-                cout << "--(!)Error opening video capture\n";
-                return -1;
-        }
-        for (auto it = begin (mw->vmat); it != end (mw->vmat); ++it) {
-		cap.write(*it);
-	}
-	cap.release();
+struct VideoWriterWrapper {
+	cv::VideoWriter writer;
+};
+
+VideoWriterWrapper *newVideoWriter() {
+	return new VideoWriterWrapper;
+}
+
+int deleteVideoWriter(VideoWriterWrapper * wrapper) {
+	delete wrapper;
 	return 1;
+}
+
+const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor) {
+	if (!wrapper->writer.open(
+	  name,
+	  cv::VideoWriter::fourcc(code[0],code[1],code[2],code[3]),
+	  fps,
+	  cv::Size(width, height),
+	  iscolor
+	)) return "Error opening video write";
+	return NULL;
+}
+
+void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw) {
+	wrapper->writer.write(mw->mat);
 }
 
 struct VideoCaptureWrapper {
@@ -440,7 +433,12 @@ typedef struct MatWrapper  MatWrapper ;
 ptrdiff_t rows (MatWrapper * mw) ;
 ptrdiff_t cols (MatWrapper * mw) ;
 int cwtype (MatWrapper * mw, int * pdltype) ;
-int vWrite(MatWrapper * mw,char * name, char * code, double fps) ;
+
+typedef struct VideoWriterWrapper VideoWriterWrapper;
+VideoWriterWrapper *newVideoWriter();
+int deleteVideoWriter (VideoWriterWrapper *);
+const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor);
+void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw);
 
 typedef struct VideoCaptureWrapper VideoCaptureWrapper;
 VideoCaptureWrapper *newVideoCapture();
@@ -455,7 +453,6 @@ int  deleteTracker (TrackerWrapper *);
 int initTracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
 int updateTracker(TrackerWrapper *, MatWrapper *, bBox * box);
 
-int newVector(MatWrapper * mw,const ptrdiff_t vs,const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data,const ptrdiff_t size);
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();
 int deleteMat(MatWrapper * wrapper);

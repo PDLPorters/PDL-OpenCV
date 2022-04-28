@@ -79,29 +79,29 @@ pp_addhdr << 'EOH';
 EOH
 
 pp_def('create_video',
-	Pars=>'m(l,c,r,f)',
+	Pars=>'[phys]m(l,c,r,f)',
 	OtherPars=>'char *file; double fps; char *code',
 	NoPthread=>1,
 	GenericTypes=>[qw/A B S U L F D/ ],
-	Code=>pp_line_numbers(__LINE__,'
+	Code=>pp_line_numbers(__LINE__, <<'EOF'),
 	    if (!$COMP(file) || !strlen($COMP(file))) $CROAK("No file name given!");
+	    VideoWriterWrapper *vw = newVideoWriter();
+	    const char *ret = openVideoWriter(vw, $COMP(file), $COMP(code), $COMP(fps), $SIZE(c), $SIZE(r), $SIZE(l) > 1);
+	    if (ret) {
+	      deleteVideoWriter(vw);
+	      $CROAK("Error in openVideoWriter: %s", ret);
+	    }
+	    pdl *pid = $PDL(m);
 	    broadcastloop %{
-		MatWrapper *mw=emptyMW();
-		int bs=PDL->howbig($PDL(m)->datatype);
-		PDL_Indx sz = $SIZE(l)*$SIZE(c)*$SIZE(r)*bs;
-		printf ("code %s\n",$COMP(code));
-		printf ("frames %"IND_FLAG" ",$SIZE(f));
-		printf ("cols %"IND_FLAG" ",$SIZE(c));
-		printf ("rows %"IND_FLAG" ",$SIZE(r));
-		printf ("planes %"IND_FLAG" ",$SIZE(l));
-		printf ("datatype %d\n",bs);
-		printf ("size %"IND_FLAG"\n",sz);
-		int res = newVector(mw,$SIZE(f),$SIZE(c), $SIZE(r), bs, $SIZE(l), $P(m), sz);
-		printf("code %s\n",$COMP(code));
-		res = vWrite(mw,$COMP(file),$COMP(code),$COMP(fps));
-		deleteMat(mw);
+		loop (f) %{
+		  MatWrapper *mw = newMat($SIZE(c),$SIZE(r),pid->datatype,$SIZE(l),&$m(l=>0,c=>0,r=>0));
+		  if (!mw) $CROAK("newMat returned null.");
+		  writeVideoWriter(vw, mw);
+		  deleteMat(mw);
+		%}
 	    %}
-	'),
+	    deleteVideoWriter(vw);
+EOF
 	Doc=>'
 =for ref
 
