@@ -388,8 +388,11 @@ const char *vRead(MatWrapper * mw,VideoCaptureWrapper * cw, ptrdiff_t *j) {
 	return NULL;
 }
 
-const char *vDims(VideoCaptureWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f) {
-	*f = wrapper->capture.get(cv::CAP_PROP_FRAME_COUNT);
+ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper) {
+	return wrapper->capture.get(cv::CAP_PROP_FRAME_COUNT);
+}
+
+const char *vDims(VideoCaptureWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
 	*c = wrapper->capture.get(cv::CAP_PROP_FRAME_WIDTH);
 	*r = wrapper->capture.get(cv::CAP_PROP_FRAME_HEIGHT);
 	cv::Mat frame;
@@ -445,7 +448,8 @@ VideoCaptureWrapper *newVideoCapture();
 int deleteVideoCapture (VideoCaptureWrapper *);
 const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
 const char *vRead(MatWrapper * mw,VideoCaptureWrapper * name, ptrdiff_t *);
-const char *vDims(VideoCaptureWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r, ptrdiff_t *f);
+ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
+const char *vDims(VideoCaptureWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 typedef struct TrackerWrapper TrackerWrapper;
 TrackerWrapper * newTracker (int tracker_type);

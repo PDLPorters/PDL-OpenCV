@@ -135,14 +135,14 @@ pp_def('video_dims',
 	GenericTypes=>[qw/N/],
 	NoPthread=>1,
 	Code=>pp_line_numbers(__LINE__,'
-		PDL_Indx t,l,c,r,f;
 		VideoCaptureWrapper *cw = newVideoCapture();
 		const char *ret = openVideoCaptureURI(cw, $COMP(file));
 		if (ret) {
 		  deleteVideoCapture(cw);
 		  $CROAK("Error in openVideoCaptureURI: %s", ret);
 		}
-		ret = vDims(cw, &t, &l, &c, &r, &f);
+		PDL_Indx t,l,c,r,f = framecountVideoCapture(cw);
+		ret = vDims(cw, &t, &l, &c, &r);
 		deleteVideoCapture(cw);
 		if (ret) $CROAK("Error in vDims: %s", ret);
 		$dims(n=>0)=t;
