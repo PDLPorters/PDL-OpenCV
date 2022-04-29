@@ -232,22 +232,9 @@ MatWrapper * emptyMW () {
 }
 
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
-	cv::Mat frame,norm;
-	int cvtype = get_ocvtype(type,planes);
-	printf ("newMat data type mapped %d(%d): %d data=%p\n",type,planes, cvtype, data);
-	//if (type == CV_32FC) ) {
-		//float * fdata = (float * ) data;
-		frame=cv::Mat (rows, cols, cvtype, data); //.clone();
-		//printf("set float data.\n");
-	//}
-	//frame.data =(uchar*) data;
-	MatWrapper * mw = new MatWrapper;
-	//normalize(frame,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
-	//printf ("norm 0 0 (newMat) %f\n",frame.at<float>(0,0));
-	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
-	mw->mat =  frame;
-	//printf ("mat type %d \n",mw->mat.type());
-	return  mw;
+	MatWrapper *mw = new MatWrapper;
+	mw->mat = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
+	return mw;
 }
 
 ptrdiff_t cols (MatWrapper * mw) {
