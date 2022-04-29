@@ -228,9 +228,7 @@ int deleteMat(MatWrapper * wrapper) {
 }
 
 MatWrapper * emptyMW () {
-	MatWrapper * mw = new MatWrapper;
-	mw->mat=cv::Mat();
-	return mw;
+	return new MatWrapper;
 }
 
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
