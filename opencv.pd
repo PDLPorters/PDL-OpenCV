@@ -20,47 +20,18 @@ PDL::OpenCV - This module interfaces perl/PDL and OpenCV.
 	...
 	$result=$mw->get_data;
 
-=head1 Description
+=head1 DESCRIPTION
 
 Use PDL::OpenCV to call OpenCV functions on your data using perl/PDL. This module
-is the glue between the two tools. OpenCV nad perl's C++ interface are not
-compatible, a C layer is introduced and needs to be built separately, see INSTALLATION.
-
-=head1 Functions
+is the glue between the two tools. OpenCV and Perl's C++ interface are not
+compatible, so a C layer is provided.
 
 =cut
-
-use Data::Dumper;
-
-sub PDL::OpenCV::get_dp {
-	my ($self,$p) = @_;
-	barf ("get_dp: not a piddle! ") unless (ref($p) =~ /PDL/ );
-	getD($$self,$p);
-	say "data ref ",$p->get_dataref;
-	$p->upd_data;
-	$p;
-}
-
-sub to_planes {
-	my $m = shift;
-	my ($c,$r,$l);
-	my @d=$m->dims;
-	$c=shift @d;
-	$r=shift @d;
-	$l=1;
-	if ($m->ndims>2 && $c < 4) {
-		$l=$c;
-		$c=$r;
-		$r=shift @d;
-	}
-	#$m->reshape($l,$c,$r,@d);
-	$l,$c,$r,@d;
-}
 
 EOPM
 
 pp_addpm ({At=>'Bot'},<<'EOPM');
-=head1 Known issues
+=head1 KNOWN ISSUES
 
 The number of functions in OpenCV is large, if you do not encounter what is needed,
 there are fairly easy ways to create the wrappers. Look at ufunc/ofunc in opencv.pd
