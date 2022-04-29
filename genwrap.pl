@@ -14,7 +14,7 @@ my @funclist = (
 #['minMaxLoc',{method=>0,},"double *","mymin","double *","mymax","int *","myminl","int *","mymaxl"],
 );
 
-my ($tstr_l,$rstr_l,$gstr_l,$gstr_l2);
+my ($tstr_l,$rstr_l);
 for my $type ( PDL::Types::types ) {
 	next unless $type->real;
 	my $ts=$type->ppsym;
@@ -30,57 +30,7 @@ for my $type ( PDL::Types::types ) {
 		//printf(\"cv type %d\\n\",CV_$s${tt}C(planes));
 		return CV_$s${tt}C(planes); break;\n";
 	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
-	$gstr_l.="\t$ct * ${ts}data=reinterpret_cast <$ct *>(rdata);\n
-	\t\t/*ptrdiff_t fs = $s * ch * lins * cols;*/ \n ";
-	$gstr_l2.="\t\t\tcase CV_$s$tt : ${ts}data[(j*cols+i)*ch+c+v*$bs*ch*lins*cols] = frame.ptr<$ct>(j)[ch*i+c];\n
-	\t\t\t break;\n";
-	#$astr_l.="\t\t\tcase CV_$s$tt : ${ts}data = frame.data[frame.channels()*(frame.cols*y + x) + 0];
 }
-
-my $gstr="
-int getDataCopy(const MatWrapper * mw,void * rdata, ptrdiff_t vl) {
-	/*
-	printf(\"getDataCopy: vl %d\\n\",vl);
-	printf(\"getDataCopy: rdata %p\\n\",rdata);
-	*/
-	ptrdiff_t lins=mw->mat.rows;
-	ptrdiff_t cols=mw->mat.cols;
-	int cvtype=mw->mat.type();
-	int ch=mw->mat.channels();
-	cv::Mat frame;
-	uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
-	printf(\"getDataCopy: cvtype %d\\n\",depth);
-	printf(\"getDataCopy: vl %td\\n\",vl);
-	if (vl > 0) {
-	try {vl=mw->vmat.size(); } catch (...) { vl=1;} // default to 0 if not a vector
-	//printf(\"getDataCopy: vl %d\\n\",vl);
-	} else vl = 1;
-	$gstr_l
-	//printf(\"getDataCopy: mw->mat %p\\n\",mw->mat);
-	//printf(\"getDataCopy: mw->vmat[0] %p\\n\",mw->vmat[0]);
-	for (ptrdiff_t v = 0; v<vl; v ++ ) { //  iterate over vmax;
-		frame=mw->vmat[v];
-		//printf(\"frame %d cols %d rows %d channels %d\\n\",v,frame.cols,frame.rows,frame.channels());
-		for ( ptrdiff_t i = 0; i<cols; i++ ) {
-			for ( ptrdiff_t j = 0; j<lins; j++ ) {
-				for (int c = 0; c<ch; c++) {
-					switch (depth) {
-					$gstr_l2
-					}
-				}
-			}
-		}
-		/*
-		printf(\"frame %d cols %d rows %d channels %d\\n\",v,frame.cols,frame.rows,frame.channels());
-		i=360;
-		j=138;
-		c=1;
-		printf(\"after data at frame %d i %d j %d ch %d: %d / %d\\n\",v,i, j, c,frame.ptr<unsigned char>(j)[ch*i+c],Bdata[(j*cols+i)*ch+c+v*1*ch*lins*cols] );
-		*/
-	}
-	return get_pdltype(cvtype);
-}
-";
 
 my $rstr="
 int get_pdltype(const int cvtype) {
@@ -280,7 +230,6 @@ int deleteMat(MatWrapper * wrapper) {
 MatWrapper * emptyMW () {
 	MatWrapper * mw = new MatWrapper;
 	mw->mat=cv::Mat();
-	mw->vmat = vector<cv::Mat>(1,mw->mat);
 	return mw;
 }
 
@@ -299,7 +248,6 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 	//printf ("norm 0 0 (newMat) %f\n",frame.at<float>(0,0));
 	//normalize(image1, dst, 255, 230, NORM_MINMAX,-1, noArray());
 	mw->mat =  frame;
-	mw->vmat  = vector<cv::Mat>(1, frame);
 	//printf ("mat type %d \n",mw->mat.type());
 	return  mw;
 }
@@ -384,22 +332,6 @@ const char *openVideoCaptureURI(VideoCaptureWrapper *wrapper, const char *uri) {
 	return NULL;
 }
 
-const char *vRead(MatWrapper * mw,VideoCaptureWrapper * cw, ptrdiff_t *j) {
-	vector <cv::Mat> video;
-	*j=0;
-	cv::Mat frame;
-	for ( ;; ) {
-		cw->capture >> frame;
-		if(frame.rows==0 || frame.cols==0)
-                        break;
-		video.push_back(frame.clone());
-		*j++;
-	}
-	mw->vmat= video;
-	mw->mat=video[0];
-	return NULL;
-}
-
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper) {
 	return wrapper->capture.get(cv::CAP_PROP_FRAME_COUNT);
 }
@@ -411,7 +343,6 @@ EOF
 
 print $fc $tstr;
 print $fc $rstr;
-print $fc $gstr;
 
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
@@ -424,7 +355,6 @@ print $fh <<'EOF';
 struct MatWrapper
 {
         cv::Mat mat;
-        std::vector<cv::Mat> vmat;
 };
 #endif
 
@@ -455,7 +385,6 @@ typedef struct VideoCaptureWrapper VideoCaptureWrapper;
 VideoCaptureWrapper *newVideoCapture();
 int deleteVideoCapture (VideoCaptureWrapper *);
 const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
-const char *vRead(MatWrapper * mw,VideoCaptureWrapper * name, ptrdiff_t *);
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
 bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw);
 
@@ -468,7 +397,6 @@ int updateTracker(TrackerWrapper *, MatWrapper *, bBox * box);
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();
 int deleteMat(MatWrapper * wrapper);
-int getDataCopy(const MatWrapper * frame,void * data, ptrdiff_t vl);
 
 int get_pdltype(const int cvtype);
 int get_ocvtype(const int datatype,const int planes);

@@ -76,11 +76,10 @@ EOF
 EOF
         PMCode => pp_line_numbers(__LINE__, <<'EOPM'),
         sub read {
-                _read_int(my $o = PDL->null, $_[0]);
-                $o;
+                eval { _read_int(my $o = PDL->null, $_[0]); $o; };
         }
 EOPM
-        Doc=>"Read a frame from the source.",
+        Doc=>"Read a frame from the source, or return undef on failure.",
 );
 
 pp_done();
