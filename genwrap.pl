@@ -249,19 +249,6 @@ void *matData (MatWrapper * mw) {
 	return mw->mat.ptr();
 }
 
-int cwtype (MatWrapper * mw, int * pdltype) {
-	int type = pdltype [0]; //
-	if (type >=0) {
-		type= get_ocvtype(pdltype[0],CV_MAT_CN(mw->mat.type()));
-		if  ( type != mw->mat.type())  {
-			mw->mat.convertTo(mw->mat,type);
-		}
-	} else {
-		pdltype[0]=get_pdltype(mw->mat.type());
-	}
-	return mw->mat.type();
-}
-
 const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
 	*c = wrapper->mat.cols;
 	*r = wrapper->mat.rows;
@@ -357,7 +344,6 @@ typedef struct MatWrapper  MatWrapper ;
 ptrdiff_t rows (MatWrapper * mw) ;
 ptrdiff_t cols (MatWrapper * mw) ;
 void *matData(MatWrapper * mw);
-int cwtype (MatWrapper * mw, int * pdltype) ;
 const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 typedef struct VideoWriterWrapper VideoWriterWrapper;
