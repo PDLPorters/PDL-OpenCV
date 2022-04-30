@@ -172,8 +172,6 @@ int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 		cv::destroyWindow("ud");
 	}
 	Tr->tracker->init(frame,roi);
-	printf("initTracker ROI x=%d y=%d width=%d height=%d frame c=%d r=%d\n",roi.x,roi.y,roi.width,roi.height,frame.cols,frame.rows); fflush(stdout);
-	//printf ("at 48 48 (init_tracker %f\n",frame->mat.at<float>(48,48));
 	box->x=roi.x;
 	box->y=roi.y;
 	box->width=roi.width;
@@ -192,29 +190,13 @@ int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	minMaxIdx(mw->mat, & mymin,& mymax);
 	double scale = 256/mymax;
 	mw->mat.convertTo(frame,CV_8UC3,scale);
-	printf ("updateTracker matrix c=%d r=%d\n", frame.cols, frame.rows); fflush(stdout);
 	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
-	//printf ("ud: min/max %f %f \n",mymin,mymax);
-	/*
-	if ( mw->mat.type() > 4 ) {
-		cv::normalize(mw->mat,frame, 1,0, NORM_MINMAX) ; //, -1,CV_8UC1);
-	} else {
-		frame=256*256/mymax*mw->mat; //.clone();
-	}
-	*/
-	//printf ("Empty matrix %d\n",frame.empty());
 	minMaxIdx(mw->mat, & mymin,& mymax);
-	//printf ("ud: after: min/max %f %f \n",mymin,mymax);
-	//printf ("Empty matrix %d\n",frame.empty());
 	int res = Tr->tracker->update(frame,box );
-	//printf ("upaate: found? %d\n",res);
-	//printf ("upaate: type? %d\n",frame.type());
 	cv::rectangle( frame, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
 	cv::imshow("ud",frame);
 	mw->mat=frame;
 	cv::waitKey(10);
-	//printf ("ut: box %d %d \n",box.x ,box.y);
-	//printf ("ut: box %d %d \n",box.width ,box.height);
 	roi->x=box.x;
 	roi->y=box.y;
 	roi->height=box.height;
