@@ -158,13 +158,13 @@ int deleteTracker(TrackerWrapper * wrapper) {
 	return 1;
 }
 
-int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
+void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 	cv::Rect roi;
 	cv::Mat frame;
-	roi.x=box->x;
-	roi.y=box->y;
-	roi.height=box->height;
-	roi.width=box->width;
+	roi.x=box.x;
+	roi.y=box.y;
+	roi.height=box.height;
+	roi.width=box.width;
 	double mymin,mymax;
 	minMaxIdx(mw->mat, & mymin,& mymax);
 	double scale = 256/mymax;
@@ -176,14 +176,9 @@ int initTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * box ){
 		cv::destroyWindow("ud");
 	}
 	Tr->tracker->init(frame,roi);
-	box->x=roi.x;
-	box->y=roi.y;
-	box->width=roi.width;
-	box->height=roi.height;
-	return 1;
 }
 
-int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
+char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 #if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
 	cv::Rect box;
 #else
@@ -195,7 +190,7 @@ int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	double scale = 256/mymax;
 	mw->mat.convertTo(frame,CV_8UC3,scale);
 	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
-	int res = Tr->tracker->update(frame,box );
+	char res = Tr->tracker->update(frame,box );
 	cv::rectangle( frame, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
 	mw->mat=frame;
 	imgImshow("ud", mw);
@@ -321,9 +316,9 @@ extern "C" {
 
 #include <stddef.h>
 
-typedef struct bBox{
+typedef struct {
 	int x; int y; int width; int height;
-} bBox;
+} cw_Rect;
 
 typedef struct MatWrapper  MatWrapper ;
 ptrdiff_t rows (MatWrapper * mw) ;
@@ -349,8 +344,8 @@ void imgImshow(const char *name, MatWrapper *mw);
 typedef struct TrackerWrapper TrackerWrapper;
 TrackerWrapper * newTracker (int tracker_type);
 int  deleteTracker (TrackerWrapper *);
-int initTracker(TrackerWrapper * Tr, MatWrapper * frame, bBox * box );
-int updateTracker(TrackerWrapper *, MatWrapper *, bBox * box);
+void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
+char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
 
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();

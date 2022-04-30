@@ -26,12 +26,12 @@ pp_def('init_tracker',
                 if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
                 MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
                 if (!mw) $CROAK("newMat returned null.");
-                bBox box;
+                cw_Rect box;
                 box.x=$b(j=>0);
                 box.y=$b(j=>1);
                 box.width=$b(j=>2);
                 box.height=$b(j=>3);
-                int res=initTracker($COMP(twi),mw,&box);
+                initTracker($COMP(twi),mw,box);
                 $b(j=>0)=box.x;
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
@@ -79,9 +79,9 @@ pp_def('update_tracker',
                 if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
                 MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
                 if (!mw) $CROAK("newMat returned null.");
-                struct bBox  box;
+                cw_Rect box;
                 TrackerWrapper * tw = $COMP(twi);
-                updateTracker(tw,mw,& box);
+                updateTracker(tw,mw,&box);
                 $b(j=>0)=box.x;
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
