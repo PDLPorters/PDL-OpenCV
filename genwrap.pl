@@ -116,6 +116,10 @@ using namespace std;
 extern "C" {
 #endif
 
+void imgImshow(const char *name, MatWrapper *mw) {
+	cv::imshow(name,mw->mat);
+}
+
 struct TrackerWrapper {
 	cv::Ptr<cv::Tracker> tracker;
 };
@@ -191,12 +195,11 @@ int updateTracker(TrackerWrapper * Tr, MatWrapper * mw, bBox * roi) {
 	double scale = 256/mymax;
 	mw->mat.convertTo(frame,CV_8UC3,scale);
 	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
-	minMaxIdx(mw->mat, & mymin,& mymax);
 	int res = Tr->tracker->update(frame,box );
 	cv::rectangle( frame, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
-	cv::imshow("ud",frame);
 	mw->mat=frame;
-	cv::waitKey(10);
+	imgImshow("ud", mw);
+	cv::waitKey(1);
 	roi->x=box.x;
 	roi->y=box.y;
 	roi->height=box.height;
@@ -340,6 +343,8 @@ int deleteVideoCapture (VideoCaptureWrapper *);
 const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
 bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw);
+
+void imgImshow(const char *name, MatWrapper *mw);
 
 typedef struct TrackerWrapper TrackerWrapper;
 TrackerWrapper * newTracker (int tracker_type);
