@@ -90,23 +90,95 @@ using namespace std;
 extern "C" {
 #endif
 
-void imgImshow(const char *name, MatWrapper *mw) {
-	cv::imshow(name,mw->held);
+struct VideoWriterWrapper {
+	cv::VideoWriter held;
+};
+
+VideoWriterWrapper *newVideoWriter() {
+	return new VideoWriterWrapper;
+}
+
+int deleteVideoWriter(VideoWriterWrapper * wrapper) {
+	delete wrapper;
+	return 1;
 }
 
 struct TrackerWrapper {
 	cv::Ptr<cv::Tracker> held;
 };
 
+int deleteTracker(TrackerWrapper * wrapper) {
+	delete wrapper;
+	return 1;
+}
+
+struct VideoCaptureWrapper {
+	cv::VideoCapture held;
+};
+
+VideoCaptureWrapper *newVideoCapture() {
+	return new VideoCaptureWrapper;
+}
+
+int deleteVideoCapture(VideoCaptureWrapper * wrapper) {
+	delete wrapper;
+	return 1;
+}
+
+int deleteMat(MatWrapper * wrapper) {
+	delete wrapper;
+	return 1;
+}
+EOF
+
+print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
+print $fh <<'EOF';
+#ifndef OPENCV_WRAPPER_H
+#define OPENCV_WRAPPER_H
+
+#ifdef __cplusplus
+#include <vector>
+#include <opencv2/opencv.hpp>
+struct MatWrapper
+{
+        cv::Mat held;
+};
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stddef.h>
+
+typedef struct {
+	int x; int y; int width; int height;
+} cw_Rect;
+
+typedef struct MatWrapper  MatWrapper ;
+
+typedef struct VideoWriterWrapper VideoWriterWrapper;
+VideoWriterWrapper *newVideoWriter();
+int deleteVideoWriter (VideoWriterWrapper *);
+typedef struct VideoCaptureWrapper VideoCaptureWrapper;
+VideoCaptureWrapper *newVideoCapture();
+int deleteVideoCapture (VideoCaptureWrapper *);
+typedef struct TrackerWrapper TrackerWrapper;
+TrackerWrapper * newTracker();
+int deleteTracker (TrackerWrapper *);
+int deleteMat(MatWrapper * wrapper);
+EOF
+
+print $fc sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
+print $fc <<'EOF';
+void imgImshow(const char *name, MatWrapper *mw) {
+	cv::imshow(name,mw->held);
+}
+
 TrackerWrapper *newTracker() {
 	TrackerWrapper * Tr = new TrackerWrapper;
 	Tr->held = cv::TrackerKCF::create();
 	return Tr;
-}
-
-int deleteTracker(TrackerWrapper * wrapper) {
-	delete wrapper;
-	return 1;
 }
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
@@ -144,11 +216,6 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	return res;
 }
 
-int deleteMat(MatWrapper * wrapper) {
-	delete wrapper;
-	return 1;
-}
-
 MatWrapper * emptyMW () {
 	return new MatWrapper;
 }
@@ -171,19 +238,6 @@ const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c,
 	return NULL;
 }
 
-struct VideoWriterWrapper {
-	cv::VideoWriter held;
-};
-
-VideoWriterWrapper *newVideoWriter() {
-	return new VideoWriterWrapper;
-}
-
-int deleteVideoWriter(VideoWriterWrapper * wrapper) {
-	delete wrapper;
-	return 1;
-}
-
 const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor) {
 	if (!wrapper->held.open(
 	  name,
@@ -197,19 +251,6 @@ const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const
 
 void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw) {
 	wrapper->held.write(mw->held);
-}
-
-struct VideoCaptureWrapper {
-	cv::VideoCapture held;
-};
-
-VideoCaptureWrapper *newVideoCapture() {
-	return new VideoCaptureWrapper;
-}
-
-int deleteVideoCapture(VideoCaptureWrapper * wrapper) {
-	delete wrapper;
-	return 1;
 }
 
 const char *openVideoCaptureURI(VideoCaptureWrapper *wrapper, const char *uri) {
@@ -232,56 +273,23 @@ print $fc $rstr;
 
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
-#ifndef OPENCV_WRAPPER_H
-#define OPENCV_WRAPPER_H
-
-#ifdef __cplusplus
-#include <vector>
-#include <opencv2/opencv.hpp>
-struct MatWrapper
-{
-        cv::Mat held;
-};
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <stddef.h>
-
-typedef struct {
-	int x; int y; int width; int height;
-} cw_Rect;
-
-typedef struct MatWrapper  MatWrapper ;
 void *matData(MatWrapper * mw);
 const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
-typedef struct VideoWriterWrapper VideoWriterWrapper;
-VideoWriterWrapper *newVideoWriter();
-int deleteVideoWriter (VideoWriterWrapper *);
 const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor);
 void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw);
 
-typedef struct VideoCaptureWrapper VideoCaptureWrapper;
-VideoCaptureWrapper *newVideoCapture();
-int deleteVideoCapture (VideoCaptureWrapper *);
 const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
 bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw);
 
 void imgImshow(const char *name, MatWrapper *mw);
 
-typedef struct TrackerWrapper TrackerWrapper;
-TrackerWrapper * newTracker();
-int  deleteTracker (TrackerWrapper *);
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
 char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
 
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
 MatWrapper * emptyMW ();
-int deleteMat(MatWrapper * wrapper);
 
 int get_pdltype(const int cvtype);
 int get_ocvtype(const int datatype,const int planes);
