@@ -1,41 +1,57 @@
 use strict;
 pp_addpm ({At=>'Top'},<<'EOPM');
-use 5.10.0;
 use strict;
 use warnings;
 
 =head1 NAME
 
-PDL::OpenCV - This module interfaces perl/PDL and OpenCV.
+PDL::OpenCV - PDL interface to OpenCV
 
 =head1 SYNOPSIS
 
-	use PDL::OpenCV;
-	use PDL;
-	use PDL::NiceSlice;
-
-	...
-
-	$mw->imshow();
-	...
-	$result=$mw->get_data;
+  use PDL::OpenCV::VideoCapture;
+  use PDL::OpenCV::VideoWriter;
+  my $vfile='t/Megamind.avi';
+  my $vc = PDL::OpenCV::VideoCapture->new_uri($vfile);
+  my $frame = $vc->read;
+  my $writer = PDL::OpenCV::VideoWriter->new;
+  $writer->open($outfile, 'MP4V', 20, (map $frame->dim($_), 1,2), 1);
+  while (defined $frame) {
+    $writer->write($frame);
+  }
 
 =head1 DESCRIPTION
 
-Use PDL::OpenCV to call OpenCV functions on your data using perl/PDL. This module
-is the glue between the two tools. OpenCV and Perl's C++ interface are not
-compatible, so a C layer is provided.
+Use PDL::OpenCV to call OpenCV functions on your data using Perl/PDL.
+
+As can be seen above, this distribution is structured to very closely
+match the structure of OpenCV v4 itself. That means the submodules
+match the "classes" and/or "modules" in OpenCV, with the obvious exception
+of the C<Mat> class which needs special handling to thinly wrap ndarrays
+going into and coming back from OpenCV.
+
+This includes method/function names which are exactly the same
+as in OpenCV, without being modified for the common Perl idiom
+of snake_casing. This is intended to make the OpenCV documentation
+trivially easy to use for the PDL binding (where a binding exists),
+including available tutorials.
+
+Where things do not work as you would expect from a PDL and/or OpenCV
+point of view, and it is not documented as doing so, this is a bug -
+please report it as shown at L</BUGS> below.
 
 =cut
-
 EOPM
 
 pp_addpm ({At=>'Bot'},<<'EOPM');
-=head1 KNOWN ISSUES
+=head1 BUGS
 
-The number of functions in OpenCV is large, if you do not encounter what is needed,
-there are fairly easy ways to create the wrappers. Look at ufunc/ofunc in opencv.pd
-and gen_code in genwrap.pl. Please file a report if you do so.
+Please report bugs at L<https://github.com/PDLPorters/PDL-OpenCV/issues>,
+or on the mailing list(s) at L<https://pdl.perl.org/?page=mailing-lists>.
+
+=head1 AUTHOR
+
+Ingo Schmid and the PDL Porters. Same terms as PDL itself.
 
 =cut
 EOPM
