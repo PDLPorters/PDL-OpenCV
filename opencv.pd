@@ -92,7 +92,7 @@ sub ofunc {
 		if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
 		MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
 		if (!mw) $CROAK("newMat returned null.");
-		$b() = %s(mw);
+		$b() = cw_%s(mw);
 		deleteMat(mw);
 EOF
     pp_def($name,
@@ -125,6 +125,6 @@ EOD
 }
 
 # generate functions.
-ofunc($_,$_,"returns $_ of the Mat object. \n") for qw/rows cols cw_channels/;
+ofunc($_,$_,"returns $_ of the Mat object. \n") for qw/rows cols channels/;
 
 pp_done();

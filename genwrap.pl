@@ -5,13 +5,13 @@ use PDL::Types;
 use PDL::Core qw/howbig/;
 
 # define generated functions.
-# [ name, ismethod, returntype, \%options, @arguments ]
+# [ name, ismethod(2=attribute), returntype, \%options, @arguments ]
 my @funclist = (
 ['normalize',0,'void',{},'MatWrapper *','out','int','start','int','end','int','type'],
 ['channels',1,'int',{}],
+['rows',2,'int',{}],
+['cols',2,'int',{}],
 ['minMaxIdx',0,'void',{},"double *","mymin","double *","mymax"],
-#['mult',0,{},"double *","mymin","double *","mymax"],
-#['minMaxLoc',0,'void',{},"double *","mymin","double *","mymax","int *","myminl","int *","mymaxl"],
 );
 
 my ($tstr_l,$rstr_l);
@@ -44,6 +44,7 @@ $tstr_l\t}
 
 sub gen_code {
 	my ($name, $ismethod, $ret, $opt) = splice @_, 0, 4;
+	die "Error on $name: attribute but args\n" if $ismethod == 2 and @_;
 	my (@args, @cvargs);
 	while (@_) {
 		my ($s, $v) = (shift, shift);
@@ -59,8 +60,9 @@ sub gen_code {
 	$str .= " {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  ".($ret ne 'void' ? "$ret retval = " : '');
-	$str .= ($ismethod ? "mw->held.$name(" : "cv::$name(mw->held@{[@cvargs && ', ']}");
-	$str .= join(', ', @cvargs).");\n";
+	$str .= $ismethod == 0 ? "cv::$name(mw->held@{[@cvargs && ', ']}" :
+	  "mw->held.$name" . ($ismethod == 1 ? "(" : ";\n");
+	$str .= join(', ', @cvargs).");\n" if $ismethod != 2;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
 	$str .= "  return retval;\n" if $ret ne 'void';
 	$str .= "}\n\n";
@@ -176,14 +178,6 @@ MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type,
 	return mw;
 }
 
-ptrdiff_t cols (MatWrapper * mw) {
-	return mw->held.cols;
-}
-
-ptrdiff_t rows (MatWrapper * mw) {
-	return mw->held.rows;
-}
-
 void *matData (MatWrapper * mw) {
 	return mw->held.ptr();
 }
@@ -280,8 +274,6 @@ typedef struct {
 } cw_Rect;
 
 typedef struct MatWrapper  MatWrapper ;
-ptrdiff_t rows (MatWrapper * mw) ;
-ptrdiff_t cols (MatWrapper * mw) ;
 void *matData(MatWrapper * mw);
 const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
