@@ -22,7 +22,7 @@ is( PDL::OpenCV::rows($slice), $data->dim(2),'rows' );
 is( PDL::OpenCV::rows($slice2), $data->dim(2),'rows planes' );
 is( PDL::OpenCV::cols($slice), $data->dim(1),'cols' );
 is( PDL::OpenCV::cols($slice2), $data->dim(1),'cols planes' );
-is PDL::OpenCV::cv_minmax($slice).'', '[0 74 0 0]','cv_minmax';
+is_deeply [map $_->sclr, PDL::OpenCV::minMaxIdx($slice)], [0,74],'minMaxIdx';
 is PDL::OpenCV::CV_8UC3(), 16, 'depth constant';
 is PDL::OpenCV::COLOR_GRAY2RGB(), 8, 'colour-conversion constant';
 is COLOR_GRAY2RGB, 8, 'colour-conversion constant exported';
