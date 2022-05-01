@@ -12,6 +12,7 @@ $hash{VERSION_FROM} = '../opencv.pd';
 $hash{INC} .= ' -I..';
 our $libs;
 $hash{LIBS}[0] .= $libs;
+$hash{depend} = { '$(OBJECT)'=>'../opencv_wrapper.h' };
 
 our @cw_objs;
 $hash{LDFROM} .= join ' ', '', '$(OBJECT)', map catfile(updir, $_), @cw_objs;
