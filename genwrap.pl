@@ -90,54 +90,6 @@ using namespace std;
 extern "C" {
 #endif
 
-struct MatWrapper
-{
-        cv::Mat held;
-};
-
-MatWrapper * newMat () {
-	return new MatWrapper;
-}
-
-int deleteMat(MatWrapper * wrapper) {
-	delete wrapper;
-	return 1;
-}
-
-struct VideoWriterWrapper {
-	cv::VideoWriter held;
-};
-
-VideoWriterWrapper *newVideoWriter() {
-	return new VideoWriterWrapper;
-}
-
-int deleteVideoWriter(VideoWriterWrapper * wrapper) {
-	delete wrapper;
-	return 1;
-}
-
-struct TrackerWrapper {
-	cv::Ptr<cv::Tracker> held;
-};
-
-int deleteTracker(TrackerWrapper * wrapper) {
-	delete wrapper;
-	return 1;
-}
-
-struct VideoCaptureWrapper {
-	cv::VideoCapture held;
-};
-
-VideoCaptureWrapper *newVideoCapture() {
-	return new VideoCaptureWrapper;
-}
-
-int deleteVideoCapture(VideoCaptureWrapper * wrapper) {
-	delete wrapper;
-	return 1;
-}
 EOF
 
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
@@ -160,19 +112,36 @@ typedef struct {
 	int x; int y; int width; int height;
 } cw_Rect;
 
-typedef struct MatWrapper MatWrapper ;
-MatWrapper *newMat ();
-int deleteMat(MatWrapper * wrapper);
-typedef struct VideoWriterWrapper VideoWriterWrapper;
-VideoWriterWrapper *newVideoWriter();
-int deleteVideoWriter (VideoWriterWrapper *);
-typedef struct VideoCaptureWrapper VideoCaptureWrapper;
-VideoCaptureWrapper *newVideoCapture();
-int deleteVideoCapture (VideoCaptureWrapper *);
-typedef struct TrackerWrapper TrackerWrapper;
-TrackerWrapper * newTracker();
-int deleteTracker (TrackerWrapper *);
 EOF
+
+sub gen_wrapper {
+  my ($class, $ptr_only) = @_;
+  (
+    <<EOF, #hstr
+typedef struct ${class}Wrapper ${class}Wrapper ;
+${class}Wrapper *new${class}();
+int delete${class}(${class}Wrapper * wrapper);
+EOF
+    <<EOF, #cstr
+struct ${class}Wrapper {
+	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : "cv::${class}"]} held;
+};
+@{[$ptr_only ? '' : "${class}Wrapper *new${class}() {
+	return new ${class}Wrapper;
+}"]}
+int delete${class}(${class}Wrapper * wrapper) {
+	delete wrapper;
+	return 1;
+}
+EOF
+  );
+}
+
+for (['Mat'], ['VideoCapture'], ['VideoWriter'], ['Tracker',1]) {
+  my ($hstr, $cstr) = gen_wrapper(@$_);
+  print $fh $hstr;
+  print $fc $cstr;
+}
 
 print $fc sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fc <<'EOF';
