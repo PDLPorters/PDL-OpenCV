@@ -12,6 +12,7 @@ my @funclist = (
 ['rows',2,'int',{}],
 ['cols',2,'int',{}],
 ['minMaxIdx',0,'void',{},"double *","mymin","double *","mymax"],
+['convertTo',1,'void',{},'MatWrapper *','out','int','rtype','double','alpha','double','beta'],
 );
 
 my ($tstr_l,$rstr_l);
@@ -115,33 +116,35 @@ int deleteTracker(TrackerWrapper * wrapper) {
 }
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
-	cv::Mat frame;
 	double mymin,mymax;
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
-	mw->held.convertTo(frame,CV_8UC3,scale);
-	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
+	MatWrapper *framew = emptyMW();
+	cw_convertTo(mw,framew,CV_8UC3,scale,0);
+	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cv::COLOR_GRAY2RGB);
 	cv::Rect roi = { box.x, box.y, box.width, box.height };
 	if (roi.x == 0) {
 		cv::namedWindow("ud",cv::WINDOW_NORMAL);
-		roi=cv::selectROI("ud",frame,true,false);
+		roi=cv::selectROI("ud",framew->held,true,false);
 		cv::destroyWindow("ud");
 	}
-	Tr->held->init(frame,roi);
+	Tr->held->init(framew->held,roi);
+	deleteMat(framew);
 }
 
 char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
-	cv::Mat frame;
 	double mymin,mymax;
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
-	mw->held.convertTo(frame,CV_8UC3,scale);
-	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
+	MatWrapper *framew = emptyMW();
+	cw_convertTo(mw,framew,CV_8UC3,scale,0);
+	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cv::COLOR_GRAY2RGB);
 	TRACKER_RECT_TYPE box;
-	char res = Tr->held->update(frame,box);
+	char res = Tr->held->update(framew->held,box);
 	*roi = { (int)box.x, (int)box.y, (int)box.width, (int)box.height };
-	cv::rectangle( frame, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
-	mw->held=frame;
+	cv::rectangle( framew->held, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
+	mw->held=framew->held;
+	deleteMat(framew);
 	imgImshow("ud", mw);
 	cv::waitKey(1);
 	return res;
