@@ -5,29 +5,24 @@ use PDL::Types;
 use PDL::Core qw/howbig/;
 
 # define generated functions.
-# [ name , \%options , \@arguments
+# [ name, ismethod, returntype, \%options, @arguments ]
 my @funclist = (
-['normalize',{},'MatWrapper *','out','int','start','int','end','int','type'],
-['channels',{cvret=>'int',method=>1,postxx=>'printf("res channels %d\n",res);',},,],
-['minMaxIdx',{method=>0,post=>'//printf("c: min %f max %f\n",mymin[0],mymax[0]);'},"double *","mymin","double *","mymax"],
-#['mult',{method=>0,post=>'//printf("c: min %f max %f\n",mymin[0],mymax[0]);'},"double *","mymin","double *","mymax"],
-#['minMaxLoc',{method=>0,},"double *","mymin","double *","mymax","int *","myminl","int *","mymaxl"],
+['normalize',0,'void',{},'MatWrapper *','out','int','start','int','end','int','type'],
+['channels',1,'int',{}],
+['minMaxIdx',0,'void',{},"double *","mymin","double *","mymax"],
+#['mult',0,{},"double *","mymin","double *","mymax"],
+#['minMaxLoc',0,'void',{},"double *","mymin","double *","mymax","int *","myminl","int *","mymaxl"],
 );
 
 my ($tstr_l,$rstr_l);
-for my $type ( PDL::Types::types ) {
-	next unless $type->real;
-	my $ts=$type->ppsym;
-	next if $ts =~/[KPQEN]/;
+for my $type ( grep $_->real, PDL::Types::types ) {
+	next if (my $bs = PDL::Core::howbig($type)) > 8;
+	next if $type->ppsym =~/[KPQN]/;
 	my $nt = $type->numval;
 	my $ct = $type->realctype;
-	my $it = ( $type->integer ? '' : 'F');
-	my $st = ( $type->unsigned ? 'U' : 'S');
-	my $tt = ( $type->integer ? $st.$it : $it);
-	my $bs = PDL::Core::howbig($type);
+	my $tt = $type->integer ? ($type->unsigned ? 'U' : 'S') : 'F';
 	my $s = 8*$bs;
 	$tstr_l.="\tcase $nt :
-		//printf(\"cv type %d\\n\",CV_$s${tt}C(planes));
 		return CV_$s${tt}C(planes); break;\n";
 	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
 }
@@ -37,62 +32,42 @@ int get_pdltype(const int cvtype) {
         uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
         const uchar chans = CV_MAT_CN(cvtype) ; //1 + (cvtype >> CV_CN_SHIFT);
 	int t=-1;
-	//printf(\"ConvertTo cvtype %d\\n\",cvtype);
 	switch(depth) {
-		$rstr_l
-\t}\n
+$rstr_l\t}
 	return t;
-}\n
+}
 ";
 
 my $tstr="
 int get_ocvtype(const int datatype,const int planes) {
-	switch (datatype) { \n
-		$tstr_l;
-\t}\n
+	switch (datatype) {
+$tstr_l\t}
 	return -1;
-}\n
+}
 ";
 
 sub gen_code {
-	my $name =shift;
-	my $opt =shift;
-	my @args;
-	my @cvargs ;
-	# parse argument list and get mats
-	for my $j (0..$#_/2) {
-		#push @types,$s;
-		my $s=$_[2*$j] || '';
-		my $v=$_[2*$j+1] || '';
-		#push @args, "$s $v";
-		($v=~ /^\&/) ? push (@args, "$s ".$v=~s/\&//r) : push @args, "$s $v";
-		($s=~ /.*Wrapper \*/) ? push (@cvargs, "$v\->mat") : push @cvargs, "$v";
+	my ($name, $ismethod, $ret, $opt) = splice @_, 0, 4;
+	my (@args, @cvargs);
+	while (@_) {
+		my ($s, $v) = (shift, shift);
+		$v=~s/^&//;
+		push @args, "$s $v";
+		push @cvargs, $s =~ /.*Wrapper \*/ ? "$v->mat" : $v;
 	}
-	my $ret=$$opt{ret} || "int";
 	my $fname=$name;
-	my $str = "$ret cw_$name ( MatWrapper * mw ";
-	my $argstr = join (", " ,@args) ; #$types[$i] $vals[$i]"), map { "$_ ".$args{$_} } keys (%args));
-	my $cvargs = join (', ',@cvargs);
-	$cvargs='' if ($cvargs =~ /^\s*,\s*$/);
-	$str .= ', '. $argstr unless ($argstr =~ /^\s*$/);
-	$str.= ") ";
-	$name=$$opt{function} if $$opt{function};
+	my $str = "$ret cw_$name(";
+	unshift @args, "MatWrapper * mw";
+	$str .= join(", ", @args) . ")";
 	my $hstr = $str.";\n";
-	$str.="{\n$ret retval;\n";
-	if (ref ($$opt{map_args}) eq 'CODE') {
-		my $fun  = $$opt{map_args};
-		&fun($argstr);
-	}
-	$str.= ($$opt{pre}||'')."\n";
-	my $lh = '';
-	# {cvret} is the return type.
-	$lh = "$$opt{cvret} cvret = " if $$opt{cvret};
-	$str.=$lh."mw->mat.$name ( $cvargs );\n" if $$opt{method};
-	$cvargs=", $cvargs" if $cvargs;
-	$str.=$lh."$name ( mw->mat $cvargs );\n" unless $$opt{method};
-	$str.= "// post: \n".($$opt{post}||'');
-	$str.= ("retval = cvret;\n") if (!$$opt{post} && $$opt{cvret} ) ;
-	$str.= "\n return retval; \n}\n\n\n";
+	$str .= " {\n";
+	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
+	$str .= "  ".($ret ne 'void' ? "$ret retval = " : '');
+	$str .= ($ismethod ? "mw->mat.$name(" : "cv::$name(mw->mat@{[@cvargs && ', ']}");
+	$str .= join(', ', @cvargs).");\n";
+	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
+	$str .= "  return retval;\n" if $ret ne 'void';
+	$str .= "}\n\n";
 	return ($hstr,$str);
 }
 
