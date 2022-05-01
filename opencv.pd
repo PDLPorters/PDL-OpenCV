@@ -135,7 +135,14 @@ ofunc($_,$_,"returns $_ of the Mat object. \n") for qw/rows cols channels/;
 sub add_const {
   my ($args, $text) = @_;
   pp_add_exported($text);
-  pp_addxs("int $text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})\nCODE:\n RETVAL = cw_const_$text(@{[join(',',map $_->[1], @$args)]});\nOUTPUT:\n RETVAL\n\n")
+  pp_addxs(<<EOF);
+int $text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})
+CODE:
+ RETVAL = cw_const_$text(@{[join(',',map $_->[1], @$args)]});
+OUTPUT:
+ RETVAL
+
+EOF
 }
 
 for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
