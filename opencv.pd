@@ -80,13 +80,12 @@ pp_def('minMaxIdx',
 	'),
 	);
 
+my %char2escape = ('>'=>'E<gt>','<'=>'E<lt>');
+my $chars = '(['.join('', map quotemeta, sort keys %char2escape).'])';
 sub protect_chars {
-	my ($txt) = @_;
-	$txt =~ s/>/E;gt#/g;
-	$txt =~ s/</E;lt#/g;
-	$txt =~ s/;/</g;
-	$txt =~ s/#/>/g;
-	return $txt;
+  my ($txt) = @_;
+  $txt =~ s/$chars/$char2escape{$1}/g;
+  return $txt;
 }
 
 sub ofunc {
