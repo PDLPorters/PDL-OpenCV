@@ -83,6 +83,12 @@ print $fc <<'EOF';
 #include <opencv2/core/utility.hpp>
 #include <opencv2/videoio.hpp>
 
+#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
+# define TRACKER_RECT_TYPE cv::Rect
+#else
+# define TRACKER_RECT_TYPE cv::Rect2d
+#endif
+
 using namespace std;
 /* use C name mangling */
 #ifdef __cplusplus
@@ -109,17 +115,13 @@ int deleteTracker(TrackerWrapper * wrapper) {
 }
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
-	cv::Rect roi;
 	cv::Mat frame;
-	roi.x=box.x;
-	roi.y=box.y;
-	roi.height=box.height;
-	roi.width=box.width;
 	double mymin,mymax;
-	minMaxIdx(mw->held, & mymin,& mymax);
+	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
 	mw->held.convertTo(frame,CV_8UC3,scale);
 	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
+	cv::Rect roi = { box.x, box.y, box.width, box.height };
 	if (roi.x == 0) {
 		cv::namedWindow("ud",cv::WINDOW_NORMAL);
 		roi=cv::selectROI("ud",frame,true,false);
@@ -129,26 +131,19 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 }
 
 char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
-#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
-	cv::Rect box;
-#else
-	cv::Rect2d box;
-#endif
 	cv::Mat frame;
 	double mymin,mymax;
-	minMaxIdx(mw->held, & mymin,& mymax);
+	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
 	mw->held.convertTo(frame,CV_8UC3,scale);
 	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
-	char res = Tr->held->update(frame,box );
+	TRACKER_RECT_TYPE box;
+	char res = Tr->held->update(frame,box);
+	*roi = { (int)box.x, (int)box.y, (int)box.width, (int)box.height };
 	cv::rectangle( frame, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
 	mw->held=frame;
 	imgImshow("ud", mw);
 	cv::waitKey(1);
-	roi->x=box.x;
-	roi->y=box.y;
-	roi->height=box.height;
-	roi->width=box.width;
 	return res;
 }
 
