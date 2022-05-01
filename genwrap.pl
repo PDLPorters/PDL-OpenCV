@@ -22,19 +22,15 @@ for my $type ( grep $_->real, PDL::Types::types ) {
 	my $ct = $type->realctype;
 	my $tt = $type->integer ? ($type->unsigned ? 'U' : 'S') : 'F';
 	my $s = 8*$bs;
-	$tstr_l.="\tcase $nt :
-		return CV_$s${tt}C(planes); break;\n";
-	$rstr_l.="\tcase CV_$s$tt : t = $nt; break;\n";
+	$tstr_l.="\tcase $nt: return CV_$s${tt}C(planes); break;\n";
+	$rstr_l.="\tcase CV_$s$tt: return $nt; break;\n";
 }
 
 my $rstr="
 int get_pdltype(const int cvtype) {
-        uchar depth = CV_MAT_DEPTH(cvtype); //    type & CV_MAT_DEPTH_MASK;
-        const uchar chans = CV_MAT_CN(cvtype) ; //1 + (cvtype >> CV_CN_SHIFT);
-	int t=-1;
-	switch(depth) {
+	switch(CV_MAT_DEPTH(cvtype)) {
 $rstr_l\t}
-	return t;
+	return -1;
 }
 ";
 
