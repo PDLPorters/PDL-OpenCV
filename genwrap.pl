@@ -53,7 +53,7 @@ sub gen_code {
 		my ($s, $v) = (shift, shift);
 		$v=~s/^&//;
 		push @args, "$s $v";
-		push @cvargs, $s =~ /.*Wrapper \*/ ? "$v->mat" : $v;
+		push @cvargs, $s =~ /.*Wrapper \*/ ? "$v->held" : $v;
 	}
 	my $fname=$name;
 	my $str = "$ret cw_$name(";
@@ -63,7 +63,7 @@ sub gen_code {
 	$str .= " {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  ".($ret ne 'void' ? "$ret retval = " : '');
-	$str .= ($ismethod ? "mw->mat.$name(" : "cv::$name(mw->mat@{[@cvargs && ', ']}");
+	$str .= ($ismethod ? "mw->held.$name(" : "cv::$name(mw->held@{[@cvargs && ', ']}");
 	$str .= join(', ', @cvargs).");\n";
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
 	$str .= "  return retval;\n" if $ret ne 'void';
@@ -92,39 +92,27 @@ extern "C" {
 #endif
 
 void imgImshow(const char *name, MatWrapper *mw) {
-	cv::imshow(name,mw->mat);
+	cv::imshow(name,mw->held);
 }
 
 struct TrackerWrapper {
-	cv::Ptr<cv::Tracker> tracker;
+	cv::Ptr<cv::Tracker> held;
 };
 
 TrackerWrapper * newTracker(int trackerNumber) {
 	string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
 	string trackerType = trackerTypes[trackerNumber];
-	//printf ("init tracker \n");
 	cv::Ptr<cv::Tracker> tracker;
-	// create a tracker object
-	//if (trackerType == "BOOSTING")
-		//tracker = cv::TrackerBoosting::create();
 	if (trackerType == "MIL")
 		tracker = cv::TrackerMIL::create();
 	if (trackerType == "KCF")
 		tracker = cv::TrackerKCF::create();
-	/*if (trackerType == "TLD")
-		tracker = cv::TrackerTLD::create();
-	if (trackerType == "MEDIANFLOW")
-		tracker = cv::TrackerMedianFlow::create();*/
 	if (trackerType == "GOTURN")
 		tracker = cv::TrackerGOTURN::create();
-	//if (trackerType == "MOSSE")
-		//tracker = cv::TrackerMOSSE::create();
 	if (trackerType == "CSRT")
 		tracker = cv::TrackerCSRT::create();
-	// Ptr<Tracker> tracker = cv::TrackerKCF::create();
 	TrackerWrapper * Tr= new TrackerWrapper;
-	Tr->tracker = tracker;
-	//printf ("init tracker done.\n");
+	Tr->held = tracker;
 	return Tr;
 }
 
@@ -141,16 +129,16 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 	roi.height=box.height;
 	roi.width=box.width;
 	double mymin,mymax;
-	minMaxIdx(mw->mat, & mymin,& mymax);
+	minMaxIdx(mw->held, & mymin,& mymax);
 	double scale = 256/mymax;
-	mw->mat.convertTo(frame,CV_8UC3,scale);
+	mw->held.convertTo(frame,CV_8UC3,scale);
 	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
 	if (roi.x == 0) {
 		cv::namedWindow("ud",cv::WINDOW_NORMAL);
 		roi=cv::selectROI("ud",frame,true,false);
 		cv::destroyWindow("ud");
 	}
-	Tr->tracker->init(frame,roi);
+	Tr->held->init(frame,roi);
 }
 
 char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
@@ -161,13 +149,13 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 #endif
 	cv::Mat frame;
 	double mymin,mymax;
-	minMaxIdx(mw->mat, & mymin,& mymax);
+	minMaxIdx(mw->held, & mymin,& mymax);
 	double scale = 256/mymax;
-	mw->mat.convertTo(frame,CV_8UC3,scale);
+	mw->held.convertTo(frame,CV_8UC3,scale);
 	if(frame.channels()==1) cvtColor(frame,frame,cv::COLOR_GRAY2RGB);
-	char res = Tr->tracker->update(frame,box );
+	char res = Tr->held->update(frame,box );
 	cv::rectangle( frame, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
-	mw->mat=frame;
+	mw->held=frame;
 	imgImshow("ud", mw);
 	cv::waitKey(1);
 	roi->x=box.x;
@@ -188,32 +176,32 @@ MatWrapper * emptyMW () {
 
 MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
 	MatWrapper *mw = new MatWrapper;
-	mw->mat = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
+	mw->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
 	return mw;
 }
 
 ptrdiff_t cols (MatWrapper * mw) {
-	return mw->mat.cols;
+	return mw->held.cols;
 }
 
 ptrdiff_t rows (MatWrapper * mw) {
-	return mw->mat.rows;
+	return mw->held.rows;
 }
 
 void *matData (MatWrapper * mw) {
-	return mw->mat.ptr();
+	return mw->held.ptr();
 }
 
 const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
-	*c = wrapper->mat.cols;
-	*r = wrapper->mat.rows;
-	*t = wrapper->mat.type();
-	*l = wrapper->mat.channels();
+	*c = wrapper->held.cols;
+	*r = wrapper->held.rows;
+	*t = wrapper->held.type();
+	*l = wrapper->held.channels();
 	return NULL;
 }
 
 struct VideoWriterWrapper {
-	cv::VideoWriter writer;
+	cv::VideoWriter held;
 };
 
 VideoWriterWrapper *newVideoWriter() {
@@ -226,7 +214,7 @@ int deleteVideoWriter(VideoWriterWrapper * wrapper) {
 }
 
 const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor) {
-	if (!wrapper->writer.open(
+	if (!wrapper->held.open(
 	  name,
 	  cv::VideoWriter::fourcc(code[0],code[1],code[2],code[3]),
 	  fps,
@@ -237,11 +225,11 @@ const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const
 }
 
 void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw) {
-	wrapper->writer.write(mw->mat);
+	wrapper->held.write(mw->held);
 }
 
 struct VideoCaptureWrapper {
-	cv::VideoCapture capture;
+	cv::VideoCapture held;
 };
 
 VideoCaptureWrapper *newVideoCapture() {
@@ -254,17 +242,17 @@ int deleteVideoCapture(VideoCaptureWrapper * wrapper) {
 }
 
 const char *openVideoCaptureURI(VideoCaptureWrapper *wrapper, const char *uri) {
-	wrapper->capture.open( uri );
-	if (!wrapper->capture.isOpened()) return "Error opening video capture";
+	wrapper->held.open( uri );
+	if (!wrapper->held.isOpened()) return "Error opening video capture";
 	return NULL;
 }
 
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper) {
-	return wrapper->capture.get(cv::CAP_PROP_FRAME_COUNT);
+	return wrapper->held.get(cv::CAP_PROP_FRAME_COUNT);
 }
 
 bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw) {
-	return wrapper->capture.read(mw->mat);
+	return wrapper->held.read(mw->held);
 }
 EOF
 
@@ -281,7 +269,7 @@ print $fh <<'EOF';
 #include <opencv2/opencv.hpp>
 struct MatWrapper
 {
-        cv::Mat mat;
+        cv::Mat held;
 };
 #endif
 
