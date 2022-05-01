@@ -45,8 +45,8 @@ $tstr_l\t}
 
 sub gen_code {
 	my ($name, $ismethod, $ret, $opt) = splice @_, 0, 4;
-	die "Error on $name: attribute but args\n" if $ismethod == 2 and @_;
 	my (@args, @cvargs);
+	die "Error on $name: attribute but args\n" if $ismethod == 2 and @_;
 	while (@_) {
 		my ($s, $v) = (shift, shift);
 		$v=~s/^&//;
