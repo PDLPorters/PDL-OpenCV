@@ -7,12 +7,12 @@ use PDL::Core qw/howbig/;
 # define generated functions.
 # [ name, ismethod(2=attribute), returntype, \%options, @arguments ]
 my @funclist = (
-['normalize',0,'void',{},'MatWrapper *','out','int','start','int','end','int','type'],
-['channels',1,'int',{}],
-['rows',2,'int',{}],
-['cols',2,'int',{}],
-['minMaxIdx',0,'void',{},"double *","mymin","double *","mymax"],
-['convertTo',1,'void',{},'MatWrapper *','out','int','rtype','double','alpha','double','beta'],
+['normalize',0,'void',{},'MatWrapper *','mw','MatWrapper *','out','int','start','int','end','int','type'],
+['channels',1,'int',{},'MatWrapper *','mw'],
+['rows',2,'int',{},'MatWrapper *','mw'],
+['cols',2,'int',{},'MatWrapper *','mw'],
+['minMaxIdx',0,'void',{},'MatWrapper *','mw',"double *","mymin","double *","mymax"],
+['convertTo',1,'void',{},'MatWrapper *','mw','MatWrapper *','out','int','rtype','double','alpha','double','beta'],
 );
 
 my ($tstr_l,$rstr_l);
@@ -45,24 +45,27 @@ $tstr_l\t}
 
 sub gen_code {
 	my ($name, $ismethod, $ret, $opt) = splice @_, 0, 4;
-	my (@args, @cvargs);
+	my (@args, @cvargs, $methodvar);
+	if ($ismethod) {
+		my ($s, $v) = (shift, shift);
+		push @args, "$s $v";
+		$methodvar = $v;
+	}
 	die "Error on $name: attribute but args\n" if $ismethod == 2 and @_;
 	while (@_) {
 		my ($s, $v) = (shift, shift);
-		$v=~s/^&//;
 		push @args, "$s $v";
 		push @cvargs, $s =~ /.*Wrapper \*/ ? "$v->held" : $v;
 	}
 	my $fname=$name;
 	my $str = "$ret cw_$name(";
-	unshift @args, "MatWrapper * mw";
 	$str .= join(", ", @args) . ")";
 	my $hstr = $str.";\n";
 	$str .= " {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  ".($ret ne 'void' ? "$ret retval = " : '');
-	$str .= $ismethod == 0 ? "cv::$name(mw->held@{[@cvargs && ', ']}" :
-	  "mw->held.$name" . ($ismethod == 1 ? "(" : ";\n");
+	$str .= $ismethod == 0 ? "cv::$name(" :
+	  "$methodvar->held.$name" . ($ismethod == 1 ? "(" : ";\n");
 	$str .= join(', ', @cvargs).");\n" if $ismethod != 2;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
 	$str .= "  return retval;\n" if $ret ne 'void';
