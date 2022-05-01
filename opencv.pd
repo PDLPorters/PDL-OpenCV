@@ -80,18 +80,9 @@ pp_def('minMaxIdx',
 	'),
 	);
 
-my %char2escape = ('>'=>'E<gt>','<'=>'E<lt>');
-my $chars = '(['.join('', map quotemeta, sort keys %char2escape).'])';
-sub protect_chars {
-  my ($txt) = @_;
-  $txt =~ s/$chars/$char2escape{$1}/g;
-  return $txt;
-}
-
 sub ofunc {
-    my ($name,$func,$doc,%extra) = @_;
+    my ($func,$doc,%extra) = @_;
     my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
-    my $funcovp = protect_chars $funcov;
     $func = $func->[0] if ref $func eq 'ARRAY';
     my $codestr = pp_line_numbers __LINE__, sprintf <<'EOF', $func;
 		MatWrapper *mw = newMat($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
@@ -99,15 +90,15 @@ sub ofunc {
 		$b() = cw_%s(mw);
 		deleteMat(mw);
 EOF
-    pp_def($name,
+    pp_def($func,
 	   Pars => 'in(l,c,r); [o]b()',
 	   GenericTypes=>['N','D'],
 	   NoPthread=>1,
 	   PMCode => pp_line_numbers(__LINE__-1, qq{
-		   sub $name {
+		   sub $func {
 			   my (\$self) = \@_;
 			   my \$res=zeroes(ushort,1);
-			   _${name}_int(\$self,\$res);
+			   _${func}_int(\$self,\$res);
 			   \$res;
 		   }
 	   },),
@@ -121,15 +112,12 @@ $doc
 =for example
 
    \$y = $funcov \$x;
-   \$x->inplace->$name;  # modify \$x inplace
 
-It can be made to work inplace with the C<\$x-E<gt>inplace> syntax.
-This function is used to overload the unary C<$funcovp> operator/function.
 EOD
 }
 
 # generate functions.
-ofunc($_,$_,"returns $_ of the Mat object. \n") for qw/rows cols channels/;
+ofunc($_,"returns $_ of the Mat object. \n") for qw/rows cols channels/;
 
 sub add_const {
   my ($args, $text) = @_;
