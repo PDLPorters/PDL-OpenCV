@@ -20,8 +20,9 @@ my $slice2 = long $data(,,0:2;-)->mv(2,0);
 
 is( PDL::OpenCV::rows($slice), $data->dim(1),'rows' );
 is( PDL::OpenCV::rows($slice2), $data->dim(1),'rows planes' );
-is( PDL::OpenCV::cols($slice) , $data->dim(0),'cols' );
-is( PDL::OpenCV::cols($slice2) , $data->dim(0),'cols planes' );
+is( PDL::OpenCV::cols($slice), $data->dim(0),'cols' );
+is( PDL::OpenCV::cols($slice2), $data->dim(0),'cols planes' );
 is PDL::OpenCV::cv_minmax($data->slice('0')).'', '[0 72 0 0]','cv_minmax';
+is PDL::OpenCV::CV_8UC3(), 16, 'depth constant';
 
 done_testing();

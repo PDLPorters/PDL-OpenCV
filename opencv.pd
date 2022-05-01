@@ -127,4 +127,15 @@ EOD
 # generate functions.
 ofunc($_,$_,"returns $_ of the Mat object. \n") for qw/rows cols channels/;
 
+sub add_const {
+  my ($args, $text) = @_;
+  pp_add_exported($text);
+  pp_addxs("int $text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})\nCODE:\n RETVAL = cw_const_$text(@{[join(',',map $_->[1], @$args)]});\nOUTPUT:\n RETVAL\n\n")
+}
+
+for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
+  add_const([], "CV_$bits$_") for 1..4;
+  add_const([[qw(int n)]], "CV_$bits");
+}
+
 pp_done();

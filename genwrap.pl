@@ -299,7 +299,20 @@ for my $func (@funclist) {
 	print $fc $cstr;
 }
 
+sub add_const {
+  my ($fh, $fc, $args, $text) = @_;
+  my $t = "int cw_const_$text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})";
+  print $fh "$t;\n";
+  print $fc "$t { return $text@{[@$args ? '('.join(',',map $_->[1], @$args).')' : '']}; }\n";
+}
+
+for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
+  add_const($fh, $fc, [], "CV_$bits$_") for 1..4;
+  add_const($fh, $fc, [[qw(int n)]], "CV_$bits");
+}
+
 print $fh <<'EOF';
+
 #ifdef __cplusplus
 }
 #endif
