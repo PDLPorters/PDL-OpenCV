@@ -90,6 +90,20 @@ using namespace std;
 extern "C" {
 #endif
 
+struct MatWrapper
+{
+        cv::Mat held;
+};
+
+MatWrapper * newMat () {
+	return new MatWrapper;
+}
+
+int deleteMat(MatWrapper * wrapper) {
+	delete wrapper;
+	return 1;
+}
+
 struct VideoWriterWrapper {
 	cv::VideoWriter held;
 };
@@ -124,11 +138,6 @@ int deleteVideoCapture(VideoCaptureWrapper * wrapper) {
 	delete wrapper;
 	return 1;
 }
-
-int deleteMat(MatWrapper * wrapper) {
-	delete wrapper;
-	return 1;
-}
 EOF
 
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
@@ -139,10 +148,6 @@ print $fh <<'EOF';
 #ifdef __cplusplus
 #include <vector>
 #include <opencv2/opencv.hpp>
-struct MatWrapper
-{
-        cv::Mat held;
-};
 #endif
 
 #ifdef __cplusplus
@@ -155,8 +160,9 @@ typedef struct {
 	int x; int y; int width; int height;
 } cw_Rect;
 
-typedef struct MatWrapper  MatWrapper ;
-
+typedef struct MatWrapper MatWrapper ;
+MatWrapper *newMat ();
+int deleteMat(MatWrapper * wrapper);
 typedef struct VideoWriterWrapper VideoWriterWrapper;
 VideoWriterWrapper *newVideoWriter();
 int deleteVideoWriter (VideoWriterWrapper *);
@@ -166,7 +172,6 @@ int deleteVideoCapture (VideoCaptureWrapper *);
 typedef struct TrackerWrapper TrackerWrapper;
 TrackerWrapper * newTracker();
 int deleteTracker (TrackerWrapper *);
-int deleteMat(MatWrapper * wrapper);
 EOF
 
 print $fc sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
@@ -214,10 +219,6 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	imgImshow("ud", mw);
 	cv::waitKey(1);
 	return res;
-}
-
-MatWrapper * newMat () {
-	return new MatWrapper;
 }
 
 MatWrapper * newMatWithDims (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
@@ -289,7 +290,6 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
 char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
 
 MatWrapper * newMatWithDims (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
-MatWrapper * newMat ();
 
 int get_pdltype(const int cvtype);
 int get_ocvtype(const int datatype,const int planes);
