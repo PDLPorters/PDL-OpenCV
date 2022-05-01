@@ -24,6 +24,10 @@ PDL::OpenCV - PDL interface to OpenCV
 
 Use PDL::OpenCV to call OpenCV functions on your data using Perl/PDL.
 
+PDL data for this purpose must be dimensioned C<(channels,cols,rows)>
+where C<channels> might be 1 if grayscale. This module will not use
+heuristics to guess what you meant if you only supply 2-dimensional data.
+
 As can be seen above, this distribution is structured to very closely
 match the structure of OpenCV v4 itself. That means the submodules
 match the "classes" and/or "modules" in OpenCV, with the obvious exception
@@ -66,25 +70,17 @@ pp_addhdr << 'EOH';
 EOH
 
 pp_def('cv_minmax',
-	Pars => 'in(dim1,dim2,dim3); [o]m(k=4)',
+	Pars => 'in(l,c,r); [o]m(k=4)',
 	Code=>pp_line_numbers(__LINE__,'
-		pdl *pid = $PDL(in);
-		PDL_Indx l = $SIZE(dim1), c = $SIZE(dim2), r = $SIZE(dim3);
-		if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
-		if (l>1) $CROAK( "minMaxIdx only works on single channel (%d) arrays. \n",l);
-		MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
+		if ($SIZE(l)>1) $CROAK( "minMaxIdx only works on single channel (got l=%"IND_FLAG") arrays.\n",$SIZE(l));
+		MatWrapper *mw = newMat($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
 		if (!mw) $CROAK("newMat returned null.");
 		double mymin;
 		double mymax;
-		//int * mil,mal;
-		//printf("min %f max %f\n",mymin,mymax);
-		cw_minMaxIdx(mw,& mymin,& mymax); //,mil,mal);
+		cw_minMaxIdx(mw,& mymin,& mymax);
 		deleteMat(mw);
-		//printf("min %f max %f\n",mymin,mymax);
 		$m(k=>0)=mymin;
 		$m(k=>1)=mymax;
-		//$m(k=>2)=mil;
-		//$m(k=>3)=mal;
 	'),
 	);
 
@@ -103,16 +99,13 @@ sub ofunc {
     my $funcovp = protect_chars $funcov;
     $func = $func->[0] if ref $func eq 'ARRAY';
     my $codestr = pp_line_numbers __LINE__, sprintf <<'EOF', $func;
-		pdl *pid = $PDL(in);
-		PDL_Indx l = $SIZE(dim1), c = $SIZE(dim2), r = $SIZE(dim3);
-		if (!(pid->ndims > 2 && l<4)) r=c, c=l, l=1;
-		MatWrapper *mw = newMat(c,r,pid->datatype,l,$P(in));
+		MatWrapper *mw = newMat($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
 		if (!mw) $CROAK("newMat returned null.");
 		$b() = cw_%s(mw);
 		deleteMat(mw);
 EOF
     pp_def($name,
-	   Pars => 'in(dim1,dim2,dim3); [o]b()',
+	   Pars => 'in(l,c,r); [o]b()',
 	   GenericTypes=>['N','D'],
 	   NoPthread=>1,
 	   PMCode => pp_line_numbers(__LINE__-1, qq{
