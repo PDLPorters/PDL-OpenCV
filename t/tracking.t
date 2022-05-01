@@ -25,7 +25,7 @@ is $@, '';
 
 note $frame->info;
 my $bx=pdl(qw/169 88 192 257/);
-my ($tr,$box)=PDL::OpenCV::Tracker->init_tracker($frame,2,$bx);
+my ($tr,$box)=PDL::OpenCV::Tracker->init_tracker($frame,$bx);
 note "box $box";
 
 my $x = 2;

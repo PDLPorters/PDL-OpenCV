@@ -97,20 +97,9 @@ struct TrackerWrapper {
 	cv::Ptr<cv::Tracker> held;
 };
 
-TrackerWrapper * newTracker(int trackerNumber) {
-	string trackerTypes[8] = {"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "GOTURN", "MOSSE", "CSRT"};
-	string trackerType = trackerTypes[trackerNumber];
-	cv::Ptr<cv::Tracker> tracker;
-	if (trackerType == "MIL")
-		tracker = cv::TrackerMIL::create();
-	if (trackerType == "KCF")
-		tracker = cv::TrackerKCF::create();
-	if (trackerType == "GOTURN")
-		tracker = cv::TrackerGOTURN::create();
-	if (trackerType == "CSRT")
-		tracker = cv::TrackerCSRT::create();
-	TrackerWrapper * Tr= new TrackerWrapper;
-	Tr->held = tracker;
+TrackerWrapper *newTracker() {
+	TrackerWrapper * Tr = new TrackerWrapper;
+	Tr->held = cv::TrackerKCF::create();
 	return Tr;
 }
 
@@ -293,7 +282,7 @@ bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw);
 void imgImshow(const char *name, MatWrapper *mw);
 
 typedef struct TrackerWrapper TrackerWrapper;
-TrackerWrapper * newTracker (int tracker_type);
+TrackerWrapper * newTracker();
 int  deleteTracker (TrackerWrapper *);
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
 char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
