@@ -21,8 +21,8 @@ pp_def('init_tracker',
         OtherPars => 'PDL__OpenCV__Tracker twi',
         Code=>pp_line_numbers(__LINE__,
         q{
-                MatWrapper *mw = newMat($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
-                if (!mw) $CROAK("newMat returned null.");
+                MatWrapper *mw = newMatWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
+                if (!mw) $CROAK("newMatWithDims returned null.");
                 cw_Rect box;
                 box.x=$b(j=>0);
                 box.y=$b(j=>1);
@@ -68,8 +68,8 @@ pp_def('update_tracker',
         Pars=>'in(l,c,r); ushort [o] b(j=4);',
         OtherPars => 'PDL__OpenCV__Tracker twi',
         Code =>pp_line_numbers(__LINE__, q{
-                MatWrapper *mw = newMat($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
-                if (!mw) $CROAK("newMat returned null.");
+                MatWrapper *mw = newMatWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
+                if (!mw) $CROAK("newMatWithDims returned null.");
                 cw_Rect box;
                 TrackerWrapper * tw = $COMP(twi);
                 updateTracker(tw,mw,&box);

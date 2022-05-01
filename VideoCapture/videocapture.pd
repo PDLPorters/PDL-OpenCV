@@ -51,8 +51,8 @@ pp_def('read',
         HaveBroadcasting=>0, NoPthread=>1, # I/O
         Comp => 'MatWrapper *mw;',
         MakeComp => <<'EOF',
-                if (!($COMP(mw) = emptyMW()))
-                  $CROAK("emptyMW returned null.");
+                if (!($COMP(mw) = newMat()))
+                  $CROAK("newMat returned null.");
                 if (!readVideoCapture($COMP(wr), $COMP(mw)))
                   $CROAK("failed to read");
 EOF

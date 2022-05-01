@@ -73,8 +73,8 @@ pp_def('minMaxIdx',
 	Pars => 'in(l,c,r); double [o]min(); double [o]max()',
 	Code=>pp_line_numbers(__LINE__,'
 		if ($SIZE(l)>1) $CROAK( "minMaxIdx only works on single channel (got l=%"IND_FLAG") arrays.\n",$SIZE(l));
-		MatWrapper *mw = newMat($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
-		if (!mw) $CROAK("newMat returned null.");
+		MatWrapper *mw = newMatWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
+		if (!mw) $CROAK("newMatWithDims returned null.");
 		cw_minMaxIdx(mw,&$min(),&$max());
 		deleteMat(mw);
 	'),
@@ -85,8 +85,8 @@ sub ofunc {
     my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
     $func = $func->[0] if ref $func eq 'ARRAY';
     my $codestr = pp_line_numbers __LINE__, sprintf <<'EOF', $func;
-		MatWrapper *mw = newMat($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
-		if (!mw) $CROAK("newMat returned null.");
+		MatWrapper *mw = newMatWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
+		if (!mw) $CROAK("newMatWithDims returned null.");
 		$b() = cw_%s(mw);
 		deleteMat(mw);
 EOF

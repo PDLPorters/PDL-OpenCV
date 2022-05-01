@@ -69,8 +69,8 @@ pp_def('write',
         NoPthread=>1, # I/O
         Code =>pp_line_numbers(__LINE__, <<'EOF'),
                 pdl *pid = $PDL(m);
-                MatWrapper *mw = newMat($SIZE(c),$SIZE(r),pid->datatype,$SIZE(l),$P(m));
-                if (!mw) $CROAK("newMat returned null.");
+                MatWrapper *mw = newMatWithDims($SIZE(c),$SIZE(r),pid->datatype,$SIZE(l),$P(m));
+                if (!mw) $CROAK("newMatWithDims returned null.");
                 writeVideoWriter($COMP(wr), mw);
                 deleteMat(mw);
 EOF

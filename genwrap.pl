@@ -185,7 +185,7 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 	double mymin,mymax;
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
-	MatWrapper *framew = emptyMW();
+	MatWrapper *framew = newMat();
 	cw_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
 	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cw_const_COLOR_GRAY2RGB());
 	cv::Rect roi = { box.x, box.y, box.width, box.height };
@@ -202,7 +202,7 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	double mymin,mymax;
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
-	MatWrapper *framew = emptyMW();
+	MatWrapper *framew = newMat();
 	cw_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
 	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cw_const_COLOR_GRAY2RGB());
 	TRACKER_RECT_TYPE box;
@@ -216,11 +216,11 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	return res;
 }
 
-MatWrapper * emptyMW () {
+MatWrapper * newMat () {
 	return new MatWrapper;
 }
 
-MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
+MatWrapper * newMatWithDims (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
 	MatWrapper *mw = new MatWrapper;
 	mw->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
 	return mw;
@@ -288,8 +288,8 @@ void imgImshow(const char *name, MatWrapper *mw);
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
 char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
 
-MatWrapper * newMat (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
-MatWrapper * emptyMW ();
+MatWrapper * newMatWithDims (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
+MatWrapper * newMat ();
 
 int get_pdltype(const int cvtype);
 int get_ocvtype(const int datatype,const int planes);
