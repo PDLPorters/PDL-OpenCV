@@ -120,8 +120,8 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
 	MatWrapper *framew = emptyMW();
-	cw_convertTo(mw,framew,CV_8UC3,scale,0);
-	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cv::COLOR_GRAY2RGB);
+	cw_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
+	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cw_const_COLOR_GRAY2RGB());
 	cv::Rect roi = { box.x, box.y, box.width, box.height };
 	if (roi.x == 0) {
 		cv::namedWindow("ud",cv::WINDOW_NORMAL);
@@ -137,8 +137,8 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
 	MatWrapper *framew = emptyMW();
-	cw_convertTo(mw,framew,CV_8UC3,scale,0);
-	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cv::COLOR_GRAY2RGB);
+	cw_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
+	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cw_const_COLOR_GRAY2RGB());
 	TRACKER_RECT_TYPE box;
 	char res = Tr->held->update(framew->held,box);
 	*roi = { (int)box.x, (int)box.y, (int)box.width, (int)box.height };
@@ -301,7 +301,8 @@ for my $func (@funclist) {
 
 sub add_const {
   my ($fh, $fc, $args, $text) = @_;
-  my $t = "int cw_const_$text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})";
+  (my $funcname = $text) =~ s#cv::##;
+  my $t = "int cw_const_$funcname(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})";
   print $fh "$t;\n";
   print $fc "$t { return $text@{[@$args ? '('.join(',',map $_->[1], @$args).')' : '']}; }\n";
 }
@@ -310,6 +311,12 @@ for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
   add_const($fh, $fc, [], "CV_$bits$_") for 1..4;
   add_const($fh, $fc, [[qw(int n)]], "CV_$bits");
 }
+
+open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
+while (!eof $consts) {
+  chomp(my $line = <$consts>);
+  add_const($fh, $fc, [], "cv::$line");
+};
 
 print $fh <<'EOF';
 

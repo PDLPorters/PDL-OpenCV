@@ -138,4 +138,10 @@ for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
   add_const([[qw(int n)]], "CV_$bits");
 }
 
+open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
+while (!eof $consts) {
+  chomp(my $line = <$consts>);
+  add_const([], $line);
+};
+
 pp_done();

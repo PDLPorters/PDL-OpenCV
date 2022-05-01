@@ -24,5 +24,7 @@ is( PDL::OpenCV::cols($slice), $data->dim(0),'cols' );
 is( PDL::OpenCV::cols($slice2), $data->dim(0),'cols planes' );
 is PDL::OpenCV::cv_minmax($data->slice('0')).'', '[0 72 0 0]','cv_minmax';
 is PDL::OpenCV::CV_8UC3(), 16, 'depth constant';
+is PDL::OpenCV::COLOR_GRAY2RGB(), 8, 'colour-conversion constant';
+is COLOR_GRAY2RGB, 8, 'colour-conversion constant exported';
 
 done_testing();
