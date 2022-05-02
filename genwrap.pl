@@ -38,13 +38,13 @@ sub gen_code {
 	my ($name, $ismethod, $ret, $opt) = splice @_, 0, 4;
 	my (@args, @cvargs, $methodvar);
 	if ($ismethod) {
-		my ($s, $v) = (shift, shift);
+		my ($s, $v) = @{shift()};
 		push @args, "$s $v";
 		$methodvar = $v;
 	}
 	die "Error on $name: attribute but args\n" if $ismethod == 2 and @_;
 	while (@_) {
-		my ($s, $v) = (shift, shift);
+		my ($s, $v) = @{shift()};
 		push @args, "$s $v";
 		push @cvargs, $s =~ /.*Wrapper \*/ ? "$v->held" : $v;
 	}
