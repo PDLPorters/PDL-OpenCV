@@ -196,12 +196,11 @@ MatWrapper * newMatWithDims (const ptrdiff_t cols, const ptrdiff_t rows, const i
 	return mw;
 }
 
-const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
+void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
+	*t = get_pdltype(wrapper->held.type());
+	*l = wrapper->held.channels();
 	*c = wrapper->held.cols;
 	*r = wrapper->held.rows;
-	*t = wrapper->held.type();
-	*l = wrapper->held.channels();
-	return NULL;
 }
 
 const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor) {
@@ -239,7 +238,7 @@ print $fc $rstr;
 
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
-const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
+void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor);
 void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw);

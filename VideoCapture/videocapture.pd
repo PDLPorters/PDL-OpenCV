@@ -58,13 +58,7 @@ pp_def('read',
 EOF
         CompFreeCodeComp => 'if ($COMP(mw)) deleteMat($COMP(mw));',
         RedoDimsCode=>pp_line_numbers(__LINE__, <<'EOF'),
-                PDL_Indx t,l,c,r;
-                const char *ret = vDims($COMP(mw), &t, &l, &c, &r);
-                if (ret) $CROAK("Error in vDims: %s", ret);
-                $SIZE(l)=l;
-                $SIZE(c)=c;
-                $SIZE(r)=r;
-                $PDL(m)->datatype = get_pdltype(t);
+                cw_Mat_pdlDims($COMP(mw), &$PDL(m)->datatype, &$SIZE(l), &$SIZE(c), &$SIZE(r));
 EOF
         Code =>pp_line_numbers(__LINE__, <<'EOF'),
                 PDL_Indx d[] = { $SIZE(l), $SIZE(c), $SIZE(r) };
