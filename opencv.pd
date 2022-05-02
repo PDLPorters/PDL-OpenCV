@@ -85,7 +85,9 @@ pp_def('minMaxIdx',
 	);
 
 sub ofunc {
-    my ($func,$doc,$ismethod,$ret,$opt,@params) = @_;
+    my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
+    die "Class '$class' given for non-method" if $class and !$ismethod;
+    die "No class given for method='$ismethod'" if !$class and $ismethod;
     $_ = '' for my ($initstr, $afterstr, $callprefix);
     my (@checks, @callargs, @pars, @otherpars, @returns, @pmpars);
     my $pcount = 1;
@@ -112,7 +114,7 @@ sub ofunc {
     my $codestr = join '',
       $initstr,
       (!@checks ? () : qq{if (@{[join ' || ', @checks]}) {\n$afterstr\n\$CROAK("Error during initialisation");\n}\n}),
-      "${callprefix}cw_$func(".join(',', @callargs).");\n",
+      ${callprefix}.join('_', grep length,'cw',$class,$func)."(".join(',', @callargs).");\n",
       $afterstr;
     my $pmsetnull = join "\n", map "\$$_ = PDL->null if !defined \$$_;", @returns;
     pp_def($func,
@@ -134,9 +136,9 @@ sub ofunc {
 }
 
 ofunc(@$_) for (
-  ['rows',"returns rows of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
-  ['cols',"returns cols of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
-  ['channels',"returns channels of the Mat-wrapped ndarray",1,'int',{},['MatWrapper *','mw']],
+  ['Mat','rows',"returns rows of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
+  ['Mat','cols',"returns cols of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
+  ['Mat','channels',"returns channels of the Mat-wrapped ndarray",1,'int',{},['MatWrapper *','mw']],
 );
 
 sub add_const {

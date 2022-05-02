@@ -35,21 +35,23 @@ $tstr_l\t}
 ";
 
 sub gen_code {
-	my ($name, $ismethod, $ret, $opt) = splice @_, 0, 4;
+	my ($class, $name, $ismethod, $ret, $opt, @params) = @_;
+	die "Class '$class' given for non-method" if $class and !$ismethod;
+	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	my (@args, @cvargs, $methodvar);
 	if ($ismethod) {
-		my ($s, $v) = @{shift()};
+		my ($s, $v) = @{shift @params};
 		push @args, "$s $v";
 		$methodvar = $v;
 	}
-	die "Error on $name: attribute but args\n" if $ismethod == 2 and @_;
-	while (@_) {
-		my ($s, $v) = @{shift()};
+	die "Error on $class/$name: attribute but args\n" if $ismethod == 2 and @params;
+	while (@params) {
+		my ($s, $v) = @{shift @params};
 		push @args, "$s $v";
 		push @cvargs, $s =~ /.*Wrapper \*/ ? "$v->held" : $v;
 	}
-	my $fname=$name;
-	my $str = "$ret cw_$name(";
+	my $fname = join '_', grep length, 'cw', $class, $name;
+	my $str = "$ret $fname(";
 	$str .= join(", ", @args) . ")";
 	my $hstr = $str.";\n";
 	$str .= " {\n";
@@ -160,7 +162,7 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
 	MatWrapper *framew = newMat();
-	cw_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
+	cw_Mat_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
 	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cw_const_COLOR_GRAY2RGB());
 	cv::Rect roi = { box.x, box.y, box.width, box.height };
 	if (roi.x == 0) {
@@ -177,7 +179,7 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
 	MatWrapper *framew = newMat();
-	cw_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
+	cw_Mat_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
 	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cw_const_COLOR_GRAY2RGB());
 	TRACKER_RECT_TYPE box;
 	char res = Tr->held->update(framew->held,box);
