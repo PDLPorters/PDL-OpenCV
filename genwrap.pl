@@ -196,10 +196,6 @@ MatWrapper * newMatWithDims (const ptrdiff_t cols, const ptrdiff_t rows, const i
 	return mw;
 }
 
-void *matData (MatWrapper * mw) {
-	return mw->held.ptr();
-}
-
 const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
 	*c = wrapper->held.cols;
 	*r = wrapper->held.rows;
@@ -243,7 +239,6 @@ print $fc $rstr;
 
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
-void *matData(MatWrapper * mw);
 const char *vDims(MatWrapper *wrapper, ptrdiff_t *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor);
