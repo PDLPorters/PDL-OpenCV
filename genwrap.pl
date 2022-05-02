@@ -281,7 +281,7 @@ open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
 while (!eof $consts) {
   chomp(my $line = <$consts>);
   add_const($fh, $fc, [], "cv::$line");
-};
+}
 
 print $fh <<'EOF';
 

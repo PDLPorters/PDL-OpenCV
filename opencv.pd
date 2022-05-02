@@ -1,4 +1,8 @@
 use strict;
+use warnings;
+
+my $T = [qw(A B S U L F D)];
+
 pp_addpm ({At=>'Top'},<<'EOPM');
 use strict;
 use warnings;
@@ -81,45 +85,58 @@ pp_def('minMaxIdx',
 	);
 
 sub ofunc {
-    my ($func,$doc,%extra) = @_;
-    my $funcov = ref $func eq 'ARRAY' ? $func->[1] : $func;
-    $func = $func->[0] if ref $func eq 'ARRAY';
-    my $codestr = pp_line_numbers __LINE__, sprintf <<'EOF', $func;
-		MatWrapper *mw = newMatWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
-		if (!mw) $CROAK("newMatWithDims returned null.");
-		$b() = cw_%s(mw);
-		deleteMat(mw);
-EOF
+    my ($func,$doc,$ismethod,$ret,$opt,@params) = @_;
+    $_ = '' for my ($initstr, $afterstr, $callprefix);
+    my (@checks, @callargs, @pars, @otherpars, @returns, @pmpars);
+    my $pcount = 1;
+    for (@params) {
+      my ($type, $var) = @$_;
+      if ($type eq 'MatWrapper *') {
+	push @pmpars, $var;
+	push @pars, "$var(l$pcount,c$pcount,r$pcount)";
+	$initstr .= "$type$var = newMatWithDims(\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($var)->datatype,\$SIZE(l$pcount),\$P($var));\n";
+	push @checks, qq{!$var};
+	$afterstr .= "deleteMat($var);\n";
+	push @callargs, $var;
+	$pcount++;
+      } else {
+      }
+    }
+    if ($ret ne 'void') {
+      push @pmpars, 'res';
+      push @pars, "$ret [o] res()";
+      push @returns, 'res';
+      $callprefix = '$res() = ';
+    }
+    my $retstr = !@returns ? '' : "!wantarray ? \$$returns[-1] : (@{[join ',', map qq{\$$_}, @returns]})";
+    my $codestr = join '',
+      $initstr,
+      (!@checks ? () : qq{if (@{[join ' || ', @checks]}) {\n$afterstr\n\$CROAK("Error during initialisation");\n}\n}),
+      "${callprefix}cw_$func(".join(',', @callargs).");\n",
+      $afterstr;
+    my $pmsetnull = join "\n", map "\$$_ = PDL->null if !defined \$$_;", @returns;
     pp_def($func,
-	   Pars => 'in(l,c,r); [o]b()',
-	   GenericTypes=>['N','D'],
+	   Pars => join('; ', @pars),
+	   OtherPars => join('; ', @otherpars),
+	   GenericTypes=>$T,
 	   NoPthread=>1,
-	   PMCode => pp_line_numbers(__LINE__-1, qq{
+	   PMCode => qq{
 		   sub $func {
-			   my (\$self) = \@_;
-			   my \$res=zeroes(ushort,1);
-			   _${func}_int(\$self,\$res);
-			   \$res;
+			   my (@{[join ',', map "\$$_", @pmpars]}) = \@_;
+			   $pmsetnull
+			   _${func}_int(@{[join ',', map "\$$_", @pmpars]});
+			   $retstr
 		   }
-	   },),
+	   },
 	   Code => $codestr,
-	   %extra,
-	   Doc => << "EOD");
-=for ref
-
-$doc
-
-=for example
-
-   \$y = $funcov \$x;
-
-EOD
+	   Doc => "=for ref\n\n$doc",
+    );
 }
 
 ofunc(@$_) for (
-  ['rows',"returns rows of the Mat-wrapped ndarray"],
-  ['cols',"returns cols of the Mat-wrapped ndarray"],
-  ['channels',"returns channels of the Mat-wrapped ndarray"],
+  ['rows',"returns rows of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
+  ['cols',"returns cols of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
+  ['channels',"returns channels of the Mat-wrapped ndarray",1,'int',{},['MatWrapper *','mw']],
 );
 
 sub add_const {
@@ -144,6 +161,6 @@ open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
 while (!eof $consts) {
   chomp(my $line = <$consts>);
   add_const([], $line);
-};
+}
 
 pp_done();
