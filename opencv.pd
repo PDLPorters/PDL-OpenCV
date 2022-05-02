@@ -116,8 +116,11 @@ $doc
 EOD
 }
 
-# generate functions.
-ofunc($_,"returns $_ of the Mat object. \n") for qw/rows cols channels/;
+ofunc(@$_) for (
+  ['rows',"returns rows of the Mat-wrapped ndarray"],
+  ['cols',"returns cols of the Mat-wrapped ndarray"],
+  ['channels',"returns channels of the Mat-wrapped ndarray"],
+);
 
 sub add_const {
   my ($args, $text) = @_;
