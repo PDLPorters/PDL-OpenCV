@@ -47,7 +47,7 @@ sub gen_code {
 	while (@params) {
 		my ($s, $v) = @{shift @params};
 		push @args, "$s $v";
-		push @cvargs, $s =~ /.*Wrapper \*/ ? "$v->held" : $v;
+		push @cvargs, $s =~ /.*Wrapper\s*\*/ ? "$v->held" : $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $name;
 	my $str = "$ret $fname(";
@@ -206,21 +206,6 @@ SizeWrapper *newSizeWithDims(int width, int height) {
 	return mw;
 }
 
-const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, int fourcc, double fps, SizeWrapper *size, char iscolor) {
-	if (!wrapper->held.open(
-	  name,
-	  fourcc,
-	  fps,
-	  size->held,
-	  iscolor
-	)) return "Error opening video write";
-	return NULL;
-}
-
-void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw) {
-	wrapper->held.write(mw->held);
-}
-
 const char *openVideoCaptureURI(VideoCaptureWrapper *wrapper, const char *uri) {
 	wrapper->held.open( uri );
 	if (!wrapper->held.isOpened()) return "Error opening video capture";
@@ -244,8 +229,6 @@ print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 SizeWrapper *newSizeWithDims(int width, int height);
-const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, int fourcc, double fps, SizeWrapper *size, char iscolor);
-void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw);
 
 const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
