@@ -86,7 +86,6 @@ pp_def('minMaxIdx',
 
 sub ofunc {
     my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
-    die "Class '$class' given for non-method" if $class and !$ismethod;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     $_ = '' for my ($initstr, $afterstr, $callprefix);
     my (@checks, @callargs, @pars, @otherpars, @returns, @pmpars);

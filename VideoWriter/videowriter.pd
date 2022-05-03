@@ -49,7 +49,7 @@ PDL__OpenCV__VideoWriter open(self, name, code, fps, width, height, iscolor)
         int height
         char iscolor
 CODE:
-  const char *ret = openVideoWriter(self, name, code, fps, width, height, iscolor);
+  const char *ret = openVideoWriter(self, name, cw_VideoWriter_fourcc(code[0],code[1],code[2],code[3]), fps, width, height, iscolor);
   if (ret) {
     PDL->pdl_barf("Error opening file '%s': %s", name, ret);
   }

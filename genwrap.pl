@@ -36,7 +36,6 @@ $tstr_l\t}
 
 sub gen_code {
 	my ($class, $name, $ismethod, $ret, $opt, @params) = @_;
-	die "Class '$class' given for non-method" if $class and !$ismethod;
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	my (@args, @cvargs, $methodvar);
 	if ($ismethod) {
@@ -57,7 +56,7 @@ sub gen_code {
 	$str .= " {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  ".($ret ne 'void' ? "$ret retval = " : '');
-	$str .= $ismethod == 0 ? "cv::$name(" :
+	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $name)."(" :
 	  "$methodvar->held.$name" . ($ismethod == 1 ? "(" : ";\n");
 	$str .= join(', ', @cvargs).");\n" if $ismethod != 2;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
@@ -201,10 +200,10 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 	*r = wrapper->held.rows;
 }
 
-const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor) {
+const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, int fourcc, double fps, int width, int height, char iscolor) {
 	if (!wrapper->held.open(
 	  name,
-	  cv::VideoWriter::fourcc(code[0],code[1],code[2],code[3]),
+	  fourcc,
 	  fps,
 	  cv::Size(width, height),
 	  iscolor
@@ -238,7 +237,7 @@ print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
-const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, const char *code, double fps, int width, int height, char iscolor);
+const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, int fourcc, double fps, int width, int height, char iscolor);
 void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw);
 
 const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
