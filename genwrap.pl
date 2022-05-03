@@ -158,7 +158,7 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 	double scale = 256/mymax;
 	MatWrapper *framew = newMat();
 	cw_Mat_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
-	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cw_const_COLOR_GRAY2RGB());
+	if(cw_Mat_channels(framew)==1) cw_cvtColor(framew,framew,cw_const_COLOR_GRAY2RGB());
 	cv::Rect roi = { box.x, box.y, box.width, box.height };
 	if (roi.x == 0) {
 		cv::namedWindow("ud",cv::WINDOW_NORMAL);
@@ -175,7 +175,7 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	double scale = 256/mymax;
 	MatWrapper *framew = newMat();
 	cw_Mat_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
-	if(framew->held.channels()==1) cv::cvtColor(framew->held,framew->held,cw_const_COLOR_GRAY2RGB());
+	if(cw_Mat_channels(framew)==1) cw_cvtColor(framew,framew,cw_const_COLOR_GRAY2RGB());
 	TRACKER_RECT_TYPE box;
 	char res = Tr->held->update(framew->held,box);
 	*roi = { (int)box.x, (int)box.y, (int)box.width, (int)box.height };
