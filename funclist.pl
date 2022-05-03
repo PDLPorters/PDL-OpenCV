@@ -2,6 +2,7 @@
 # [ name, ismethod(2=attribute), returntype, \%options, @arguments ]
 (
 ['','normalize',0,'void',{},['MatWrapper *','mw'],['MatWrapper *','out'],['int','start'],['int','end'],['int','type']],
+['','imshow',0,'void',{},['const char *','name'],['MatWrapper *','mw']],
 ['Mat','channels',1,'int',{},['MatWrapper *','mw']],
 ['Mat','ptr',1,'void *',{},['MatWrapper *','mw']],
 ['Mat','rows',2,'int',{},['MatWrapper *','mw']],

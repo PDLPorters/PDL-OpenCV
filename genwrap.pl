@@ -147,10 +147,6 @@ for (['Mat'], ['VideoCapture'], ['VideoWriter'], ['Tracker',1]) {
 
 print $fc sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fc <<'EOF';
-void imgImshow(const char *name, MatWrapper *mw) {
-	cv::imshow(name,mw->held);
-}
-
 TrackerWrapper *newTracker() {
 	TrackerWrapper * Tr = new TrackerWrapper;
 	Tr->held = cv::TrackerKCF::create();
@@ -187,7 +183,7 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	cv::rectangle( framew->held, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
 	mw->held=framew->held;
 	deleteMat(framew);
-	imgImshow("ud", mw);
+	cw_imshow("ud", mw);
 	cv::waitKey(1);
 	return res;
 }
@@ -248,8 +244,6 @@ void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw);
 const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
 bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw);
-
-void imgImshow(const char *name, MatWrapper *mw);
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
 char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
