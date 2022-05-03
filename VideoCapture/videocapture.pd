@@ -29,10 +29,9 @@ PDL__OpenCV__VideoCapture new_uri(klass,uri)
 CODE:
   RETVAL = newVideoCapture();
   if (RETVAL) {
-    const char *ret = openVideoCaptureURI(RETVAL, uri);
-    if (ret) {
+    if (!cw_VideoCapture_open(RETVAL, uri)) {
       deleteVideoCapture(RETVAL);
-      PDL->pdl_barf("Error opening URI '%s': %s", uri, ret);
+      PDL->pdl_barf("Error opening URI '%s'", uri);
     }
   }
  OUTPUT:
@@ -53,7 +52,7 @@ pp_def('read',
         MakeComp => <<'EOF',
                 if (!($COMP(mw) = newMat()))
                   $CROAK("newMat returned null.");
-                if (!readVideoCapture($COMP(wr), $COMP(mw)))
+                if (!cw_VideoCapture_read($COMP(wr), $COMP(mw)))
                   $CROAK("failed to read");
 EOF
         CompFreeCodeComp => 'if ($COMP(mw)) deleteMat($COMP(mw));',

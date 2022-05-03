@@ -206,18 +206,8 @@ SizeWrapper *newSizeWithDims(int width, int height) {
 	return mw;
 }
 
-const char *openVideoCaptureURI(VideoCaptureWrapper *wrapper, const char *uri) {
-	wrapper->held.open( uri );
-	if (!wrapper->held.isOpened()) return "Error opening video capture";
-	return NULL;
-}
-
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper) {
 	return wrapper->held.get(cv::CAP_PROP_FRAME_COUNT);
-}
-
-bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw) {
-	return wrapper->held.read(mw->held);
 }
 EOF
 
@@ -230,9 +220,7 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 
 SizeWrapper *newSizeWithDims(int width, int height);
 
-const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
-bool readVideoCapture(VideoCaptureWrapper *wrapper, MatWrapper *mw);
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
 char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
