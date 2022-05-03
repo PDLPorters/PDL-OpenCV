@@ -138,7 +138,7 @@ EOF
   );
 }
 
-for (['Mat'], ['VideoCapture'], ['VideoWriter'], ['Tracker',1]) {
+for (['Mat'], ['Size'], ['VideoCapture'], ['VideoWriter'], ['Tracker',1]) {
   my ($hstr, $cstr) = gen_wrapper(@$_);
   print $fh $hstr;
   print $fc $cstr;
@@ -200,12 +200,18 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 	*r = wrapper->held.rows;
 }
 
-const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, int fourcc, double fps, int width, int height, char iscolor) {
+SizeWrapper *newSizeWithDims(int width, int height) {
+	SizeWrapper *mw = new SizeWrapper;
+	mw->held = cv::Size(width, height);
+	return mw;
+}
+
+const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, int fourcc, double fps, SizeWrapper *size, char iscolor) {
 	if (!wrapper->held.open(
 	  name,
 	  fourcc,
 	  fps,
-	  cv::Size(width, height),
+	  size->held,
 	  iscolor
 	)) return "Error opening video write";
 	return NULL;
@@ -237,7 +243,8 @@ print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
-const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, int fourcc, double fps, int width, int height, char iscolor);
+SizeWrapper *newSizeWithDims(int width, int height);
+const char *openVideoWriter(VideoWriterWrapper *wrapper, const char *name, int fourcc, double fps, SizeWrapper *size, char iscolor);
 void writeVideoWriter(VideoWriterWrapper *wrapper, MatWrapper *mw);
 
 const char *openVideoCaptureURI(VideoCaptureWrapper * Tr, const char *uri);
