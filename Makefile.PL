@@ -33,13 +33,13 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
     CONFIGURE_REQUIRES => {
         'ExtUtils::CppGuess' => '0.21',
         'ExtUtils::MakeMaker' => '6.3002',
-        'PDL'        => '2.078', # broadcastloop
+        'PDL'        => '2.079', # typemap-search in dirs above
     },
     TEST_REQUIRES => {
         'Test::More' => '0.88',
     },
     PREREQ_PM => {
-        'PDL'        => '2.078', # broadcastloop
+        'PDL'        => '2.079',
     },
     MYEXTLIB => join(' ', @cw_objs),
     depend => {
