@@ -27,7 +27,7 @@ PDL__OpenCV__VideoCapture new_uri(klass,uri)
         char *klass
         char *uri
 CODE:
-  RETVAL = cw_VideoCapture_new();
+  RETVAL = cw_VideoCapture_new(NULL);
   if (RETVAL) {
     if (!cw_VideoCapture_open(RETVAL, uri)) {
       cw_VideoCapture_DESTROY(RETVAL);
@@ -52,7 +52,7 @@ pp_def('read',
         HaveBroadcasting=>0, NoPthread=>1, # I/O
         Comp => 'MatWrapper *mw;',
         MakeComp => <<'EOF',
-                if (!($COMP(mw) = cw_Mat_new()))
+                if (!($COMP(mw) = cw_Mat_new(NULL)))
                   $CROAK("cw_Mat_new returned null.");
                 if (!cw_VideoCapture_read($COMP(wr), $COMP(mw)))
                   $CROAK("failed to read");
