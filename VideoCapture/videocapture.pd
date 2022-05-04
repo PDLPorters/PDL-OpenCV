@@ -27,23 +27,20 @@ PDL__OpenCV__VideoCapture new_uri(klass,uri)
         char *klass
         char *uri
 CODE:
-  RETVAL = newVideoCapture();
+  RETVAL = cw_VideoCapture_new();
   if (RETVAL) {
     if (!cw_VideoCapture_open(RETVAL, uri)) {
-      deleteVideoCapture(RETVAL);
+      cw_VideoCapture_DESTROY(RETVAL);
       PDL->pdl_barf("Error opening URI '%s'", uri);
     }
   }
  OUTPUT:
   RETVAL
 
-void
-DESTROY(self)
-  PDL__OpenCV__VideoCapture self
- CODE:
-  deleteVideoCapture(self);
-
 MODULE = PDL::OpenCV::VideoCapture PACKAGE = PDL::OpenCV::VideoCapture PREFIX=cw_VideoCapture_
+
+void
+cw_VideoCapture_DESTROY(PDL__OpenCV__VideoCapture self)
 
 double
 cw_VideoCapture_get(PDL__OpenCV__VideoCapture self, int propId)
@@ -55,12 +52,12 @@ pp_def('read',
         HaveBroadcasting=>0, NoPthread=>1, # I/O
         Comp => 'MatWrapper *mw;',
         MakeComp => <<'EOF',
-                if (!($COMP(mw) = newMat()))
-                  $CROAK("newMat returned null.");
+                if (!($COMP(mw) = cw_Mat_new()))
+                  $CROAK("cw_Mat_new returned null.");
                 if (!cw_VideoCapture_read($COMP(wr), $COMP(mw)))
                   $CROAK("failed to read");
 EOF
-        CompFreeCodeComp => 'if ($COMP(mw)) deleteMat($COMP(mw));',
+        CompFreeCodeComp => 'if ($COMP(mw)) cw_Mat_DESTROY($COMP(mw));',
         RedoDimsCode=>pp_line_numbers(__LINE__, <<'EOF'),
                 cw_Mat_pdlDims($COMP(mw), &$PDL(m)->datatype, &$SIZE(l), &$SIZE(c), &$SIZE(r));
 EOF

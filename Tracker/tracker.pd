@@ -21,8 +21,8 @@ pp_def('init_tracker',
         OtherPars => 'PDL__OpenCV__Tracker twi',
         Code=>pp_line_numbers(__LINE__,
         q{
-                MatWrapper *mw = newMatWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
-                if (!mw) $CROAK("newMatWithDims returned null.");
+                MatWrapper *mw = cw_Mat_newWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
+                if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
                 cw_Rect box;
                 box.x=$b(j=>0);
                 box.y=$b(j=>1);
@@ -33,7 +33,7 @@ pp_def('init_tracker',
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
                 $b(j=>3)=box.height;
-                deleteMat(mw);
+                cw_Mat_DESTROY(mw);
         }
          ),
         PMCode => pp_line_numbers(__LINE__, <<'EOP'),
@@ -68,8 +68,8 @@ pp_def('update_tracker',
         Pars=>'in(l,c,r); ushort [o] b(j=4);',
         OtherPars => 'PDL__OpenCV__Tracker twi',
         Code =>pp_line_numbers(__LINE__, q{
-                MatWrapper *mw = newMatWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
-                if (!mw) $CROAK("newMatWithDims returned null.");
+                MatWrapper *mw = cw_Mat_newWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
+                if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
                 cw_Rect box;
                 TrackerWrapper * tw = $COMP(twi);
                 updateTracker(tw,mw,&box);
@@ -77,7 +77,7 @@ pp_def('update_tracker',
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
                 $b(j=>3)=box.height;
-                deleteMat(mw);
+                cw_Mat_DESTROY(mw);
         }),
         PMCode => pp_line_numbers(__LINE__,
 <<'EOPM',
@@ -94,15 +94,14 @@ EOPM
 pp_addxs('','
 PDL__OpenCV__Tracker newT()
 CODE:
-  RETVAL = newTracker();
+  RETVAL = cw_Tracker_new();
  OUTPUT:
   RETVAL
 
+MODULE = PDL::OpenCV::Tracker PACKAGE = PDL::OpenCV::Tracker PREFIX=cw_Tracker_
+
 void
-DESTROY(to)
-  PDL__OpenCV__Tracker to
- CODE:
-  deleteTracker(to);
+cw_Tracker_DESTROY(PDL__OpenCV__Tracker to)
 ',
 );
 

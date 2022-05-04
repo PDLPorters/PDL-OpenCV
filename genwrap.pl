@@ -120,17 +120,17 @@ sub gen_wrapper {
   (
     <<EOF, #hstr
 typedef struct ${class}Wrapper ${class}Wrapper ;
-${class}Wrapper *new${class}();
-int delete${class}(${class}Wrapper * wrapper);
+${class}Wrapper *cw_${class}_new();
+int cw_${class}_DESTROY(${class}Wrapper * wrapper);
 EOF
     <<EOF, #cstr
 struct ${class}Wrapper {
 	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : "cv::${class}"]} held;
 };
-@{[$ptr_only ? '' : "${class}Wrapper *new${class}() {
+@{[$ptr_only ? '' : "${class}Wrapper *cw_${class}_new() {
 	return new ${class}Wrapper;
 }"]}
-int delete${class}(${class}Wrapper * wrapper) {
+int cw_${class}_DESTROY(${class}Wrapper * wrapper) {
 	delete wrapper;
 	return 1;
 }
@@ -146,7 +146,7 @@ for (['Mat'], ['Size'], ['VideoCapture'], ['VideoWriter'], ['Tracker',1]) {
 
 print $fc sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fc <<'EOF';
-TrackerWrapper *newTracker() {
+TrackerWrapper *cw_Tracker_new() {
 	TrackerWrapper * Tr = new TrackerWrapper;
 	Tr->held = cv::TrackerKCF::create();
 	return Tr;
@@ -156,7 +156,7 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 	double mymin,mymax;
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
-	MatWrapper *framew = newMat();
+	MatWrapper *framew = cw_Mat_new();
 	cw_Mat_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
 	if(cw_Mat_channels(framew)==1) cw_cvtColor(framew,framew,cw_const_COLOR_GRAY2RGB());
 	cv::Rect roi = { box.x, box.y, box.width, box.height };
@@ -166,14 +166,14 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 		cv::destroyWindow("ud");
 	}
 	Tr->held->init(framew->held,roi);
-	deleteMat(framew);
+	cw_Mat_DESTROY(framew);
 }
 
 char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	double mymin,mymax;
 	cw_minMaxIdx(mw, & mymin,& mymax);
 	double scale = 256/mymax;
-	MatWrapper *framew = newMat();
+	MatWrapper *framew = cw_Mat_new();
 	cw_Mat_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
 	if(cw_Mat_channels(framew)==1) cw_cvtColor(framew,framew,cw_const_COLOR_GRAY2RGB());
 	TRACKER_RECT_TYPE box;
@@ -181,13 +181,13 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	*roi = { (int)box.x, (int)box.y, (int)box.width, (int)box.height };
 	cv::rectangle( framew->held, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
 	mw->held=framew->held;
-	deleteMat(framew);
+	cw_Mat_DESTROY(framew);
 	cw_imshow("ud", mw);
 	cv::waitKey(1);
 	return res;
 }
 
-MatWrapper * newMatWithDims (const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
+MatWrapper * cw_Mat_newWithDims(const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
 	MatWrapper *mw = new MatWrapper;
 	mw->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
 	return mw;
@@ -200,7 +200,7 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 	*r = wrapper->held.rows;
 }
 
-SizeWrapper *newSizeWithDims(int width, int height) {
+SizeWrapper *cw_Size_newWithDims(int width, int height) {
 	SizeWrapper *mw = new SizeWrapper;
 	mw->held = cv::Size(width, height);
 	return mw;
@@ -218,14 +218,14 @@ print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
-SizeWrapper *newSizeWithDims(int width, int height);
+SizeWrapper *cw_Size_newWithDims(int width, int height);
 
 ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
 char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
 
-MatWrapper * newMatWithDims (const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
+MatWrapper * cw_Mat_newWithDims(const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
 
 int get_pdltype(const int cvtype);
 int get_ocvtype(const int datatype,const int planes);

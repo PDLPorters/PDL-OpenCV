@@ -77,10 +77,10 @@ pp_def('minMaxIdx',
 	Pars => 'in(l,c,r); double [o]min(); double [o]max()',
 	Code=>pp_line_numbers(__LINE__,'
 		if ($SIZE(l)>1) $CROAK( "minMaxIdx only works on single channel (got l=%"IND_FLAG") arrays.\n",$SIZE(l));
-		MatWrapper *mw = newMatWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
-		if (!mw) $CROAK("newMatWithDims returned null.");
+		MatWrapper *mw = cw_Mat_newWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
+		if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
 		cw_minMaxIdx(mw,&$min(),&$max());
-		deleteMat(mw);
+		cw_Mat_DESTROY(mw);
 	'),
 	);
 
@@ -95,9 +95,9 @@ sub ofunc {
       if ($type eq 'MatWrapper *') {
 	push @pmpars, $var;
 	push @pars, "$var(l$pcount,c$pcount,r$pcount)";
-	$initstr .= "$type$var = newMatWithDims(\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($var)->datatype,\$SIZE(l$pcount),\$P($var));\n";
+	$initstr .= "$type$var = cw_Mat_newWithDims(\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($var)->datatype,\$SIZE(l$pcount),\$P($var));\n";
 	push @checks, qq{!$var};
-	$afterstr .= "deleteMat($var);\n";
+	$afterstr .= "cw_Mat_DESTROY($var);\n";
 	push @callargs, $var;
 	$pcount++;
       } else {
@@ -144,12 +144,9 @@ sub add_const {
   my ($args, $text) = @_;
   pp_add_exported($text);
   pp_addxs(<<EOF);
-int $text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})
-CODE:
- RETVAL = cw_const_$text(@{[join(',',map $_->[1], @$args)]});
-OUTPUT:
- RETVAL
+MODULE = PDL::OpenCV PACKAGE = PDL::OpenCV PREFIX=cw_const_
 
+int cw_const_$text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})
 EOF
 }
 
