@@ -42,6 +42,11 @@ DESTROY(self)
   PDL__OpenCV__VideoCapture self
  CODE:
   deleteVideoCapture(self);
+
+MODULE = PDL::OpenCV::VideoCapture PACKAGE = PDL::OpenCV::VideoCapture PREFIX=cw_VideoCapture_
+
+double
+cw_VideoCapture_get(PDL__OpenCV__VideoCapture self, int propId)
 EOF
 
 pp_def('read',

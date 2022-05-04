@@ -10,6 +10,7 @@
 ['VideoWriter','write',1,'void',{},['VideoWriterWrapper *','vw'],['MatWrapper*','mw']],
 ['VideoCapture','open',1,'char',{},['VideoCaptureWrapper *','vw'],['const char *','name']],
 ['VideoCapture','read',1,'char',{},['VideoCaptureWrapper *','vw'],['MatWrapper*','mw']],
+['VideoCapture','get',1,'double',{},['VideoCaptureWrapper *','vw'],['int','propId']],
 ['Mat','channels',1,'int',{},['MatWrapper *','mw']],
 ['Mat','ptr',1,'void *',{},['MatWrapper *','mw']],
 ['Mat','rows',2,'int',{},['MatWrapper *','mw']],
