@@ -11,8 +11,9 @@ use PDL::OpenCV::VideoWriter;
 use File::Temp qw(tempfile);
 
 my $vfile='t/Megamind.avi';
-my $vc = PDL::OpenCV::VideoCapture->new_uri($vfile);
+my $vc = PDL::OpenCV::VideoCapture->new;
 isa_ok $vc, 'PDL::OpenCV::VideoCapture';
+die if !$vc->open($vfile);
 my $frame = $vc->read;
 is_deeply [$frame->dims], [3,720,528], 'right dims' or diag $frame->info;
 

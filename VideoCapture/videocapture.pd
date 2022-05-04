@@ -11,7 +11,13 @@ typedef VideoCaptureWrapper *PDL__OpenCV__VideoCapture;
 EOH
 
 pp_addpm(<<'EOD');
-=head2 new_uri
+=head2 new
+
+=for ref
+
+Initialize OpenCV videocapture object.
+
+=head2 open
 
 =for ref
 
@@ -19,28 +25,18 @@ Initialize OpenCV videocapture.
 
 =for example
 
-        $capture = PDL::OpenCV::VideoCapture->new_uri($uri);
+        $succeeded = $vc->open($uri);
 EOD
 
 pp_addxs(<<'EOF');
-PDL__OpenCV__VideoCapture new_uri(klass,uri)
-        char *klass
-        char *uri
-CODE:
-  RETVAL = cw_VideoCapture_new(NULL);
-  if (RETVAL) {
-    if (!cw_VideoCapture_open(RETVAL, uri)) {
-      cw_VideoCapture_DESTROY(RETVAL);
-      PDL->pdl_barf("Error opening URI '%s'", uri);
-    }
-  }
- OUTPUT:
-  RETVAL
-
 MODULE = PDL::OpenCV::VideoCapture PACKAGE = PDL::OpenCV::VideoCapture PREFIX=cw_VideoCapture_
+
+PDL__OpenCV__VideoCapture cw_VideoCapture_new(char *klass)
 
 void
 cw_VideoCapture_DESTROY(PDL__OpenCV__VideoCapture self)
+
+char cw_VideoCapture_open(PDL__OpenCV__VideoCapture self, char *uri)
 
 double
 cw_VideoCapture_get(PDL__OpenCV__VideoCapture self, int propId)
