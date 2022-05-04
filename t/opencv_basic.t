@@ -26,5 +26,6 @@ is_deeply [map $_->sclr, PDL::OpenCV::minMaxIdx($slice)], [0,74],'minMaxIdx';
 is PDL::OpenCV::CV_8UC3(), 16, 'depth constant';
 is PDL::OpenCV::COLOR_GRAY2RGB(), 8, 'colour-conversion constant';
 is COLOR_GRAY2RGB, 8, 'colour-conversion constant exported';
+is CAP_PROP_FORMAT, 8, 'capability constant exported';
 
 done_testing();
