@@ -16,6 +16,8 @@ isa_ok $vc, 'PDL::OpenCV::VideoCapture';
 die if !$vc->open($vfile);
 my $frame = $vc->read;
 is_deeply [$frame->dims], [3,720,528], 'right dims' or diag $frame->info;
+my $x = 1;
+$frame = $vc->read for 1..$x; # blank frames
 
 (undef, my $outfile) = tempfile(SUFFIX=>'.avi');
 my $writer = PDL::OpenCV::VideoWriter->new;
@@ -29,8 +31,6 @@ my $bx=pdl(qw/169 88 192 257/);
 my ($tr,$box)=PDL::OpenCV::Tracker->init_tracker($frame,$bx);
 note "box $box";
 
-my $x = 2;
-$frame = $vc->read for 1..$x; # blank frames
 while (defined $frame) {
 	$box = $tr->update_tracker($frame);
 	if ($x<98 || $x > 153 && $x<200) {
