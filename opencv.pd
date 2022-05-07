@@ -97,7 +97,6 @@ EOH
 pp_def('minMaxIdx',
 	Pars => 'in(l,c,r); double [o]min(); double [o]max()',
 	Code=>pp_line_numbers(__LINE__,'
-		if ($SIZE(l)>1) $CROAK( "minMaxIdx only works on single channel (got l=%"IND_FLAG") arrays.\n",$SIZE(l));
 		MatWrapper *mw = cw_Mat_newWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
 		if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
 		cw_minMaxIdx(mw,&$min(),&$max());
