@@ -153,35 +153,22 @@ TrackerWrapper *cw_Tracker_new(char *klass) {
 }
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
-	double mymin,mymax;
-	cw_minMaxIdx(mw, & mymin,& mymax);
-	double scale = 256/mymax;
-	MatWrapper *framew = cw_Mat_new(NULL);
-	cw_Mat_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
-	if(cw_Mat_channels(framew)==1) cw_cvtColor(framew,framew,cw_const_COLOR_GRAY2RGB());
+	if(cw_Mat_channels(mw)==1) cw_cvtColor(mw,mw,cw_const_COLOR_GRAY2RGB());
 	cv::Rect roi = { box.x, box.y, box.width, box.height };
 	if (roi.x == 0) {
 		cv::namedWindow("ud",cv::WINDOW_NORMAL);
-		roi=cv::selectROI("ud",framew->held,true,false);
+		roi=cv::selectROI("ud",mw->held,true,false);
 		cv::destroyWindow("ud");
 	}
-	Tr->held->init(framew->held,roi);
-	cw_Mat_DESTROY(framew);
+	Tr->held->init(mw->held,roi);
 }
 
 char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
-	double mymin,mymax;
-	cw_minMaxIdx(mw, & mymin,& mymax);
-	double scale = 256/mymax;
-	MatWrapper *framew = cw_Mat_new(NULL);
-	cw_Mat_convertTo(mw,framew,cw_const_CV_8UC3(),scale,0);
-	if(cw_Mat_channels(framew)==1) cw_cvtColor(framew,framew,cw_const_COLOR_GRAY2RGB());
+	if(cw_Mat_channels(mw)==1) cw_cvtColor(mw,mw,cw_const_COLOR_GRAY2RGB());
 	TRACKER_RECT_TYPE box;
-	char res = Tr->held->update(framew->held,box);
+	char res = Tr->held->update(mw->held,box);
 	*roi = { (int)box.x, (int)box.y, (int)box.width, (int)box.height };
-	cv::rectangle( framew->held, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
-	mw->held=framew->held;
-	cw_Mat_DESTROY(framew);
+	cv::rectangle( mw->held, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
 	cw_imshow("ud", mw);
 	cv::waitKey(1);
 	return res;
