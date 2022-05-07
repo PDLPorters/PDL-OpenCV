@@ -94,16 +94,6 @@ pp_addhdr << 'EOH';
 #include "opencv_wrapper.h"
 EOH
 
-pp_def('minMaxIdx',
-	Pars => 'in(l,c,r); double [o]min(); double [o]max()',
-	Code=>pp_line_numbers(__LINE__,'
-		MatWrapper *mw = cw_Mat_newWithDims($SIZE(c),$SIZE(r),$PDL(in)->datatype,$SIZE(l),$P(in));
-		if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
-		cw_minMaxIdx(mw,&$min(),&$max());
-		cw_Mat_DESTROY(mw);
-	'),
-	);
-
 sub ofunc {
     my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
@@ -112,8 +102,8 @@ sub ofunc {
     my $pcount = 1;
     for (@params) {
       my ($type, $var) = @$_;
+      push @pmpars, $var;
       if ($type eq 'MatWrapper *') {
-	push @pmpars, $var;
 	push @pars, "$var(l$pcount,c$pcount,r$pcount)";
 	$initstr .= "$type$var = cw_Mat_newWithDims(\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($var)->datatype,\$SIZE(l$pcount),\$P($var));\n";
 	push @checks, qq{!$var};
@@ -121,6 +111,10 @@ sub ofunc {
 	push @callargs, $var;
 	$pcount++;
       } else {
+	(my $rawtype = $type) =~ s#\s*\*$##;
+	push @pars, "$rawtype ".($rawtype ne $type ? '[o]' : '')."$var()";
+	push @callargs, ($type =~ /\*$/ ? '&' : '') . "\$$var()";
+	push @returns, $var;
       }
     }
     if ($ret ne 'void') {
@@ -158,6 +152,7 @@ ofunc(@$_) for (
   ['Mat','rows',"returns rows of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
   ['Mat','cols',"returns cols of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
   ['Mat','channels',"returns channels of the Mat-wrapped ndarray",1,'int',{},['MatWrapper *','mw']],
+  ['','minMaxIdx',"returns minimum and maximum values of Mat-wrapped ndarray",0,'void',{},['MatWrapper *','mw'],["double *","min"],["double *","max"]],
 );
 
 sub add_const {
