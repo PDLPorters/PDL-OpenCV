@@ -205,10 +205,6 @@ SizeWrapper *cw_Size_newWithDims(int width, int height) {
 	mw->held = cv::Size(width, height);
 	return mw;
 }
-
-ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper) {
-	return wrapper->held.get(cv::CAP_PROP_FRAME_COUNT);
-}
 EOF
 
 print $fc $tstr;
@@ -219,8 +215,6 @@ print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 SizeWrapper *cw_Size_newWithDims(int width, int height);
-
-ptrdiff_t framecountVideoCapture(VideoCaptureWrapper *wrapper);
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
 char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
