@@ -10,17 +10,17 @@ sub genpp {
       my ($type, $var) = @$_;
       push @pmpars, $var;
       if ($type eq 'MatWrapper *') {
-	push @pars, "$var(l$pcount,c$pcount,r$pcount)";
-	$initstr .= "$type$var = cw_Mat_newWithDims(\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($var)->datatype,\$P($var));\n";
-	push @checks, qq{!$var};
-	$afterstr .= "cw_Mat_DESTROY($var);\n";
-	push @callargs, $var;
-	$pcount++;
+        push @pars, "$var(l$pcount,c$pcount,r$pcount)";
+        $initstr .= "$type$var = cw_Mat_newWithDims(\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($var)->datatype,\$P($var));\n";
+        push @checks, qq{!$var};
+        $afterstr .= "cw_Mat_DESTROY($var);\n";
+        push @callargs, $var;
+        $pcount++;
       } else {
-	(my $rawtype = $type) =~ s#\s*\*$##;
-	push @pars, "$rawtype ".($rawtype ne $type ? '[o]' : '')."$var()";
-	push @callargs, ($type =~ /\*$/ ? '&' : '') . "\$$var()";
-	push @returns, $var;
+        (my $rawtype = $type) =~ s#\s*\*$##;
+        push @pars, "$rawtype ".($rawtype ne $type ? '[o]' : '')."$var()";
+        push @callargs, ($type =~ /\*$/ ? '&' : '') . "\$$var()";
+        push @returns, $var;
       }
     }
     if ($ret ne 'void') {
@@ -37,20 +37,21 @@ sub genpp {
       $afterstr;
     my $pmsetnull = join "\n", map "\$$_ = PDL->null if !defined \$$_;", @returns;
     pp_def($func,
-	   Pars => join('; ', @pars),
-	   OtherPars => join('; ', @otherpars),
-	   GenericTypes=>$T,
-	   NoPthread=>1,
-	   PMCode => qq{
-		   sub ${::PDLOBJ}::$func {
-			   my (@{[join ',', map "\$$_", @pmpars]}) = \@_;
-			   $pmsetnull
-			   ${::PDLOBJ}::_${func}_int(@{[join ',', map "\$$_", @pmpars]});
-			   $retstr
-		   }
-	   },
-	   Code => $codestr,
-	   Doc => "=for ref\n\n$doc",
+           Pars => join('; ', @pars),
+           OtherPars => join('; ', @otherpars),
+           GenericTypes=>$T,
+           NoPthread=>1,
+           HandleBad=>0,
+           PMCode => qq{
+                   sub ${::PDLOBJ}::$func {
+                           my (@{[join ',', map "\$$_", @pmpars]}) = \@_;
+                           $pmsetnull
+                           ${::PDLOBJ}::_${func}_int(@{[join ',', map "\$$_", @pmpars]});
+                           $retstr
+                   }
+           },
+           Code => $codestr,
+           Doc => "=for ref\n\n$doc",
     );
 }
 
