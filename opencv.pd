@@ -87,8 +87,6 @@ EOPM
 our $VERSION = 0.02;
 pp_setversion($VERSION);
 
-pp_bless("PDL::OpenCV");
-
 pp_addhdr << 'EOH';
 #include "opencv_wrapper.h"
 EOH

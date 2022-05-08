@@ -42,10 +42,10 @@ sub genpp {
 	   GenericTypes=>$T,
 	   NoPthread=>1,
 	   PMCode => qq{
-		   sub $func {
+		   sub ${::PDLOBJ}::$func {
 			   my (@{[join ',', map "\$$_", @pmpars]}) = \@_;
 			   $pmsetnull
-			   _${func}_int(@{[join ',', map "\$$_", @pmpars]});
+			   ${::PDLOBJ}::_${func}_int(@{[join ',', map "\$$_", @pmpars]});
 			   $retstr
 		   }
 	   },

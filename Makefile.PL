@@ -44,7 +44,7 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
     MYEXTLIB => join(' ', @cw_objs),
     depend => {
       'opencv_wrapper$(OBJ_EXT)'=>'opencv_wrapper.h',
-      'opencv_wrapper.h OpenCV.pm'=>'constlist.txt funclist.pl', # .pm because that deps on .pd
+      'opencv_wrapper.h OpenCV.pm'=>'constlist.txt funclist.pl genpp.pl', # .pm because that deps on .pd
     },
 );
 WriteMakefile(%hash);
