@@ -174,7 +174,7 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	return res;
 }
 
-MatWrapper * cw_Mat_newWithDims(const ptrdiff_t cols, const ptrdiff_t rows, const int type, int planes, void * data) {
+MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
 	MatWrapper *mw = new MatWrapper;
 	mw->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
 	return mw;
@@ -206,7 +206,7 @@ SizeWrapper *cw_Size_newWithDims(int width, int height);
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
 char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
 
-MatWrapper * cw_Mat_newWithDims(const ptrdiff_t cols, const ptrdiff_t rows, const int type, const int planes, void * data);
+MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
 
 int get_pdltype(const int cvtype);
 int get_ocvtype(const int datatype,const int planes);
