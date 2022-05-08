@@ -77,7 +77,6 @@ print $fc <<'EOF';
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/core/utility.hpp>
-#include <opencv2/videoio.hpp>
 
 #if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
 # define TRACKER_RECT_TYPE cv::Rect
@@ -87,9 +86,7 @@ print $fc <<'EOF';
 
 using namespace std;
 /* use C name mangling */
-#ifdef __cplusplus
 extern "C" {
-#endif
 
 EOF
 
@@ -97,11 +94,6 @@ print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 #ifndef OPENCV_WRAPPER_H
 #define OPENCV_WRAPPER_H
-
-#ifdef __cplusplus
-#include <vector>
-#include <opencv2/opencv.hpp>
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -247,9 +239,7 @@ print $fh <<'EOF';
 EOF
 
 print $fc <<'EOF';
-#ifdef __cplusplus
 }
-#endif
 EOF
 
 close $fh;
