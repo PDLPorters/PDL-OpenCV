@@ -145,7 +145,7 @@ TrackerWrapper *cw_Tracker_new(char *klass) {
 }
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
-	if(cw_Mat_channels(mw)==1) cw_cvtColor(mw,mw,cw_const_COLOR_GRAY2RGB());
+	if(cw_Mat_channels(mw)==1) cw_cvtColor(mw,mw,cw_const_COLOR_GRAY2RGB(),0);
 	cv::Rect roi = { box.x, box.y, box.width, box.height };
 	if (roi.x == 0) {
 		cv::namedWindow("ud",cv::WINDOW_NORMAL);
@@ -156,7 +156,7 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 }
 
 char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
-	if(cw_Mat_channels(mw)==1) cw_cvtColor(mw,mw,cw_const_COLOR_GRAY2RGB());
+	if(cw_Mat_channels(mw)==1) cw_cvtColor(mw,mw,cw_const_COLOR_GRAY2RGB(),0);
 	TRACKER_RECT_TYPE box;
 	char res = Tr->held->update(mw->held,box);
 	*roi = { (int)box.x, (int)box.y, (int)box.width, (int)box.height };

@@ -4,7 +4,7 @@
 ['','normalize',0,'void',{},['MatWrapper *','mw'],['MatWrapper *','out'],['int','start'],['int','end'],['int','type']],
 ['','minMaxIdx',0,'void',{},['MatWrapper *','mw'],["double *","mymin"],["double *","mymax"]],
 ['','imshow',0,'void',{},['const char *','name'],['MatWrapper *','mw']],
-['','cvtColor',0,'void',{},['MatWrapper *','mw'],['MatWrapper *','out'],['int','rtype']],
+['','cvtColor',0,'void',{},["MatWrapper *","src","",[]],["MatWrapper *","dst","",["/O"]],["int","code","",[]],["int","dstCn","0",[]]],
 ['VideoWriter','fourcc',0,'int',{},['char','c1'],['char','c2'],['char','c3'],['char','c4']],
 ['VideoWriter','open',1,'char',{},['VideoWriterWrapper *','vw'],['const char *','name'],['int','fourcc'],['double','fps'],['SizeWrapper*','size'],['char','iscolor']],
 ['VideoWriter','write',1,'void',{},['VideoWriterWrapper *','vw'],['MatWrapper*','mw']],
