@@ -11,10 +11,10 @@ use File::Temp qw(tempfile);
 my $vfile='t/Megamind.avi';
 my $vc = PDL::OpenCV::VideoCapture->new;
 die if !$vc->open($vfile);
-my $frame = $vc->read;
+my ($frame, $res) = $vc->read;
 is_deeply [$frame->dims], [3,720,528], 'right dims' or diag $frame->info;
 my $x = 1;
-$frame = $vc->read for 1..$x; # blank frames
+($frame, $res) = $vc->read for 1..$x; # blank frames
 
 (undef, my $outfile) = tempfile(SUFFIX=>'.avi');
 my $writer = PDL::OpenCV::VideoWriter->new;
@@ -24,7 +24,7 @@ my $bx=pdl(qw/169 88 192 257/);
 my ($tr,$box)=PDL::OpenCV::Tracker->init_tracker(frame_scale($frame),$bx);
 note "box $box";
 
-while (defined $frame) {
+while ($res) {
 	$box = $tr->update_tracker(frame_scale($frame));
 	if ($x<98 || $x > 153 && $x<200) {
 		is(all ($box) >0,1,"tracker found box $x.");
@@ -33,7 +33,7 @@ while (defined $frame) {
 	}
 	note "x $x box $box";
 	$writer->write($frame);
-	$frame = $vc->read;
+	($frame, $res) = $vc->read;
 	$x++;
 }
 

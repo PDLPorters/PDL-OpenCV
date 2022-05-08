@@ -43,15 +43,14 @@ cw_VideoCapture_get(PDL__OpenCV__VideoCapture self, int propId)
 EOF
 
 pp_def('read',
-        Pars=>'[oca] m(l,c,r);',
+        Pars=>'[oca] m(l,c,r); byte [o]res()',
         OtherPars => 'PDL__OpenCV__VideoCapture wr',
         NoPthread=>1, # I/O
-        Comp => 'MatWrapper *mw;',
+        Comp => 'MatWrapper *mw; unsigned char res;',
         MakeComp => <<'EOF',
                 if (!($COMP(mw) = cw_Mat_new(NULL)))
                   $CROAK("cw_Mat_new returned null.");
-                if (!cw_VideoCapture_read($COMP(wr), $COMP(mw)))
-                  $CROAK("failed to read");
+                $COMP(res) = cw_VideoCapture_read($COMP(wr), $COMP(mw));
 EOF
         CompFreeCodeComp => 'if ($COMP(mw)) cw_Mat_DESTROY($COMP(mw));',
         RedoDimsCode=>pp_line_numbers(__LINE__, <<'EOF'),
@@ -59,13 +58,15 @@ EOF
 EOF
         Code =>pp_line_numbers(__LINE__, <<'EOF'),
                 memmove($P(m), cw_Mat_ptr($COMP(mw)), $PDL(m)->nbytes);
+                $res() = $COMP(res);
 EOF
         PMCode => pp_line_numbers(__LINE__, <<'EOPM'),
         sub read {
-                eval { _read_int(my $o = PDL->null, $_[0]); $o; };
+                _read_int(my $o = PDL->null, my $res = PDL->null, $_[0]);
+                ($o, $res);
         }
 EOPM
-        Doc=>"Read a frame from the source, or return undef on failure.",
+        Doc=>"Read a frame from the source, return also whether succeeded",
 );
 
 pp_done();
