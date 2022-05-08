@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+
 my $T = [qw(A B S U L F D)];
 
 sub genpp {
@@ -7,21 +10,25 @@ sub genpp {
     my (@checks, @callargs, @pars, @otherpars, @returns, @pmpars);
     my $pcount = 1;
     for (@params) {
-      my ($type, $var) = @$_;
+      my ($type, $var, $default, $f) = @$_;
+      $default //= '';
+      my %flags = map +($_=>1), @{$f||[]};
       push @pmpars, $var;
+      my ($partype, $par) = '';
       if ($type eq 'MatWrapper *') {
-        push @pars, "$var(l$pcount,c$pcount,r$pcount)";
+        $par = "$var(l$pcount,c$pcount,r$pcount)";
         $initstr .= "$type$var = cw_Mat_newWithDims(\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($var)->datatype,\$P($var));\n";
         push @checks, qq{!$var};
         $afterstr .= "cw_Mat_DESTROY($var);\n";
         push @callargs, $var;
         $pcount++;
       } else {
-        (my $rawtype = $type) =~ s#\s*\*$##;
-        push @pars, "$rawtype ".($rawtype ne $type ? '[o]' : '')."$var()";
+        ($partype = $type) =~ s#\s*\*$##;
+        $par = "$var()";
         push @callargs, ($type =~ /\*$/ ? '&' : '') . "\$$var()";
         push @returns, $var;
       }
+      push @pars, join ' ', $partype, ($flags{'/O'} ? '[o]' : ()), $par;
     }
     if ($ret ne 'void') {
       push @pmpars, 'res';
@@ -43,10 +50,10 @@ sub genpp {
            NoPthread=>1,
            HandleBad=>0,
            PMCode => qq{
-                   sub ${::PDLOBJ}::$func {
+                   sub ${main::PDLOBJ}::$func {
                            my (@{[join ',', map "\$$_", @pmpars]}) = \@_;
                            $pmsetnull
-                           ${::PDLOBJ}::_${func}_int(@{[join ',', map "\$$_", @pmpars]});
+                           ${main::PDLOBJ}::_${func}_int(@{[join ',', map "\$$_", @pmpars]});
                            $retstr
                    }
            },

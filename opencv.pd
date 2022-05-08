@@ -95,7 +95,7 @@ genpp(@$_) for (
   ['Mat','rows',"returns rows of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
   ['Mat','cols',"returns cols of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
   ['Mat','channels',"returns channels of the Mat-wrapped ndarray",1,'int',{},['MatWrapper *','mw']],
-  ['','minMaxIdx',"returns minimum and maximum values of Mat-wrapped ndarray",0,'void',{},['MatWrapper *','mw'],["double *","min"],["double *","max"]],
+  ['','minMaxIdx',"returns minimum and maximum values of Mat-wrapped ndarray",0,'void',{},['MatWrapper *','mw'],["double *","min","",["/O"]],["double *","max","",["/O"]]],
 );
 
 sub add_const {
