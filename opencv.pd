@@ -57,7 +57,7 @@ OpenCV has the concepts of "depth" and "channels".
 "Channels" resembles the above 1/3/4 point, with the important caveat
 that the default for OpenCV image-reading is to format data not as R,G,B,
 but B,G,R. This is for historical reasons, being the format returned by
-the cameras first used at the start of OpenCV. Use C<cvtColor> is your
+the cameras first used at the start of OpenCV. Use C<cvtColor> if your
 application requires otherwise.
 
 "Depth" is bit-depth (and data type) per pixel and per channel: the
