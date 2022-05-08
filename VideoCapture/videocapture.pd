@@ -45,7 +45,7 @@ EOF
 pp_def('read',
         Pars=>'[oca] m(l,c,r);',
         OtherPars => 'PDL__OpenCV__VideoCapture wr',
-        HaveBroadcasting=>0, NoPthread=>1, # I/O
+        NoPthread=>1, # I/O
         Comp => 'MatWrapper *mw;',
         MakeComp => <<'EOF',
                 if (!($COMP(mw) = cw_Mat_new(NULL)))
@@ -58,12 +58,7 @@ EOF
                 cw_Mat_pdlDims($COMP(mw), &$PDL(m)->datatype, &$SIZE(l), &$SIZE(c), &$SIZE(r));
 EOF
         Code =>pp_line_numbers(__LINE__, <<'EOF'),
-                PDL_Indx d[] = { $SIZE(l), $SIZE(c), $SIZE(r) };
-                pdl *pid = $PDL(m);
-                PDL->setdims(pid, d, 3);
-                PDL->make_physical(pid);
-                /* no $P(m) because was NULL on entry */
-                memmove(pid->data, cw_Mat_ptr($COMP(mw)), pid->nbytes);
+                memmove($P(m), cw_Mat_ptr($COMP(mw)), $PDL(m)->nbytes);
 EOF
         PMCode => pp_line_numbers(__LINE__, <<'EOPM'),
         sub read {
