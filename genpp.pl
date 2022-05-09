@@ -7,7 +7,7 @@ sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     $_ = '' for my ($initstr, $afterstr, $callprefix);
-    my (@checks, @callargs, @pars, @otherpars, @returns, @pmpars, @defaults);
+    my (@checks, @callargs, @pars, @otherpars, @outputs, @pmpars, @defaults);
     my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");
     my $pcount = 1;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
@@ -30,7 +30,7 @@ sub genpp {
         push @callargs, ($type =~ /\*$/ ? '&' : '') . "\$$var()";
       }
       if ($flags{'/O'}) {
-        push @returns, $var;
+        push @outputs, [$type, $var];
         $default = 'PDL->null' if !length $default;
       }
       push @defaults, "\$$var = $default if !defined \$$var;" if length $default;
@@ -44,7 +44,7 @@ sub ${main::PDLOBJ}::$func {
   my (@{[join ',', map "\$$_", @pmpars]}) = \@_;
   @{[ join "\n  ", @defaults ]}
   ${main::PDLOBJ}::_${func}_int(@{[join ',', map "\$$_", @pmpars]});
-  @{[!@returns ? '' : "!wantarray ? \$$returns[-1] : (@{[join ',', map qq{\$$_}, @returns]})"]}
+  @{[!@outputs ? '' : "!wantarray ? \$$outputs[-1][1] : (@{[join ',', map qq{\$$_->[1]}, @outputs]})"]}
 }
 EOF
     );
