@@ -7,7 +7,7 @@ sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     $_ = '' for my ($callprefix);
-    my (@checks, @callargs, @pars, @otherpars, @inits, @destroy_ins, @destroy_outs, @outputs, @pmpars, @defaults);
+    my (@callargs, @pars, @otherpars, @inits, @outputs, @pmpars, @defaults);
     my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");
     my $pcount = 1;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
@@ -20,8 +20,6 @@ sub genpp {
       if ($type eq 'MatWrapper *') {
         $par = "$var(l$pcount,c$pcount,r$pcount)";
         push @inits, [$var, $flags{'/O'}, $type, $pcount];
-        push @checks, qq{!$var};
-        push @{$flags{'/O'} ? \@destroy_outs : \@destroy_ins}, $var;
         push @callargs, $var;
         $pcount++;
       } else {
@@ -48,11 +46,11 @@ sub ${main::PDLOBJ}::$func {
 }
 EOF
     );
-    my $destroy_in = join '', map "cw_Mat_DESTROY($_);\n", @destroy_ins;
-    my $destroy_out = join '', map "cw_Mat_DESTROY($_);\n", @destroy_outs;
+    my $destroy_in = join '', map "cw_Mat_DESTROY($_->[0]);\n", grep !$_->[1], @inits;
+    my $destroy_out = join '', map "cw_Mat_DESTROY($_->[0]);\n", grep $_->[1], @inits;
     $hash{Code} = join '',
       (map "@$_[2,0] = cw_Mat_newWithDims(\$SIZE(l$_->[3]),\$SIZE(c$_->[3]),\$SIZE(r$_->[3]),\$PDL($_->[0])->datatype,\$P($_->[0]));\n", @inits),
-      (!@checks ? () : qq{if (@{[join ' || ', @checks]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
+      (!@inits ? () : qq{if (@{[join ' || ', map "!$_->[0]", @inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
       $callprefix.join('_', grep length,'cw',$class,$func)."(".join(',', map ref()?"$_->[0]\$$_->[1]()":$_, @callargs).");\n",
       $destroy_in, $destroy_out;
     pp_def($func, %hash);
