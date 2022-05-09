@@ -6,8 +6,8 @@ my $T = [qw(A B S U L F D)];
 sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
-    $_ = '' for my ($initstr, $afterstr, $callprefix);
-    my (@checks, @callargs, @pars, @otherpars, @outputs, @pmpars, @defaults);
+    $_ = '' for my ($callprefix);
+    my (@checks, @callargs, @pars, @otherpars, @inits, @destroy_ins, @destroy_outs, @outputs, @pmpars, @defaults);
     my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");
     my $pcount = 1;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
@@ -19,9 +19,9 @@ sub genpp {
       my ($partype, $par) = '';
       if ($type eq 'MatWrapper *') {
         $par = "$var(l$pcount,c$pcount,r$pcount)";
-        $initstr .= "$type$var = cw_Mat_newWithDims(\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($var)->datatype,\$P($var));\n";
+        push @inits, [$var, $flags{'/O'}, $type, $pcount];
         push @checks, qq{!$var};
-        $afterstr .= "cw_Mat_DESTROY($var);\n";
+        push @{$flags{'/O'} ? \@destroy_outs : \@destroy_ins}, $var;
         push @callargs, $var;
         $pcount++;
       } else {
@@ -48,11 +48,13 @@ sub ${main::PDLOBJ}::$func {
 }
 EOF
     );
+    my $destroy_in = join '', map "cw_Mat_DESTROY($_);\n", @destroy_ins;
+    my $destroy_out = join '', map "cw_Mat_DESTROY($_);\n", @destroy_outs;
     $hash{Code} = join '',
-      $initstr,
-      (!@checks ? () : qq{if (@{[join ' || ', @checks]}) {\n$afterstr\$CROAK("Error during initialisation");\n}\n}),
+      (map "@$_[2,0] = cw_Mat_newWithDims(\$SIZE(l$_->[3]),\$SIZE(c$_->[3]),\$SIZE(r$_->[3]),\$PDL($_->[0])->datatype,\$P($_->[0]));\n", @inits),
+      (!@checks ? () : qq{if (@{[join ' || ', @checks]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
       ${callprefix}.join('_', grep length,'cw',$class,$func)."(".join(',', @callargs).");\n",
-      $afterstr;
+      $destroy_in, $destroy_out;
     pp_def($func, %hash);
 }
 
