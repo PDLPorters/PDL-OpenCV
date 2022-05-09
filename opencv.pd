@@ -96,6 +96,7 @@ genpp(@$_) for (
   ['Mat','cols',"returns cols of the Mat-wrapped ndarray",2,'int',{},['MatWrapper *','mw']],
   ['Mat','channels',"returns channels of the Mat-wrapped ndarray",1,'int',{},['MatWrapper *','mw']],
   ['','minMaxIdx',"returns minimum and maximum values of Mat-wrapped ndarray",0,'void',{},['MatWrapper *','mw'],["double *","min","",["/O"]],["double *","max","",["/O"]]],
+  ['','cvtColor',"convert src to dest with given colour space",0,'void',{},["MatWrapper *","src","",[]],["MatWrapper *","dst","",["/O"]],["int","code","",[]],["int","dstCn","0",[]]],
 );
 
 sub add_const {
