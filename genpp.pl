@@ -8,6 +8,7 @@ sub genpp {
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     $_ = '' for my ($initstr, $afterstr, $callprefix);
     my (@checks, @callargs, @pars, @otherpars, @returns, @pmpars, @defaults);
+    my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");
     my $pcount = 1;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     for (@params) {
@@ -36,29 +37,23 @@ sub genpp {
       push @pars, join ' ', $partype, ($flags{'/O'} ? '[o]' : ()), $par;
     }
     $callprefix = '$res() = ', pop @callargs if $ret ne 'void';
-    my $retstr = !@returns ? '' : "!wantarray ? \$$returns[-1] : (@{[join ',', map qq{\$$_}, @returns]})";
-    my $codestr = join '',
-      $initstr,
-      (!@checks ? () : qq{if (@{[join ' || ', @checks]}) {\n$afterstr\n\$CROAK("Error during initialisation");\n}\n}),
-      ${callprefix}.join('_', grep length,'cw',$class,$func)."(".join(',', @callargs).");\n",
-      $afterstr;
-    pp_def($func,
-           Pars => join('; ', @pars),
-           OtherPars => join('; ', @otherpars),
-           GenericTypes=>$T,
-           NoPthread=>1,
-           HandleBad=>0,
-           PMCode => qq{
+    %hash = (%hash,
+      Pars => join('; ', @pars), OtherPars => join('; ', @otherpars),
+      PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
   my (@{[join ',', map "\$$_", @pmpars]}) = \@_;
   @{[ join "\n  ", @defaults ]}
   ${main::PDLOBJ}::_${func}_int(@{[join ',', map "\$$_", @pmpars]});
-  $retstr
+  @{[!@returns ? '' : "!wantarray ? \$$returns[-1] : (@{[join ',', map qq{\$$_}, @returns]})"]}
 }
-           },
-           Code => $codestr,
-           Doc => "=for ref\n\n$doc",
+EOF
     );
+    $hash{Code} = join '',
+      $initstr,
+      (!@checks ? () : qq{if (@{[join ' || ', @checks]}) {\n$afterstr\$CROAK("Error during initialisation");\n}\n}),
+      ${callprefix}.join('_', grep length,'cw',$class,$func)."(".join(',', @callargs).");\n",
+      $afterstr;
+    pp_def($func, %hash);
 }
 
 1;
