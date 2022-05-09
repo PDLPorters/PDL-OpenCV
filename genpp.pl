@@ -27,14 +27,14 @@ sub genpp {
       } else {
         ($partype = $type) =~ s#\s*\*$##;
         $par = "$var()";
-        push @callargs, ($type =~ /\*$/ ? '&' : '') . "\$$var()";
+        push @callargs, [($type =~ /\*$/ ? '&' : ''), $var, $partype];
       }
       if ($flags{'/O'}) {
         push @outputs, [$type, $var];
         $default = 'PDL->null' if !length $default;
       }
       push @defaults, "\$$var = $default if !defined \$$var;" if length $default;
-      push @pars, join ' ', $partype, ($flags{'/O'} ? '[o]' : ()), $par;
+      push @pars, join ' ', grep length, $partype, ($flags{'/O'} ? '[o]' : ()), $par;
     }
     $callprefix = '$res() = ', pop @callargs if $ret ne 'void';
     %hash = (%hash,
@@ -53,7 +53,7 @@ EOF
     $hash{Code} = join '',
       (map "@$_[2,0] = cw_Mat_newWithDims(\$SIZE(l$_->[3]),\$SIZE(c$_->[3]),\$SIZE(r$_->[3]),\$PDL($_->[0])->datatype,\$P($_->[0]));\n", @inits),
       (!@checks ? () : qq{if (@{[join ' || ', @checks]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-      ${callprefix}.join('_', grep length,'cw',$class,$func)."(".join(',', @callargs).");\n",
+      $callprefix.join('_', grep length,'cw',$class,$func)."(".join(',', map ref()?"$_->[0]\$$_->[1]()":$_, @callargs).");\n",
       $destroy_in, $destroy_out;
     pp_def($func, %hash);
 }
