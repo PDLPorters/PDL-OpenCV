@@ -41,6 +41,10 @@ of snake_casing. This is intended to make the OpenCV documentation
 trivially easy to use for the PDL binding (where a binding exists),
 including available tutorials.
 
+The API is generated from the Python bindings that are part of OpenCV. In
+imitation of that, you are not currently able, as with "normal" PDL
+functions, to pass in output ndarrays.
+
 Where things do not work as you would expect from a PDL and/or OpenCV
 point of view, and it is not documented as doing so, this is a bug -
 please report it as shown at L</BUGS> below.
