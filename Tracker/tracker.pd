@@ -1,20 +1,9 @@
-#!perl
-
-use strict;
-pp_bless ("PDL::OpenCV::Tracker");
-pp_addpm ({At=>'Top'},<<"EOPM");
-use 5.10.0;
 use strict;
 use warnings;
+use File::Spec::Functions;
+require ''.catfile(updir, 'genpp.pl');
 
-use PDL::OpenCV;
-
-EOPM
-
-pp_addhdr << 'EOH';
-#include "opencv_wrapper.h"
-typedef TrackerWrapper *PDL__OpenCV__Tracker;
-EOH
+genheader("Tracker");
 
 pp_def('init_tracker',
         Pars=>'in(l,c,r); ushort [o] b(j=4);',
@@ -39,9 +28,7 @@ pp_def('init_tracker',
         PMCode => pp_line_numbers(__LINE__, <<'EOP'),
 sub init_tracker{
         my ($class,$img,$box) = @_;
-        $box=PDL->null unless UNIVERSAL::isa($box, 'PDL');
         my $tracker = $class->new;
-        say "box $box tracker=$tracker";
         _init_tracker_int($img,$box,$tracker);
         ($tracker,$box);
 }
@@ -89,15 +76,5 @@ EOPM
 ),
         Doc=>"update the tracker box.\n",
         );
-
-pp_addxs('','
-MODULE = PDL::OpenCV::Tracker PACKAGE = PDL::OpenCV::Tracker PREFIX=cw_Tracker_
-
-PDL__OpenCV__Tracker cw_Tracker_new(char *klass)
-
-void
-cw_Tracker_DESTROY(PDL__OpenCV__Tracker to)
-',
-);
 
 pp_done();

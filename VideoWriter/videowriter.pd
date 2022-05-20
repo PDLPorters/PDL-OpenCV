@@ -1,26 +1,11 @@
 use strict;
-pp_bless ("PDL::OpenCV::VideoWriter");
-pp_addpm ({At=>'Top'},<<"EOPM");
-use strict;
 use warnings;
-EOPM
+use File::Spec::Functions;
+require ''.catfile(updir, 'genpp.pl');
 
-pp_addhdr << 'EOH';
-#include "opencv_wrapper.h"
-typedef VideoWriterWrapper *PDL__OpenCV__VideoWriter;
-EOH
+genheader("VideoWriter");
 
 pp_addpm(<<'EOD');
-=head2 new
-
-=for ref
-
-Initialize OpenCV video writing object.
-
-=for example
-
-  $writer = PDL::OpenCV::VideoWriter->new;
-
 =head2 open
 
 =for ref
@@ -34,11 +19,6 @@ EOD
 
 pp_addxs(<<'EOF');
 MODULE = PDL::OpenCV::VideoWriter PACKAGE = PDL::OpenCV::VideoWriter PREFIX=cw_VideoWriter_
-
-PDL__OpenCV__VideoWriter cw_VideoWriter_new(char *klass)
-
-void
-cw_VideoWriter_DESTROY(PDL__OpenCV__VideoWriter self)
 
 void cw_VideoWriter_open(self, name, code, fps, width, height, iscolor)
         PDL__OpenCV__VideoWriter self

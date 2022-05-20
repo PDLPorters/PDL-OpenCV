@@ -104,4 +104,45 @@ EOF
     pp_def($func, %hash);
 }
 
+sub genheader {
+  my ($last) = @_;
+  pp_bless("PDL::OpenCV::$last");
+  pp_addpm({At=>'Top'},<<"EOPM");
+=head1 NAME
+
+PDL::OpenCV::$last - PDL bindings for OpenCV $last
+
+=cut
+
+use strict;
+use warnings;
+EOPM
+  pp_addhdr <<EOH;
+#include "opencv_wrapper.h"
+typedef ${last}Wrapper *PDL__OpenCV__$last;
+EOH
+  pp_addpm(<<EOD);
+=head2 new
+
+=for ref
+
+Initialize OpenCV $last object.
+
+=for example
+
+  \$obj = PDL::OpenCV::$last->new;
+
+=cut
+EOD
+
+  pp_addxs(<<EOF);
+MODULE = PDL::OpenCV::$last PACKAGE = PDL::OpenCV::$last PREFIX=cw_${last}_
+
+PDL__OpenCV__$last cw_${last}_new(char *klass)
+
+void
+cw_${last}_DESTROY(PDL__OpenCV__$last self)
+EOF
+}
+
 1;

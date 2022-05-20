@@ -1,33 +1,10 @@
 use strict;
 use warnings;
 use File::Spec::Functions;
-
 require ''.catfile(updir, 'genpp.pl');
 
-pp_bless ("PDL::OpenCV::VideoCapture");
-pp_addpm ({At=>'Top'},<<"EOPM");
-=head1 NAME
-
-PDL::OpenCV::VideoCapture - PDL bindings for OpenCV VideoCapture
-
-=cut
-
-use strict;
-use warnings;
-EOPM
-
-pp_addhdr << 'EOH';
-#include "opencv_wrapper.h"
-typedef VideoCaptureWrapper *PDL__OpenCV__VideoCapture;
-EOH
-
+genheader("VideoCapture");
 pp_addpm(<<'EOD');
-=head2 new
-
-=for ref
-
-Initialize OpenCV videocapture object.
-
 =head2 open
 
 =for ref
@@ -41,11 +18,6 @@ EOD
 
 pp_addxs(<<'EOF');
 MODULE = PDL::OpenCV::VideoCapture PACKAGE = PDL::OpenCV::VideoCapture PREFIX=cw_VideoCapture_
-
-PDL__OpenCV__VideoCapture cw_VideoCapture_new(char *klass)
-
-void
-cw_VideoCapture_DESTROY(PDL__OpenCV__VideoCapture self)
 
 char cw_VideoCapture_open(PDL__OpenCV__VideoCapture self, char *uri)
 
