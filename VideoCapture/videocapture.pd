@@ -4,29 +4,11 @@ use File::Spec::Functions;
 require ''.catfile(updir, 'genpp.pl');
 
 genheader("VideoCapture");
-pp_addpm(<<'EOD');
-=head2 open
-
-=for ref
-
-Initialize OpenCV videocapture.
-
-=for example
-
-        $succeeded = $vc->open($uri);
-EOD
-
-pp_addxs(<<'EOF');
-MODULE = PDL::OpenCV::VideoCapture PACKAGE = PDL::OpenCV::VideoCapture PREFIX=cw_VideoCapture_
-
-char cw_VideoCapture_open(PDL__OpenCV__VideoCapture self, char *uri)
-
-double
-cw_VideoCapture_get(PDL__OpenCV__VideoCapture self, int propId)
-EOF
 
 genpp(@$_) for (
   ['VideoCapture','read',"Read a frame from the source, return also whether succeeded",1,'byte',{},["Mat","image","",["/O"]]],
+  ['VideoCapture','open',"Initialize OpenCV videocapture.\n\n=for example\n\n  \$succeeded = \$vc->open(\$uri);\n",1,'char',{},['const char *','name']],
+  ['VideoCapture','get',"Return a VideoCapture object's property",1,'double',{},['int','propId']],
 );
 
 pp_done();

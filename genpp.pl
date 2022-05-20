@@ -25,6 +25,26 @@ sub genpp {
     my $pcount = 1;
     my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
+    if (!grep /^[A-Z]/ && !(genpp_par $_, '', 0)[0], map $_->[0], @params) {
+      pp_addpm("=head2 $func\n\n$hash{Doc}\n");
+      pp_add_exported($func);
+      my @xs_params;
+      for (@params) {
+        my ($type, $var) = @$_;
+        my ($is_other, $par) = 0;
+        if ($type =~ /^[A-Z]/) {
+          ($is_other, $par, $type) = genpp_par($type, $var, 0);
+        }
+        push @xs_params, $is_other ? $par : "$type $var";
+      }
+pp_addxs(<<EOF);
+MODULE = PDL::OpenCV::$class PACKAGE = PDL::OpenCV::$class PREFIX=cw_${class}_
+
+$ret $cfunc(@{[join ', ', @xs_params]})
+  PROTOTYPE: DISABLE
+EOF
+      return;
+    }
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     for (@params) {
       my ($type, $var, $default, $f) = @$_;
