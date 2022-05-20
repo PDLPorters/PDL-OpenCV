@@ -57,8 +57,7 @@ pp_def('update_tracker',
                 MatWrapper *mw = cw_Mat_newWithDims($SIZE(l),$SIZE(c),$SIZE(r),$PDL(in)->datatype,$P(in));
                 if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
                 cw_Rect box;
-                TrackerWrapper * tw = $COMP(twi);
-                updateTracker(tw,mw,&box);
+                updateTracker($COMP(twi),mw,&box);
                 $b(j=>0)=box.x;
                 $b(j=>1)=box.y;
                 $b(j=>2)=box.width;
