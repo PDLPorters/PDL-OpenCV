@@ -5,11 +5,10 @@ require ''.catfile(updir, 'genpp.pl');
 
 genheader("Tracker");
 
-pp_def('init_tracker',
+pp_def('init',
         Pars=>'in(l,c,r); ushort [o] b(j=4);',
         OtherPars => 'PDL__OpenCV__Tracker twi',
-        Code=>pp_line_numbers(__LINE__,
-        q{
+        Code=>pp_line_numbers(__LINE__, q{
                 MatWrapper *mw = cw_Mat_newWithDims($SIZE(l),$SIZE(c),$SIZE(r),$PDL(in)->datatype,$P(in));
                 if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
                 cw_Rect box;
@@ -23,14 +22,12 @@ pp_def('init_tracker',
                 $b(j=>2)=box.width;
                 $b(j=>3)=box.height;
                 cw_Mat_DESTROY(mw);
-        }
-         ),
+        }),
         PMCode => pp_line_numbers(__LINE__, <<'EOP'),
-sub init_tracker{
-        my ($class,$img,$box) = @_;
-        my $tracker = $class->new;
-        _init_tracker_int($img,$box,$tracker);
-        ($tracker,$box);
+sub init{
+        my ($tracker,$img,$box) = @_;
+        _init_int($img,$box,$tracker);
+        $box;
 }
 EOP
         Doc=><<'EOD',
@@ -40,7 +37,7 @@ Initialize OpenCV tracker.
 
 =for example
 
-        ($tracker,$box) = init_tracker ( $img, [$box] );
+        $box = $tracker->init($img, $box);
 
 The first argument $img is the data, e.g. anything that fits a Mat object.
 Currently only the KCF tracker is supported.
@@ -50,7 +47,7 @@ $box is a 4-integer array (x,y,width,height) holding the bounding box.
 EOD
 );
 
-pp_def('update_tracker',
+pp_def('update',
         Pars=>'in(l,c,r); ushort [o] b(j=4);',
         OtherPars => 'PDL__OpenCV__Tracker twi',
         Code =>pp_line_numbers(__LINE__, q{
@@ -66,9 +63,9 @@ pp_def('update_tracker',
         }),
         PMCode => pp_line_numbers(__LINE__,
 <<'EOPM',
-        sub update_tracker {
+        sub update {
                 my ($tw,$mat)=@_;
-                _update_tracker_int($mat,my $box=PDL->null,$tw);
+                _update_int($mat,my $box=PDL->null,$tw);
                 $box;
         }
 EOPM

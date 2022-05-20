@@ -22,12 +22,12 @@ is my $fcc = fourcc(split '', 'MP4V'), 1446269005, 'fourcc right value';
 my $writer = PDL::OpenCV::VideoWriter->new;
 ok $writer->open($outfile, $fcc, 20, [map $frame->dim($_), 1,2], 1), 'open worked';
 
-my $bx=pdl(qw/169 88 192 257/);
-my ($tr,$box)=PDL::OpenCV::Tracker->init_tracker(frame_scale($frame),$bx);
-note "box $box";
+my $box=pdl(qw/169 88 192 257/);
+my $tr = PDL::OpenCV::Tracker->new;
+$box = $tr->init(frame_scale($frame),$box);
 
 while ($res) {
-	$box = $tr->update_tracker(frame_scale($frame));
+	$box = $tr->update(frame_scale($frame));
 	if ($x<98 || $x > 153 && $x<200) {
 		is(all ($box) >0,1,"tracker found box $x.");
 	} else {
