@@ -6,21 +6,34 @@ my $T = [qw(A B S U L F D)];
 
 sub genpp_par {
   my ($type, $name, $pcount) = @_;
-  my ($is_other, $ctype, $par) = (0, "${type}Wrapper *");
+  my ($is_other, $ctype, $par, $destroy, $blank, $frompdl, $topdl1, $topdl2) = (
+    0, "${type}Wrapper *", undef,
+    "cw_${type}_DESTROY", "cw_${type}_new(NULL)",
+  );
   if ($type eq 'Mat') {
     $par = "$name(l$pcount,c$pcount,r$pcount)";
+    $frompdl = sub {
+      my ($iscomp) = @_;
+      "cw_Mat_newWithDims(" .
+        ($iscomp
+          ? join ',', (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
+          : "\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype,\$P($name)"
+        ) .
+        ")"
+    };
+    $topdl1 = "cw_Mat_pdlDims(\$COMP($name), &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount))";
+    $topdl2 = "memmove(\$P($name), cw_Mat_ptr(\$COMP($name)), \$PDL($name)->nbytes)";
   } else {
     $par = "PDL__OpenCV__$type $name";
     $is_other = 1;
   }
-  ($is_other, $par, $ctype);
+  ($is_other, $par, $ctype, $destroy, $blank, $frompdl, $topdl1, $topdl2);
 }
 
 sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     $_ = '' for my ($callprefix, $compmode);
-    my (@c_input, @pp_input, @pars, @otherpars, @inits, @outputs, @pmpars, @defaults, %var2count, %var2usecomp);
     my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");
     my $pcount = 1;
     my $cfunc = join('_', grep length,'cw',$class,$func);
@@ -46,19 +59,20 @@ EOF
       return;
     }
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
+    my (@c_input, @pp_input, @pars, @otherpars, @pdl_inits, @outputs, @pmpars, @defaults, %var2count, %var2usecomp);
     for (@params) {
       my ($type, $var, $default, $f) = @$_;
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
-      my ($partype, $par, $is_other) = '';
+      my ($partype, $par, $is_other, $destroy, $blank, $frompdl, $topdl1, $topdl2) = '';
       if ($type =~ /^[A-Z]/) {
-        ($is_other, $par, $type) = genpp_par($type, $var, $pcount);
+        ($is_other, $par, $type, $destroy, $blank, $frompdl, $topdl1, $topdl2) = genpp_par($type, $var, $pcount);
         if ($is_other) {
           die "Error: OtherPars '$var' is output" if $flags{'/O'};
           push @otherpars, [$par, $var];
           $var2usecomp{$var} = 1;
         } else {
-          push @inits, [$var, $flags{'/O'}, $type, $pcount];
+          push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, $destroy, $blank, $frompdl, $topdl1, $topdl2];
           $compmode = $var2usecomp{$var} = 1 if $flags{'/O'};
           $var2count{$var} = $pcount++;
         }
@@ -69,7 +83,7 @@ EOF
         push @c_input, [($type =~ /\*$/ ? '&' : ''), $var, $partype];
       }
       if ($flags{'/O'}) {
-        push @outputs, [$type, $var];
+        push @outputs, [$type, $var, $topdl1, $topdl2];
         $default = 'PDL->null' if !length $default;
       } else {
         push @pmpars, $var;
@@ -96,29 +110,25 @@ EOF
     );
     if ($compmode) {
       $hash{Comp} = join '; ', map +($_->[0] =~ /^[A-Z]/ ? $_->[0] : PDL::Type->new($_->[0])->ctype)." $_->[1]", @outputs;
-      my $destroy_in = join '', map "cw_Mat_DESTROY($_->[0]_LOCAL);\n", grep !$_->[1], @inits;
-      my $destroy_out = join '', map "cw_Mat_DESTROY(\$COMP($_->[0]));\n", grep $_->[1], @inits;
+      my $destroy_in = join '', map "$_->[4]($_->[0]_LOCAL);\n", grep !$_->[1], @pdl_inits;
+      my $destroy_out = join '', map "$_->[4](\$COMP($_->[0]));\n", grep $_->[1], @pdl_inits;
       $hash{MakeComp} = join '',
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->[1]));\n", grep ref, @c_input),
-        (map $_->[1] ? "\$COMP($_->[0]) = cw_Mat_new(NULL);\n" : "@$_[2,0]_LOCAL = cw_Mat_newWithDims($_->[0]->dims[0],$_->[0]->dims[1],$_->[0]->dims[2],$_->[0]->datatype,$_->[0]->data);\n", @inits),
-        (!@inits ? () : qq{if (@{[join ' || ', map "!".($_->[1]?"\$COMP($_->[0])":"$_->[0]_LOCAL"), @inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
+        (map $_->[1] ? "\$COMP($_->[0]) = $_->[5];\n" : "@$_[2,0]_LOCAL = ".$_->[6]->(1).";\n", @pdl_inits),
+        (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".($_->[1]?"\$COMP($_->[0])":"$_->[0]_LOCAL"), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         ($callprefix && '$COMP(res) = ').$cfunc."(".join(',', map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
         $destroy_in;
       $hash{CompFreeCodeComp} = $destroy_out;
-      my @map_tuples = map [$_->[1], $var2count{$_->[1]}], grep $var2count{$_->[1]}, @outputs;
-      $hash{RedoDimsCode} = join '',
-        map "cw_Mat_pdlDims(\$COMP($_->[0]), &\$PDL($_->[0])->datatype, &\$SIZE(l$_->[1]), &\$SIZE(c$_->[1]), &\$SIZE(r$_->[1]));\n",
-        @map_tuples;
-      $hash{Code} = join '',
-        map "memmove(\$P($_->[0]), cw_Mat_ptr(\$COMP($_->[0])), \$PDL($_->[0])->nbytes);\n",
-        @map_tuples;
+      my @map_tuples = map [$_->[1], $var2count{$_->[1]}, @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
+      $hash{RedoDimsCode} = join '', map "$_->[2];\n", @map_tuples;
+      $hash{Code} = join '', map "$_->[3];\n", @map_tuples;
       $hash{Code} .= $callprefix.'$COMP(res);'."\n" if $callprefix;
     } else {
-      my $destroy_in = join '', map "cw_Mat_DESTROY($_->[0]);\n", grep !$_->[1], @inits;
-      my $destroy_out = join '', map "cw_Mat_DESTROY($_->[0]);\n", grep $_->[1], @inits;
+      my $destroy_in = join '', map "$_->[4]($_->[0]);\n", grep !$_->[1], @pdl_inits;
+      my $destroy_out = join '', map "$_->[4]($_->[0]);\n", grep $_->[1], @pdl_inits;
       $hash{Code} = join '',
-        (map "@$_[2,0] = cw_Mat_newWithDims(\$SIZE(l$_->[3]),\$SIZE(c$_->[3]),\$SIZE(r$_->[3]),\$PDL($_->[0])->datatype,\$P($_->[0]));\n", @inits),
-        (!@inits ? () : qq{if (@{[join ' || ', map "!$_->[0]", @inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
+        (map "@$_[2,0] = ".$_->[6]->(0).";\n", @pdl_inits),
+        (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->[0]", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         $callprefix.$cfunc."(".join(',', map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
         $destroy_in, $destroy_out;
     }
