@@ -19,7 +19,7 @@ my $x = 1;
 
 (undef, my $outfile) = tempfile(SUFFIX=>'.avi');
 my $writer = PDL::OpenCV::VideoWriter->new;
-$writer->open($outfile, 'MP4V', 20, (map $frame->dim($_), 1,2), 1);
+ok $writer->open($outfile, 'MP4V', 20, (map $frame->dim($_), 1,2), 1), 'open worked';
 
 my $bx=pdl(qw/169 88 192 257/);
 my ($tr,$box)=PDL::OpenCV::Tracker->init_tracker(frame_scale($frame),$bx);
