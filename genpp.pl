@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use PDL::Types;
 
 my $T = [qw(A B S U L F D)];
 
@@ -9,7 +10,7 @@ sub genpp_par {
   if ($type eq 'Mat') {
     $par = "$name(l$pcount,c$pcount,r$pcount)";
   } else {
-    $par = $ctype.$name;
+    $par = "PDL__OpenCV__$type $name";
     $is_other = 1;
   }
   ($is_other, $par, $ctype);
@@ -19,7 +20,7 @@ sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     $_ = '' for my ($callprefix, $compmode);
-    my (@c_input, @pp_input, @pars, @otherpars, @inits, @outputs, @pmpars, @defaults, %var2count, %var2out);
+    my (@c_input, @pp_input, @pars, @otherpars, @inits, @outputs, @pmpars, @defaults, %var2count, %var2usecomp);
     my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");
     my $pcount = 1;
     unshift @params, [$class,'self'] if $ismethod;
@@ -28,18 +29,19 @@ sub genpp {
       my ($type, $var, $default, $f) = @$_;
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
-      push @pp_input, $var;
-      my ($partype, $par) = '';
+      my ($partype, $par, $is_other) = '';
       if ($type =~ /^[A-Z]/) {
-        (my $is_other, $par, $type) = genpp_par($type, $var, $pcount);
+        ($is_other, $par, $type) = genpp_par($type, $var, $pcount);
         if ($is_other) {
-          die "Can't handle OtherPars yet";
+          die "Error: OtherPars '$var' is output" if $flags{'/O'};
+          push @otherpars, [$par, $var];
+          $var2usecomp{$var} = 1;
         } else {
           push @inits, [$var, $flags{'/O'}, $type, $pcount];
-          $compmode = $var2out{$var} = 1 if $flags{'/O'};
-          push @c_input, $var;
+          $compmode = $var2usecomp{$var} = 1 if $flags{'/O'};
           $var2count{$var} = $pcount++;
         }
+        push @c_input, $var;
       } else {
         ($partype = $type) =~ s#\s*\*$##;
         $par = "$var()";
@@ -52,11 +54,15 @@ sub genpp {
         push @pmpars, $var;
       }
       push @defaults, "\$$var = $default if !defined \$$var;" if length $default;
-      push @pars, join ' ', grep length, $partype, ($flags{'/O'} ? '[o]' : ()), $par;
+      if (!$is_other) {
+        push @pp_input, $var;
+        push @pars, join ' ', grep length, $partype, ($flags{'/O'} ? '[o]' : ()), $par;
+      }
     }
+    push @pp_input, map $_->[1], @otherpars;
     $callprefix = '$res() = ', pop @c_input if $ret ne 'void';
     %hash = (%hash,
-      Pars => join('; ', @pars), OtherPars => join('; ', @otherpars),
+      Pars => join('; ', @pars), OtherPars => join('; ', map $_->[0], @otherpars),
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
   my (@{[join ',', map "\$$_", @pmpars]}) = \@_;
@@ -68,15 +74,14 @@ sub ${main::PDLOBJ}::$func {
 EOF
     );
     if ($compmode) {
-      $hash{Comp} = join '; ', map join(' ', @$_), @outputs;
-      $callprefix &&= '$COMP(res) = ';
+      $hash{Comp} = join '; ', map +($_->[0] =~ /^[A-Z]/ ? $_->[0] : PDL::Type->new($_->[0])->ctype)." $_->[1]", @outputs;
       my $destroy_in = join '', map "cw_Mat_DESTROY($_->[0]_LOCAL);\n", grep !$_->[1], @inits;
       my $destroy_out = join '', map "cw_Mat_DESTROY(\$COMP($_->[0]));\n", grep $_->[1], @inits;
       $hash{MakeComp} = join '',
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->[1]));\n", grep ref, @c_input),
         (map $_->[1] ? "\$COMP($_->[0]) = cw_Mat_new(NULL);\n" : "@$_[2,0]_LOCAL = cw_Mat_newWithDims($_->[0]->dims[0],$_->[0]->dims[1],$_->[0]->dims[2],$_->[0]->datatype,$_->[0]->data);\n", @inits),
         (!@inits ? () : qq{if (@{[join ' || ', map "!".($_->[1]?"\$COMP($_->[0])":"$_->[0]_LOCAL"), @inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        ($callprefix && '$COMP(res) = ').join('_', grep length,'cw',$class,$func)."(".join(',', map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2out{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
+        ($callprefix && '$COMP(res) = ').join('_', grep length,'cw',$class,$func)."(".join(',', map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
         $destroy_in;
       $hash{CompFreeCodeComp} = $destroy_out;
       my @map_tuples = map [$_->[1], $var2count{$_->[1]}], grep $var2count{$_->[1]}, @outputs;

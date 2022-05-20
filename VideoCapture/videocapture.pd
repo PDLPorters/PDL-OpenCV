@@ -1,6 +1,17 @@
 use strict;
+use warnings;
+use File::Spec::Functions;
+
+require ''.catfile(updir, 'genpp.pl');
+
 pp_bless ("PDL::OpenCV::VideoCapture");
 pp_addpm ({At=>'Top'},<<"EOPM");
+=head1 NAME
+
+PDL::OpenCV::VideoCapture - PDL bindings for OpenCV VideoCapture
+
+=cut
+
 use strict;
 use warnings;
 EOPM
@@ -42,31 +53,8 @@ double
 cw_VideoCapture_get(PDL__OpenCV__VideoCapture self, int propId)
 EOF
 
-pp_def('read',
-        Pars=>'[oca] m(l,c,r); byte [o]res()',
-        OtherPars => 'PDL__OpenCV__VideoCapture wr',
-        NoPthread=>1, # I/O
-        Comp => 'MatWrapper *mw; unsigned char res;',
-        MakeComp => <<'EOF',
-                if (!($COMP(mw) = cw_Mat_new(NULL)))
-                  $CROAK("cw_Mat_new returned null.");
-                $COMP(res) = cw_VideoCapture_read($COMP(wr), $COMP(mw));
-EOF
-        CompFreeCodeComp => 'if ($COMP(mw)) cw_Mat_DESTROY($COMP(mw));',
-        RedoDimsCode=>pp_line_numbers(__LINE__, <<'EOF'),
-                cw_Mat_pdlDims($COMP(mw), &$PDL(m)->datatype, &$SIZE(l), &$SIZE(c), &$SIZE(r));
-EOF
-        Code =>pp_line_numbers(__LINE__, <<'EOF'),
-                memmove($P(m), cw_Mat_ptr($COMP(mw)), $PDL(m)->nbytes);
-                $res() = $COMP(res);
-EOF
-        PMCode => pp_line_numbers(__LINE__, <<'EOPM'),
-        sub read {
-                _read_int(my $o = PDL->null, my $res = PDL->null, $_[0]);
-                ($o, $res);
-        }
-EOPM
-        Doc=>"Read a frame from the source, return also whether succeeded",
+genpp(@$_) for (
+  ['VideoCapture','read',"Read a frame from the source, return also whether succeeded",1,'byte',{},["Mat","image","",["/O"]]],
 );
 
 pp_done();

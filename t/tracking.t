@@ -12,6 +12,7 @@ my $vfile='t/Megamind.avi';
 my $vc = PDL::OpenCV::VideoCapture->new;
 die if !$vc->open($vfile);
 my ($frame, $res) = $vc->read;
+ok $res, 'read a frame right';
 is_deeply [$frame->dims], [3,720,528], 'right dims' or diag $frame->info;
 my $x = 1;
 ($frame, $res) = $vc->read for 1..$x; # blank frames
