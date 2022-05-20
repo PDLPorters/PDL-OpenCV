@@ -23,6 +23,12 @@ sub genpp_par {
     };
     $topdl1 = "cw_Mat_pdlDims(\$COMP($name), &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount))";
     $topdl2 = "memmove(\$P($name), cw_Mat_ptr(\$COMP($name)), \$PDL($name)->nbytes)";
+  } elsif ($type eq 'Size') {
+    $par = "indx $name(sizen=2)";
+    $frompdl = sub {
+      my ($iscomp) = @_;
+      "cw_Size_newWithDims(\$$name(sizen=>0), \$$name(sizen=>1))"
+    };
   } else {
     $par = "PDL__OpenCV__$type $name";
     $is_other = 1;
@@ -52,8 +58,7 @@ sub genpp {
       }
 pp_addxs(<<EOF);
 MODULE = PDL::OpenCV::$class PACKAGE = PDL::OpenCV::$class PREFIX=cw_${class}_
-
-$ret $cfunc(@{[join ', ', @xs_params]})
+\n$ret $cfunc(@{[join ', ', @xs_params]})
   PROTOTYPE: DISABLE
 EOF
       return;
@@ -76,6 +81,11 @@ EOF
           $compmode = $var2usecomp{$var} = 1 if $flags{'/O'};
           $var2count{$var} = $pcount++;
         }
+        push @c_input, $var;
+      } elsif ($type eq 'char *') {
+        $is_other = 1;
+        push @otherpars, ["$type $var", $var];
+        $var2usecomp{$var} = 1;
         push @c_input, $var;
       } else {
         ($partype = $type) =~ s#\s*\*$##;
