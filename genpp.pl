@@ -3,6 +3,18 @@ use warnings;
 
 my $T = [qw(A B S U L F D)];
 
+sub genpp_par {
+  my ($type, $name, $pcount) = @_;
+  my ($is_other, $ctype, $par) = (0, "${type}Wrapper *");
+  if ($type eq 'Mat') {
+    $par = "$name(l$pcount,c$pcount,r$pcount)";
+  } else {
+    $par = $ctype.$name;
+    $is_other = 1;
+  }
+  ($is_other, $par, $ctype);
+}
+
 sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
@@ -17,12 +29,16 @@ sub genpp {
       my %flags = map +($_=>1), @{$f||[]};
       push @pp_input, $var;
       my ($partype, $par) = '';
-      if ($type eq 'MatWrapper *') {
-        $par = "$var(l$pcount,c$pcount,r$pcount)";
-        push @inits, [$var, $flags{'/O'}, $type, $pcount];
-        $compmode = $var2out{$var} = 1 if $flags{'/O'};
-        push @c_input, $var;
-        $var2count{$var} = $pcount++;
+      if ($type =~ /^[A-Z]/) {
+        (my $is_other, $par, $type) = genpp_par($type, $var, $pcount);
+        if ($is_other) {
+          die "Can't handle OtherPars yet";
+        } else {
+          push @inits, [$var, $flags{'/O'}, $type, $pcount];
+          $compmode = $var2out{$var} = 1 if $flags{'/O'};
+          push @c_input, $var;
+          $var2count{$var} = $pcount++;
+        }
       } else {
         ($partype = $type) =~ s#\s*\*$##;
         $par = "$var()";
