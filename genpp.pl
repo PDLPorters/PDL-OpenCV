@@ -23,6 +23,7 @@ sub genpp {
     my (@c_input, @pp_input, @pars, @otherpars, @inits, @outputs, @pmpars, @defaults, %var2count, %var2usecomp);
     my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");
     my $pcount = 1;
+    my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     for (@params) {
@@ -81,7 +82,7 @@ EOF
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->[1]));\n", grep ref, @c_input),
         (map $_->[1] ? "\$COMP($_->[0]) = cw_Mat_new(NULL);\n" : "@$_[2,0]_LOCAL = cw_Mat_newWithDims($_->[0]->dims[0],$_->[0]->dims[1],$_->[0]->dims[2],$_->[0]->datatype,$_->[0]->data);\n", @inits),
         (!@inits ? () : qq{if (@{[join ' || ', map "!".($_->[1]?"\$COMP($_->[0])":"$_->[0]_LOCAL"), @inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        ($callprefix && '$COMP(res) = ').join('_', grep length,'cw',$class,$func)."(".join(',', map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
+        ($callprefix && '$COMP(res) = ').$cfunc."(".join(',', map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
         $destroy_in;
       $hash{CompFreeCodeComp} = $destroy_out;
       my @map_tuples = map [$_->[1], $var2count{$_->[1]}], grep $var2count{$_->[1]}, @outputs;
@@ -98,7 +99,7 @@ EOF
       $hash{Code} = join '',
         (map "@$_[2,0] = cw_Mat_newWithDims(\$SIZE(l$_->[3]),\$SIZE(c$_->[3]),\$SIZE(r$_->[3]),\$PDL($_->[0])->datatype,\$P($_->[0]));\n", @inits),
         (!@inits ? () : qq{if (@{[join ' || ', map "!$_->[0]", @inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        $callprefix.join('_', grep length,'cw',$class,$func)."(".join(',', map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
+        $callprefix.$cfunc."(".join(',', map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
         $destroy_in, $destroy_out;
     }
     pp_def($func, %hash);
