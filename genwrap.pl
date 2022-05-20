@@ -45,8 +45,9 @@ sub gen_code {
 	die "Error on $class/$name: attribute but args\n" if $ismethod == 2 and @params;
 	while (@params) {
 		my ($s, $v) = @{shift @params};
-		push @args, "$s $v";
-		push @cvargs, $s =~ /.*Wrapper\s*\*/ ? "$v->held" : $v;
+		my $ctype = $s . ($s =~ /^[A-Z]/ ? "Wrapper *" : '');
+		push @args, "$ctype $v";
+		push @cvargs, $s =~ /^[A-Z]/ ? "$v->held" : $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $name;
 	my $str = "$ret $fname(";
