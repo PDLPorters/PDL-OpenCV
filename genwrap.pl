@@ -39,9 +39,8 @@ sub gen_code {
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	my (@args, @cvargs, $methodvar);
 	if ($ismethod) {
-		my ($s, $v) = @{shift @params};
-		push @args, "$s $v";
-		$methodvar = $v;
+		push @args, "${class}Wrapper *self";
+		$methodvar = 'self';
 	}
 	die "Error on $class/$name: attribute but args\n" if $ismethod == 2 and @params;
 	while (@params) {
