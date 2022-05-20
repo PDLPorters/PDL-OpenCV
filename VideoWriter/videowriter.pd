@@ -37,19 +37,8 @@ CODE:
   }
 EOF
 
-pp_def('write',
-        Pars=>'m(l,c,r);',
-        OtherPars => 'PDL__OpenCV__VideoWriter wr',
-        NoPthread=>1, # I/O
-        Code =>pp_line_numbers(__LINE__, <<'EOF'),
-                pdl *pid = $PDL(m);
-                MatWrapper *mw = cw_Mat_newWithDims($SIZE(l),$SIZE(c),$SIZE(r),pid->datatype,$P(m));
-                if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
-                cw_VideoWriter_write($COMP(wr), mw);
-                cw_Mat_DESTROY(mw);
-EOF
-        PMCode => 'sub write { _write_int(@_[1,0]) }',
-        Doc=>"Write a frame to the file.",
+genpp(@$_) for (
+  ['VideoWriter','write',"Write a frame to the file.",1,'void',{},["Mat","image"]],
 );
 
 pp_done();
