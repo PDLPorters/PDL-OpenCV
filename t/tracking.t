@@ -42,7 +42,6 @@ done_testing();
 sub frame_scale {
   my ($frame) = @_;
   my ($min, $max) = PDL::OpenCV::minMaxIdx($frame);
-  return $frame if $max->sclr == 255;
-  my $scale = 255/$max;
-  ($frame * $scale)->byte; # equivalent of convertTo(CV_8UC3)
+  $frame = ($frame * (255/$max))->byte if $max->sclr != 255;
+  $frame->dim(0) == 1 ? $frame->cvtColor(COLOR_GRAY2RGB) : $frame;
 }

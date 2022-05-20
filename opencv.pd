@@ -72,6 +72,11 @@ PDL data for use with OpenCV must be dimensioned C<(channels,x,y)>
 where C<channels> might be 1 if grayscale. This module will not use
 heuristics to guess what you meant if you only supply 2-dimensional data.
 
+Be careful when scaling byte-valued inputs to maximise dynamic range:
+
+  $frame = ($frame * (255/$max))->byte; # works
+  $frame = ($frame * 255/$max)->byte;   # multiply happens first and overflows
+
 =cut
 EOPM
 
