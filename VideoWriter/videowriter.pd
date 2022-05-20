@@ -18,17 +18,17 @@ Open writing to given filename.
 EOD
 
 pp_addxs(<<'EOF');
-int open(self, name, code, fps, width, height, iscolor)
+int open(self, name, fourcc, fps, width, height, iscolor)
         PDL__OpenCV__VideoWriter self
         char *name
-        char *code
+        int fourcc
         double fps
         int width
         int height
         char iscolor
 CODE:
   SizeWrapper *sw = cw_Size_newWithDims(width, height);
-  RETVAL = cw_VideoWriter_open(self, name, cw_VideoWriter_fourcc(code[0],code[1],code[2],code[3]), fps, sw, iscolor);
+  RETVAL = cw_VideoWriter_open(self, name, fourcc, fps, sw, iscolor);
   cw_Size_DESTROY(sw);
 OUTPUT:
   RETVAL
