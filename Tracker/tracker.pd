@@ -16,7 +16,7 @@ pp_def('init',
                   cw_Rect_DESTROY(box);
                   $CROAK("A constructor returned null.");
                 }
-                initTracker($COMP(twi),mw,box);
+                cw_Tracker_init($COMP(twi),mw,box);
                 cw_Rect_getVals(box,&$b(j=>0),&$b(j=>1),&$b(j=>2),&$b(j=>3));
                 cw_Mat_DESTROY(mw);
                 cw_Rect_DESTROY(box);

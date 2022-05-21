@@ -166,10 +166,6 @@ TrackerWrapper *cw_Tracker_new(char *klass) {
 	return Tr;
 }
 
-void initTracker(TrackerWrapper * Tr, MatWrapper * mw, RectWrapper *roi) {
-	Tr->held->init(mw->held,roi->held);
-}
-
 MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
 	MatWrapper *mw = new MatWrapper;
 	mw->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);

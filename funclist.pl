@@ -21,5 +21,6 @@
 ['Mat','cols',2,'int',{}],
 ['Mat','convertTo',1,'void',{},['Mat','out'],['int','rtype'],['double','alpha'],['double','beta']],
 ['','rectangle',0,"void",{},["Mat","img"],["Rect","rec"],["Scalar","color"],["int","thickness"],["int","lineType"],["int","shift"]],
+['Tracker','init',1,'void',{},['Mat','mw'],['Rect','roi']],
 ['Tracker','update',1,'char',{pre=>'TRACKER_RECT_TYPE box;',post=>'roi->held = box;',argfix=>sub{$_[0][1]='box'}},['Mat','mw'],['Rect','roi']],
 );
