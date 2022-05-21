@@ -12,8 +12,8 @@ our %DIMTYPES = (
 );
 sub genpp_par {
   my ($type, $name, $pcount) = @_;
-  my ($is_other, $ctype, $par, $partype, $destroy, $blank, $frompdl, $topdl1, $topdl2) = (
-    0, "${type}Wrapper *", undef, '',
+  my ($is_other, $ctype, $par, $partype, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2) = (
+    0, "${type}Wrapper *", undef, '', 0,
     "cw_${type}_DESTROY", "cw_${type}_new(NULL)",
   );
   if ($type eq 'Mat') {
@@ -40,6 +40,7 @@ sub genpp_par {
   } elsif (my $spec = $DIMTYPES{$type}) {
     my ($indname, $indcount) = ("n${type}$pcount", scalar @{$spec->[1]});
     $par = "$name($indname=$indcount)";
+    $fixeddims = 1;
     $partype = $spec->[1][0][0] eq 'ptrdiff_t' ? "indx" : $spec->[1][0][0];
     $frompdl = sub {
       my ($iscomp) = @_;
@@ -55,7 +56,7 @@ sub genpp_par {
     $par = "PDL__OpenCV__$type $name";
     $is_other = 1;
   }
-  ($is_other, $par, $ctype, $partype, $destroy, $blank, $frompdl, $topdl1, $topdl2);
+  ($is_other, $par, $ctype, $partype, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2);
 }
 
 sub genpp {
@@ -91,16 +92,16 @@ EOF
       my ($type, $var, $default, $f) = @$_;
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
-      my ($partype, $par, $is_other, $destroy, $blank, $frompdl, $topdl1, $topdl2) = '';
+      my ($partype, $par, $is_other, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2) = '';
       if ($type =~ /^[A-Z]/) {
-        ($is_other, $par, $type, $partype, $destroy, $blank, $frompdl, $topdl1, $topdl2) = genpp_par($type, $var, $pcount);
+        ($is_other, $par, $type, $partype, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2) = genpp_par($type, $var, $pcount);
         if ($is_other) {
           die "Error: OtherPars '$var' is output" if $flags{'/O'};
           push @otherpars, [$par, $var];
           $var2usecomp{$var} = 1;
         } else {
           push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, $destroy, $blank, $frompdl];
-          $compmode = $var2usecomp{$var} = 1 if $flags{'/O'};
+          $compmode = $var2usecomp{$var} = 1 if $flags{'/O'} and !$fixeddims;
           $var2count{$var} = $pcount++;
         }
         push @c_input, $var;
@@ -158,10 +159,12 @@ EOF
     } else {
       my $destroy_in = join '', map "$_->[4]($_->[0]);\n", grep !$_->[1], @pdl_inits;
       my $destroy_out = join '', map "$_->[4]($_->[0]);\n", grep $_->[1], @pdl_inits;
+      my @map_tuples = map [$_->[1], $var2count{$_->[1]}, map $_->(0), @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
       $hash{Code} = join '',
         (map "@$_[2,0] = ".$_->[6]->(0).";\n", @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->[0]", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         $callprefix.$cfunc."(".join(',', map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
+        (map "$_->[3];\n", @map_tuples),
         $destroy_in, $destroy_out;
     }
     pp_def($func, %hash);
