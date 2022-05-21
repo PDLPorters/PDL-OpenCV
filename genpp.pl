@@ -44,13 +44,13 @@ sub genpp_par {
     $partype = $spec->[1][0][0] eq 'ptrdiff_t' ? "indx" : $spec->[1][0][0];
     $frompdl = sub {
       my ($iscomp) = @_;
-      qq{cw_${type}_newWithDims(@{[join ',', map "\$$name($indname=>$_)", 0..$indcount-1]})};
+      qq{cw_${type}_newWithVals(@{[join ',', map "\$$name($indname=>$_)", 0..$indcount-1]})};
     };
     $topdl1 = sub { "" };
     $topdl2 = sub {
       my ($iscomp) = @_;
       my $varname = $iscomp ? "\$COMP($name)" : $name;
-      qq{cw_${type}_getDims($varname,@{[join ',', map "&\$$name($indname=>$_)", 0..$indcount-1]})};
+      qq{cw_${type}_getVals($varname,@{[join ',', map "&\$$name($indname=>$_)", 0..$indcount-1]})};
     };
   } else {
     $par = "PDL__OpenCV__$type $name";

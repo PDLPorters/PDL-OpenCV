@@ -131,16 +131,16 @@ int cw_${class}_DESTROY(${class}Wrapper * wrapper) {
 EOF
   if ($dims) {
     $hstr .= <<EOF;
-${class}Wrapper *cw_${class}_newWithDims(@{[join ',', map "@$_[0,1]", @$dims]});
-void cw_${class}_getDims(${class}Wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @$dims]});
+${class}Wrapper *cw_${class}_newWithVals(@{[join ',', map "@$_[0,1]", @$dims]});
+void cw_${class}_getVals(${class}Wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @$dims]});
 EOF
     $cstr .= <<EOF;
-${class}Wrapper *cw_${class}_newWithDims(@{[join ',', map "@$_[0,1]", @$dims]}) {
+${class}Wrapper *cw_${class}_newWithVals(@{[join ',', map "@$_[0,1]", @$dims]}) {
   ${class}Wrapper *self = new ${class}Wrapper;
   self->held = cv::${class}(@{[join ',', map $_->[1], @$dims]});
   return self;
 }
-void cw_${class}_getDims(${class}Wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @$dims]}) {
+void cw_${class}_getVals(${class}Wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @$dims]}) {
   @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @$dims]}
 }
 EOF

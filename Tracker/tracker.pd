@@ -10,14 +10,14 @@ pp_def('init',
         OtherPars => 'PDL__OpenCV__Tracker twi',
         Code=>pp_line_numbers(__LINE__, q{
                 MatWrapper *mw = cw_Mat_newWithDims($SIZE(l),$SIZE(c),$SIZE(r),$PDL(in)->datatype,$P(in));
-                RectWrapper *box = cw_Rect_newWithDims($b(j=>0),$b(j=>1),$b(j=>2),$b(j=>3));
+                RectWrapper *box = cw_Rect_newWithVals($b(j=>0),$b(j=>1),$b(j=>2),$b(j=>3));
                 if (!mw || !box) {
                   cw_Mat_DESTROY(mw);
                   cw_Rect_DESTROY(box);
                   $CROAK("A constructor returned null.");
                 }
                 initTracker($COMP(twi),mw,box);
-                cw_Rect_getDims(box,&$b(j=>0),&$b(j=>1),&$b(j=>2),&$b(j=>3));
+                cw_Rect_getVals(box,&$b(j=>0),&$b(j=>1),&$b(j=>2),&$b(j=>3));
                 cw_Mat_DESTROY(mw);
                 cw_Rect_DESTROY(box);
         }),
