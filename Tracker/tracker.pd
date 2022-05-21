@@ -45,32 +45,8 @@ $box is a 4-integer array (x,y,width,height) holding the bounding box.
 EOD
 );
 
-pp_def('update',
-        Pars=>'in(l,c,r); indx [o] b(j=4);',
-        OtherPars => 'PDL__OpenCV__Tracker twi',
-        Code =>pp_line_numbers(__LINE__, q{
-                MatWrapper *mw = cw_Mat_newWithDims($SIZE(l),$SIZE(c),$SIZE(r),$PDL(in)->datatype,$P(in));
-                RectWrapper *box = cw_Rect_new(NULL);
-                if (!mw || !box) {
-                  cw_Mat_DESTROY(mw);
-                  cw_Rect_DESTROY(box);
-                  $CROAK("A constructor returned null.");
-                }
-                cw_Tracker_update($COMP(twi),mw,box);
-                cw_Rect_getDims(box,&$b(j=>0),&$b(j=>1),&$b(j=>2),&$b(j=>3));
-                cw_Mat_DESTROY(mw);
-                cw_Rect_DESTROY(box);
-        }),
-        PMCode => pp_line_numbers(__LINE__,
-<<'EOPM',
-        sub update {
-                my ($tw,$mat)=@_;
-                _update_int($mat,my $box=PDL->null,$tw);
-                $box;
-        }
-EOPM
-),
-        Doc=>"update the tracker box.\n",
-        );
+genpp(@$_) for (
+  ['Tracker','update',"Update tracker with new image",1,'int',{},['Mat','mw'],['Rect','roi',"",['/O']]],
+);
 
 pp_done();

@@ -29,14 +29,16 @@ my $tr = PDL::OpenCV::Tracker->new;
 $box = $tr->init(frame_scale($frame),$box);
 
 while ($res) {
-  $box = $tr->update($frame = frame_scale($frame));
+  ($box, my $track_res) = $tr->update($frame = frame_scale($frame));
   rectangle($frame, $box, [255,0,0,0], 2, 1, 0);
   imshow("ud", $frame);
   waitKey(1);
   if ($x<98 || $x > 153 && $x<200) {
           is(all ($box) >0,1,"tracker found box $x.");
+          ok $track_res, 'tracker said found';
   } else {
           is(all ($box) == 0,1,"tracker did not find box $x.");
+          ok !$track_res, 'tracker said not found';
   }
   note "x $x box $box";
   $writer->write($frame);
