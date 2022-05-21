@@ -171,13 +171,6 @@ void initTracker(TrackerWrapper * Tr, MatWrapper * mw, RectWrapper *roi) {
 	Tr->held->init(mw->held,roi->held);
 }
 
-char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, RectWrapper *roi) {
-	TRACKER_RECT_TYPE box;
-	char res = Tr->held->update(mw->held,box);
-	roi->held = box;
-	return res;
-}
-
 MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
 	MatWrapper *mw = new MatWrapper;
 	mw->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
@@ -200,7 +193,6 @@ print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, RectWrapper *box);
-char updateTracker(TrackerWrapper *, MatWrapper *, RectWrapper *box);
 
 MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
 

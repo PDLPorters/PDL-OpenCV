@@ -56,7 +56,7 @@ pp_def('update',
                   cw_Rect_DESTROY(box);
                   $CROAK("A constructor returned null.");
                 }
-                updateTracker($COMP(twi),mw,box);
+                cw_Tracker_update($COMP(twi),mw,box);
                 cw_Rect_getDims(box,&$b(j=>0),&$b(j=>1),&$b(j=>2),&$b(j=>3));
                 cw_Mat_DESTROY(mw);
                 cw_Rect_DESTROY(box);
