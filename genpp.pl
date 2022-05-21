@@ -27,8 +27,16 @@ sub genpp_par {
         ) .
         ")"
     };
-    $topdl1 = "cw_Mat_pdlDims(\$COMP($name), &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount))";
-    $topdl2 = "memmove(\$P($name), cw_Mat_ptr(\$COMP($name)), \$PDL($name)->nbytes)";
+    $topdl1 = sub {
+      my ($iscomp) = @_;
+      my $varname = $iscomp ? "\$COMP($name)" : $name;
+      "cw_Mat_pdlDims($varname, &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount))";
+    };
+    $topdl2 = sub {
+      my ($iscomp) = @_;
+      my $varname = $iscomp ? "\$COMP($name)" : $name;
+      "memmove(\$P($name), cw_Mat_ptr($varname), \$PDL($name)->nbytes)";
+    };
   } elsif (my $spec = $DIMTYPES{$type}) {
     my ($indname, $indcount) = ("n${type}$pcount", scalar @{$spec->[1]});
     $par = "$name($indname=$indcount)";
@@ -37,8 +45,12 @@ sub genpp_par {
       my ($iscomp) = @_;
       qq{cw_${type}_newWithDims(@{[join ',', map "\$$name($indname=>$_)", 0..$indcount-1]})};
     };
-    $topdl1 = "";
-    $topdl2 = qq{cw_${type}_getDims(\$COMP($name),@{[join ',', map "&\$$name($indname=>$_)", 0..$indcount-1]})};
+    $topdl1 = sub { "" };
+    $topdl2 = sub {
+      my ($iscomp) = @_;
+      my $varname = $iscomp ? "\$COMP($name)" : $name;
+      qq{cw_${type}_getDims($varname,@{[join ',', map "&\$$name($indname=>$_)", 0..$indcount-1]})};
+    };
   } else {
     $par = "PDL__OpenCV__$type $name";
     $is_other = 1;
@@ -87,7 +99,7 @@ EOF
           push @otherpars, [$par, $var];
           $var2usecomp{$var} = 1;
         } else {
-          push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, $destroy, $blank, $frompdl, $topdl1, $topdl2];
+          push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, $destroy, $blank, $frompdl];
           $compmode = $var2usecomp{$var} = 1 if $flags{'/O'};
           $var2count{$var} = $pcount++;
         }
@@ -139,7 +151,7 @@ EOF
         ($callprefix && '$COMP(res) = ').$cfunc."(".join(',', map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
         $destroy_in;
       $hash{CompFreeCodeComp} = $destroy_out;
-      my @map_tuples = map [$_->[1], $var2count{$_->[1]}, @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
+      my @map_tuples = map [$_->[1], $var2count{$_->[1]}, map $_->(1), @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
       $hash{RedoDimsCode} = join '', map "$_->[2];\n", @map_tuples;
       $hash{Code} = join '', map "$_->[3];\n", @map_tuples;
       $hash{Code} .= $callprefix.'$COMP(res);'."\n" if $callprefix;
