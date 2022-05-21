@@ -3,6 +3,7 @@ use warnings;
 use Test::More;
 use PDL::LiteF;
 use PDL::OpenCV;
+use PDL::OpenCV::Highgui;
 use PDL::OpenCV::Tracker;
 use PDL::OpenCV::VideoCapture;
 use PDL::OpenCV::VideoWriter;
@@ -27,7 +28,9 @@ my $tr = PDL::OpenCV::Tracker->new;
 $box = $tr->init(frame_scale($frame),$box);
 
 while ($res) {
-	$box = $tr->update(frame_scale($frame));
+	$box = $tr->update($frame = frame_scale($frame));
+	imshow("ud", $frame);
+	waitKey(1);
 	if ($x<98 || $x > 153 && $x<200) {
 		is(all ($box) >0,1,"tracker found box $x.");
 	} else {

@@ -1,0 +1,15 @@
+use strict;
+use warnings;
+use File::Spec::Functions;
+require ''.catfile(updir, 'genpp.pl');
+
+genheader("Highgui",0);
+
+genpp(@$_) for (
+  ['','imshow',"Show image",0,'void',{},['char *','name'],['Mat','mw']],
+  ['','waitKey',"Wait for key",0,'int',{},['int','delay']],
+  ['','namedWindow',"Open window",0,'void',{},['char *','winname'],['int','flags']],
+  ['','destroyWindow',"Close window",0,'void',{},['char *','winname']],
+);
+
+pp_done();

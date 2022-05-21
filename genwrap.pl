@@ -147,9 +147,9 @@ TrackerWrapper *cw_Tracker_new(char *klass) {
 void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
 	cv::Rect roi = { box.x, box.y, box.width, box.height };
 	if (roi.x == 0) {
-		cv::namedWindow("ud",cv::WINDOW_NORMAL);
+		cw_namedWindow("ud",cv::WINDOW_NORMAL);
 		roi=cv::selectROI("ud",mw->held,true,false);
-		cv::destroyWindow("ud");
+		cw_destroyWindow("ud");
 	}
 	Tr->held->init(mw->held,roi);
 }
@@ -159,8 +159,6 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
 	char res = Tr->held->update(mw->held,box);
 	*roi = { (int)box.x, (int)box.y, (int)box.width, (int)box.height };
 	cv::rectangle( mw->held, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
-	cw_imshow("ud", mw);
-	cv::waitKey(1);
 	return res;
 }
 

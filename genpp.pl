@@ -56,8 +56,8 @@ sub genpp {
         }
         push @xs_params, $is_other ? $par : "$type $var";
       }
-pp_addxs(<<EOF);
-MODULE = PDL::OpenCV::$class PACKAGE = PDL::OpenCV::$class PREFIX=cw_${class}_
+      pp_addxs(<<EOF);
+MODULE = ${main::PDLOBJ} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep length,'cw',$class]}_
 \n$ret $cfunc(@{[join ', ', @xs_params]})
   PROTOTYPE: DISABLE
 EOF
@@ -146,42 +146,30 @@ EOF
 }
 
 sub genheader {
-  my ($last) = @_;
+  my ($last, $want_new) = @_;
+  $want_new //= 1;
   pp_bless("PDL::OpenCV::$last");
   pp_addpm({At=>'Top'},<<"EOPM");
 =head1 NAME
-
-PDL::OpenCV::$last - PDL bindings for OpenCV $last
-
-=cut
-
-use strict;
+\nPDL::OpenCV::$last - PDL bindings for OpenCV $last
+\n=cut
+\nuse strict;
 use warnings;
 EOPM
-  pp_addhdr <<EOH;
-#include "opencv_wrapper.h"
-typedef ${last}Wrapper *PDL__OpenCV__$last;
-EOH
-  pp_addpm(<<EOD);
+  pp_addhdr qq{#include "opencv_wrapper.h"\n};
+  pp_addhdr qq{typedef ${last}Wrapper *PDL__OpenCV__$last;\n} if $want_new;
+  pp_addpm(<<EOD) if $want_new;
 =head2 new
-
-=for ref
-
-Initialize OpenCV $last object.
-
-=for example
-
-  \$obj = PDL::OpenCV::$last->new;
-
-=cut
+\n=for ref
+\nInitialize OpenCV $last object.
+\n=for example
+\n  \$obj = PDL::OpenCV::$last->new;
+\n=cut
 EOD
-
-  pp_addxs(<<EOF);
+  pp_addxs(<<EOF) if $want_new;
 MODULE = PDL::OpenCV::$last PACKAGE = PDL::OpenCV::$last PREFIX=cw_${last}_
-
-PDL__OpenCV__$last cw_${last}_new(char *klass)
-
-void
+\nPDL__OpenCV__$last cw_${last}_new(char *klass)
+\nvoid
 cw_${last}_DESTROY(PDL__OpenCV__$last self)
 EOF
 }
