@@ -4,6 +4,8 @@ use File::Spec::Functions;
 use PDL::Types;
 use PDL::Core qw/howbig/;
 
+require './genpp.pl';
+our %DIMTYPES;
 my @funclist = do './funclist.pl'; die if $@;
 
 my ($tstr_l,$rstr_l);
@@ -104,14 +106,13 @@ extern "C" {
 EOF
 
 sub gen_wrapper {
-  my ($class, $ptr_only) = @_;
-  (
-    <<EOF, #hstr
-typedef struct ${class}Wrapper ${class}Wrapper ;
+  my ($class, $ptr_only, $dims) = @_;
+  my $hstr = <<EOF;
+typedef struct ${class}Wrapper ${class}Wrapper;
 ${class}Wrapper *cw_${class}_new(char *klass);
-int cw_${class}_DESTROY(${class}Wrapper * wrapper);
+int cw_${class}_DESTROY(${class}Wrapper *wrapper);
 EOF
-    <<EOF, #cstr
+  my $cstr = <<EOF;
 struct ${class}Wrapper {
 	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : "cv::${class}"]} held;
 };
@@ -123,11 +124,27 @@ int cw_${class}_DESTROY(${class}Wrapper * wrapper) {
 	return 1;
 }
 EOF
-  );
+  if ($dims) {
+    $hstr .= <<EOF;
+${class}Wrapper *cw_${class}_newWithDims(@{[join ',', map "@$_[0,1]", @$dims]});
+void cw_${class}_getDims(${class}Wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @$dims]});
+EOF
+    $cstr .= <<EOF;
+${class}Wrapper *cw_${class}_newWithDims(@{[join ',', map "@$_[0,1]", @$dims]}) {
+  ${class}Wrapper *self = new ${class}Wrapper;
+  self->held = cv::${class}(@{[join ',', map $_->[1], @$dims]});
+  return self;
+}
+void cw_${class}_getDims(${class}Wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @$dims]}) {
+  @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @$dims]}
+}
+EOF
+  }
+  ($hstr, $cstr);
 }
 
 for (
-  ['Mat'], ['Rect'], ['Size'],
+  ['Mat'], (map [$_, @{$DIMTYPES{$_}}], sort keys %DIMTYPES),
   ['VideoCapture'], ['VideoWriter'], ['Tracker',1],
 ) {
   my ($hstr, $cstr) = gen_wrapper(@$_);
@@ -172,25 +189,6 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 	*c = wrapper->held.cols;
 	*r = wrapper->held.rows;
 }
-
-SizeWrapper *cw_Size_newWithDims(int width, int height) {
-	SizeWrapper *mw = new SizeWrapper;
-	mw->held = cv::Size(width, height);
-	return mw;
-}
-
-RectWrapper *cw_Rect_newWithDims(ptrdiff_t x, ptrdiff_t y, ptrdiff_t width, ptrdiff_t height) {
-  RectWrapper *self = new RectWrapper;
-  self->held = cv::Rect(x, y, width, height);
-  return self;
-}
-
-void cw_Rect_getDims(RectWrapper *self, ptrdiff_t *x, ptrdiff_t *y, ptrdiff_t *width, ptrdiff_t *height) {
-  *x = self->held.x;
-  *y = self->held.y;
-  *width = self->held.width;
-  *height = self->held.height;
-}
 EOF
 
 print $fc $tstr;
@@ -199,10 +197,6 @@ print $fc $rstr;
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
-
-SizeWrapper *cw_Size_newWithDims(int width, int height);
-RectWrapper *cw_Rect_newWithDims(ptrdiff_t x, ptrdiff_t y, ptrdiff_t width, ptrdiff_t height);
-void cw_Rect_getDims(RectWrapper *self, ptrdiff_t *x, ptrdiff_t *y, ptrdiff_t *width, ptrdiff_t *height);
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * frame, RectWrapper *box);
 char updateTracker(TrackerWrapper *, MatWrapper *, RectWrapper *box);

@@ -4,6 +4,12 @@ use PDL::Types;
 
 my $T = [qw(A B S U L F D)];
 
+our %DIMTYPES = (
+  Point=>[0,[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)]]],
+  Rect=>[0,[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)], [qw(ptrdiff_t width)], [qw(ptrdiff_t height)]]],
+  Scalar=>[0,[[qw(double v0 val[0])], [qw(double v1 val[1])], [qw(double v2 val[2])], [qw(double v3 val[3])]]],
+  Size=>[0,[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]]],
+);
 sub genpp_par {
   my ($type, $name, $pcount) = @_;
   my ($is_other, $ctype, $par, $destroy, $blank, $frompdl, $topdl1, $topdl2) = (
@@ -23,11 +29,12 @@ sub genpp_par {
     };
     $topdl1 = "cw_Mat_pdlDims(\$COMP($name), &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount))";
     $topdl2 = "memmove(\$P($name), cw_Mat_ptr(\$COMP($name)), \$PDL($name)->nbytes)";
-  } elsif ($type eq 'Size') {
-    $par = "indx $name(sizen=2)";
+  } elsif (my $spec = $DIMTYPES{$type}) {
+    my ($indname, $indcount) = ("n${type}$pcount", scalar @{$spec->[1]});
+    $par = "indx $name($indname=$indcount)";
     $frompdl = sub {
       my ($iscomp) = @_;
-      "cw_Size_newWithDims(\$$name(sizen=>0), \$$name(sizen=>1))"
+      qq{cw_${type}_newWithDims(@{[join ',', map "\$$name($indname=>$_)", 0..$indcount-1]})};
     };
   } else {
     $par = "PDL__OpenCV__$type $name";
@@ -156,8 +163,8 @@ sub genheader {
 \nuse strict;
 use warnings;
 EOPM
-  pp_addhdr qq{#include "opencv_wrapper.h"\n};
-  pp_addhdr qq{typedef ${last}Wrapper *PDL__OpenCV__$last;\n} if $want_new;
+  pp_addhdr(qq{#include "opencv_wrapper.h"\n});
+  pp_addhdr(qq{typedef ${last}Wrapper *PDL__OpenCV__$last;\n}) if $want_new;
   pp_addpm(<<EOD) if $want_new;
 =head2 new
 \n=for ref
