@@ -44,7 +44,7 @@ sub gen_code {
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	my (@args, @cvargs, $methodvar);
 	my $func_ret = $ret =~ /^[A-Z]/ ? "${ret}Wrapper *" : $ret;
-	my $cpp_ret = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? "cv::$ret " . "cpp_" : "$ret " . '')."retval = ";
+	my $cpp_ret = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? "cv::$ret cpp_" : "$ret ")."retval = ";
 	my $after_ret = $ret =~ /^[A-Z]/ ? "  ${func_ret}retval = cw_${ret}_new(NULL); retval->held = cpp_retval;\n" : '';
 	if ($ismethod) {
 		push @args, "${class}Wrapper *self";
