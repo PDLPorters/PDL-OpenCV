@@ -67,7 +67,7 @@ sub genpp {
     my $pcount = 1;
     my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
-    if (!grep /^[A-Z]/ && !(genpp_par $_, '', 0)[0], map $_->[0], @params) {
+    if (!grep /^[A-Z]/ && !(genpp_par $_, '', 0)[0], map $_->[0], @params, $ret ne 'void' ? [$ret] : ()) {
       pp_addpm("=head2 $func\n\n$hash{Doc}\n");
       pp_add_exported($func);
       my @xs_params;
@@ -128,7 +128,7 @@ EOF
       }
     }
     push @pp_input, map $_->[1], @otherpars;
-    $callprefix = '$res() = ', pop @c_input if $ret ne 'void';
+    $callprefix = ($ret =~ /^[A-Z]/ ? 'res' : '$res()').' = ', pop @c_input if $ret ne 'void';
     %hash = (%hash,
       Pars => join('; ', @pars), OtherPars => join('; ', map $_->[0], @otherpars),
       PMCode => <<EOF,

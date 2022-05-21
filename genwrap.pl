@@ -167,13 +167,6 @@ TrackerWrapper *cw_Tracker_new(char *klass) {
 }
 
 void initTracker(TrackerWrapper * Tr, MatWrapper * mw, RectWrapper *roi) {
-	if (roi->held.x == 0) {
-		cw_namedWindow("ud",cv::WINDOW_NORMAL);
-		RectWrapper *res = cw_selectROI("ud",mw,1,0);
-		roi->held = res->held;
-		cw_Rect_DESTROY(res);
-		cw_destroyWindow("ud");
-	}
 	Tr->held->init(mw->held,roi->held);
 }
 

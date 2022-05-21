@@ -26,6 +26,11 @@ ok $writer->open($outfile, $fcc, 20, [map $frame->dim($_), 1,2], 1), 'open worke
 
 my $box=pdl(qw/169 88 192 257/);
 my $tr = PDL::OpenCV::Tracker->new;
+if ($box->at(0) == 0) {
+  namedWindow("ud",WINDOW_NORMAL);
+  $box = selectROI("ud",$frame,1,0);
+  destroyWindow("ud");
+}
 $box = $tr->init(frame_scale($frame),$box);
 
 while ($res) {
