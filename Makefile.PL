@@ -2,10 +2,9 @@ use strict;
 use warnings;
 use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
-use File::Spec::Functions qw(curdir rel2abs catfile);
+use File::Spec::Functions qw(catfile curdir);
 
-our $basepath = rel2abs curdir;
-our $submodmf = catfile $basepath, 'submodmf.pl';
+require ''. catfile curdir, 'submodmf.pl';
 my @pkgs = qw(opencv4);
 our $libs = (
   eval {require PkgConfig; join ' ', map PkgConfig->find($_)->get_ldflags, @pkgs} ||

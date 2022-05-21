@@ -24,3 +24,5 @@ sub wmf {
   *MY::postamble = sub { pdlpp_postamble($package); };
   WriteMakefile(%hash);
 }
+
+1;
