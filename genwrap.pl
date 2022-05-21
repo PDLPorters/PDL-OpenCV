@@ -101,10 +101,6 @@ extern "C" {
 
 #include <stddef.h>
 
-typedef struct {
-	int x; int y; int width; int height;
-} cw_Rect;
-
 EOF
 
 sub gen_wrapper {
@@ -130,7 +126,10 @@ EOF
   );
 }
 
-for (['Mat'], ['Size'], ['VideoCapture'], ['VideoWriter'], ['Tracker',1]) {
+for (
+  ['Mat'], ['Rect'], ['Size'],
+  ['VideoCapture'], ['VideoWriter'], ['Tracker',1],
+) {
   my ($hstr, $cstr) = gen_wrapper(@$_);
   print $fh $hstr;
   print $fc $cstr;
@@ -144,20 +143,19 @@ TrackerWrapper *cw_Tracker_new(char *klass) {
 	return Tr;
 }
 
-void initTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect box) {
-	cv::Rect roi = { box.x, box.y, box.width, box.height };
-	if (roi.x == 0) {
+void initTracker(TrackerWrapper * Tr, MatWrapper * mw, RectWrapper *roi) {
+	if (roi->held.x == 0) {
 		cw_namedWindow("ud",cv::WINDOW_NORMAL);
-		roi=cv::selectROI("ud",mw->held,true,false);
+		roi->held = cv::selectROI("ud",mw->held,true,false);
 		cw_destroyWindow("ud");
 	}
-	Tr->held->init(mw->held,roi);
+	Tr->held->init(mw->held,roi->held);
 }
 
-char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, cw_Rect *roi) {
+char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, RectWrapper *roi) {
 	TRACKER_RECT_TYPE box;
 	char res = Tr->held->update(mw->held,box);
-	*roi = { (int)box.x, (int)box.y, (int)box.width, (int)box.height };
+	roi->held = box;
 	cv::rectangle( mw->held, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
 	return res;
 }
@@ -180,6 +178,19 @@ SizeWrapper *cw_Size_newWithDims(int width, int height) {
 	mw->held = cv::Size(width, height);
 	return mw;
 }
+
+RectWrapper *cw_Rect_newWithDims(ptrdiff_t x, ptrdiff_t y, ptrdiff_t width, ptrdiff_t height) {
+  RectWrapper *self = new RectWrapper;
+  self->held = cv::Rect(x, y, width, height);
+  return self;
+}
+
+void cw_Rect_getDims(RectWrapper *self, ptrdiff_t *x, ptrdiff_t *y, ptrdiff_t *width, ptrdiff_t *height) {
+  *x = self->held.x;
+  *y = self->held.y;
+  *width = self->held.width;
+  *height = self->held.height;
+}
 EOF
 
 print $fc $tstr;
@@ -190,9 +201,11 @@ print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 SizeWrapper *cw_Size_newWithDims(int width, int height);
+RectWrapper *cw_Rect_newWithDims(ptrdiff_t x, ptrdiff_t y, ptrdiff_t width, ptrdiff_t height);
+void cw_Rect_getDims(RectWrapper *self, ptrdiff_t *x, ptrdiff_t *y, ptrdiff_t *width, ptrdiff_t *height);
 
-void initTracker(TrackerWrapper * Tr, MatWrapper * frame, cw_Rect box);
-char updateTracker(TrackerWrapper *, MatWrapper *, cw_Rect *box);
+void initTracker(TrackerWrapper * Tr, MatWrapper * frame, RectWrapper *box);
+char updateTracker(TrackerWrapper *, MatWrapper *, RectWrapper *box);
 
 MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
 

@@ -6,22 +6,20 @@ require ''.catfile(updir, 'genpp.pl');
 genheader("Tracker");
 
 pp_def('init',
-        Pars=>'in(l,c,r); ushort [o] b(j=4);',
+        Pars=>'in(l,c,r); indx [o] b(j=4);',
         OtherPars => 'PDL__OpenCV__Tracker twi',
         Code=>pp_line_numbers(__LINE__, q{
                 MatWrapper *mw = cw_Mat_newWithDims($SIZE(l),$SIZE(c),$SIZE(r),$PDL(in)->datatype,$P(in));
-                if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
-                cw_Rect box;
-                box.x=$b(j=>0);
-                box.y=$b(j=>1);
-                box.width=$b(j=>2);
-                box.height=$b(j=>3);
+                RectWrapper *box = cw_Rect_newWithDims($b(j=>0),$b(j=>1),$b(j=>2),$b(j=>3));
+                if (!mw || !box) {
+                  cw_Mat_DESTROY(mw);
+                  cw_Rect_DESTROY(box);
+                  $CROAK("A constructor returned null.");
+                }
                 initTracker($COMP(twi),mw,box);
-                $b(j=>0)=box.x;
-                $b(j=>1)=box.y;
-                $b(j=>2)=box.width;
-                $b(j=>3)=box.height;
+                cw_Rect_getDims(box,&$b(j=>0),&$b(j=>1),&$b(j=>2),&$b(j=>3));
                 cw_Mat_DESTROY(mw);
+                cw_Rect_DESTROY(box);
         }),
         PMCode => pp_line_numbers(__LINE__, <<'EOP'),
 sub init{
@@ -48,18 +46,20 @@ EOD
 );
 
 pp_def('update',
-        Pars=>'in(l,c,r); ushort [o] b(j=4);',
+        Pars=>'in(l,c,r); indx [o] b(j=4);',
         OtherPars => 'PDL__OpenCV__Tracker twi',
         Code =>pp_line_numbers(__LINE__, q{
                 MatWrapper *mw = cw_Mat_newWithDims($SIZE(l),$SIZE(c),$SIZE(r),$PDL(in)->datatype,$P(in));
-                if (!mw) $CROAK("cw_Mat_newWithDims returned null.");
-                cw_Rect box;
-                updateTracker($COMP(twi),mw,&box);
-                $b(j=>0)=box.x;
-                $b(j=>1)=box.y;
-                $b(j=>2)=box.width;
-                $b(j=>3)=box.height;
+                RectWrapper *box = cw_Rect_new(NULL);
+                if (!mw || !box) {
+                  cw_Mat_DESTROY(mw);
+                  cw_Rect_DESTROY(box);
+                  $CROAK("A constructor returned null.");
+                }
+                updateTracker($COMP(twi),mw,box);
+                cw_Rect_getDims(box,&$b(j=>0),&$b(j=>1),&$b(j=>2),&$b(j=>3));
                 cw_Mat_DESTROY(mw);
+                cw_Rect_DESTROY(box);
         }),
         PMCode => pp_line_numbers(__LINE__,
 <<'EOPM',
