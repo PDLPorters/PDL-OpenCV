@@ -1,15 +1,16 @@
 use strict;
 use warnings;
+use FindBin qw($Bin);
 use File::Spec::Functions;
 use PDL::Types;
 use PDL::Core qw/howbig/;
 
-require './genpp.pl';
+require ''. catfile $Bin, 'genpp.pl';
 our %DIMTYPES;
 my %ALLTYPES = (%DIMTYPES,
   Mat=>[], VideoCapture=>[], VideoWriter=>[], Tracker=>[1],
 );
-my @funclist = do './funclist.pl'; die if $@;
+my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 
 my ($tstr_l,$rstr_l);
 for my $type ( grep $_->real, PDL::Types::types ) {
@@ -186,8 +187,6 @@ print $fc $rstr;
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
-
-void initTracker(TrackerWrapper * Tr, MatWrapper * frame, RectWrapper *box);
 
 MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
 
