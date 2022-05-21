@@ -8,6 +8,7 @@ die "No dir given" unless -d ($ARGV[0]||'') and my $dir = $ARGV[0];
 
 process_header(catfile($dir, qw(opencv2 imgproc.hpp)), 'ColorConversionCodes');
 process_header(catfile($dir, qw(opencv2 videoio.hpp)), 'VideoCaptureProperties');
+process_header(catfile($dir, qw(opencv2 highgui.hpp)), 'WindowFlags');
 
 sub process_header {
   my ($f, $enum) = @_;
