@@ -6,6 +6,7 @@
 ['','imshow',0,'void',{},['const char *','name'],['Mat','mw']],
 ['','waitKey',0,'int',{},['int','delay']],
 ['','namedWindow',0,'void',{},['const char *','winname'],['int','flags']],
+['','selectROI',0,'Rect',{},['const char *','windowName'],['Mat','img'],['char','showCrosshair',"1"],["char","fromCenter","0"]],
 ['','destroyWindow',0,'void',{},['const char *','winname']],
 ['','cvtColor',0,'void',{},["Mat","src","",[]],["Mat","dst","",["/O"]],["int","code","",[]],["int","dstCn","0",[]]],
 ['VideoWriter','fourcc',0,'int',{},['char','c1'],['char','c2'],['char','c3'],['char','c4']],

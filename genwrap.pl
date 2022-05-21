@@ -43,6 +43,9 @@ sub gen_code {
 	my ($class, $name, $ismethod, $ret, $opt, @params) = @_;
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	my (@args, @cvargs, $methodvar);
+	my $func_ret = $ret =~ /^[A-Z]/ ? "${ret}Wrapper *" : $ret;
+	my $cpp_ret = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? "cv::$ret " . "cpp_" : "$ret " . '')."retval = ";
+	my $after_ret = $ret =~ /^[A-Z]/ ? "  ${func_ret}retval = cw_${ret}_new(NULL); retval->held = cpp_retval;\n" : '';
 	if ($ismethod) {
 		push @args, "${class}Wrapper *self";
 		$methodvar = 'self';
@@ -55,17 +58,18 @@ sub gen_code {
 		push @cvargs, $s =~ /^[A-Z]/ ? "$v->held" : $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $name;
-	my $str = "$ret $fname(";
+	my $str = "$func_ret $fname(";
 	$str .= join(", ", @args) . ")";
 	my $hstr = $str.";\n";
 	$str .= " {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
-	$str .= "  ".($ret ne 'void' ? "$ret retval = " : '');
+	$str .= "  $cpp_ret";
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $name)."(" :
 	  "$methodvar->held".($ALLTYPES{$class}[0]?'->':'.')."$name" .
 	  ($ismethod == 1 ? "(" : ";\n");
 	$opt->{argfix}->(\@cvargs) if $opt->{argfix};
 	$str .= join(', ', @cvargs).");\n" if $ismethod != 2;
+	$str .= $after_ret;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
 	$str .= "  return retval;\n" if $ret ne 'void';
 	$str .= "}\n\n";
@@ -165,7 +169,9 @@ TrackerWrapper *cw_Tracker_new(char *klass) {
 void initTracker(TrackerWrapper * Tr, MatWrapper * mw, RectWrapper *roi) {
 	if (roi->held.x == 0) {
 		cw_namedWindow("ud",cv::WINDOW_NORMAL);
-		roi->held = cv::selectROI("ud",mw->held,true,false);
+		RectWrapper *res = cw_selectROI("ud",mw,1,0);
+		roi->held = res->held;
+		cw_Rect_DESTROY(res);
 		cw_destroyWindow("ud");
 	}
 	Tr->held->init(mw->held,roi->held);
