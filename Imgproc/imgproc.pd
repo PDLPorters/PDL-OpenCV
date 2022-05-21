@@ -5,8 +5,4 @@ require ''.catfile(updir, 'genpp.pl');
 
 genheader("Imgproc",0);
 
-genpp(@$_) for (
-  ['','rectangle',"Draw rectangle",0,"void",{},["Mat","img"],["Rect","rec"],["Scalar","color"],["int","thickness"],["int","lineType"],["int","shift"]],
-);
-
 pp_done();

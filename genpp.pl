@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use PDL::Types;
+use File::Spec::Functions qw(catfile curdir);
 
 my $T = [qw(A B S U L F D)];
 
@@ -197,6 +198,14 @@ MODULE = PDL::OpenCV::$last PACKAGE = PDL::OpenCV::$last PREFIX=cw_${last}_
 \nvoid
 cw_${last}_DESTROY(PDL__OpenCV__$last self)
 EOF
+  genpp_fromfile('funclist.pl');
+}
+
+sub genpp_fromfile {
+  my ($file) = @_;
+  my @flist = do ''. catfile curdir, $file;
+  die if $@;
+  genpp(@$_) for @flist;
 }
 
 1;
