@@ -6,6 +6,9 @@ use PDL::Core qw/howbig/;
 
 require './genpp.pl';
 our %DIMTYPES;
+my %ALLTYPES = (%DIMTYPES,
+  Mat=>[], VideoCapture=>[], VideoWriter=>[], Tracker=>[1],
+);
 my @funclist = do './funclist.pl'; die if $@;
 
 my ($tstr_l,$rstr_l);
@@ -59,7 +62,9 @@ sub gen_code {
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  ".($ret ne 'void' ? "$ret retval = " : '');
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $name)."(" :
-	  "$methodvar->held.$name" . ($ismethod == 1 ? "(" : ";\n");
+	  "$methodvar->held".($ALLTYPES{$class}[0]?'->':'.')."$name" .
+	  ($ismethod == 1 ? "(" : ";\n");
+	$opt->{argfix}->(\@cvargs) if $opt->{argfix};
 	$str .= join(', ', @cvargs).");\n" if $ismethod != 2;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
 	$str .= "  return retval;\n" if $ret ne 'void';
@@ -143,11 +148,8 @@ EOF
   ($hstr, $cstr);
 }
 
-for (
-  ['Mat'], (map [$_, @{$DIMTYPES{$_}}], sort keys %DIMTYPES),
-  ['VideoCapture'], ['VideoWriter'], ['Tracker',1],
-) {
-  my ($hstr, $cstr) = gen_wrapper(@$_);
+for (sort keys %ALLTYPES) {
+  my ($hstr, $cstr) = gen_wrapper($_, @{$ALLTYPES{$_}});
   print $fh $hstr;
   print $fc $cstr;
 }
