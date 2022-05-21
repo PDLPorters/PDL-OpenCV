@@ -12,8 +12,8 @@ our %DIMTYPES = (
 );
 sub genpp_par {
   my ($type, $name, $pcount) = @_;
-  my ($is_other, $ctype, $par, $destroy, $blank, $frompdl, $topdl1, $topdl2) = (
-    0, "${type}Wrapper *", undef,
+  my ($is_other, $ctype, $par, $partype, $destroy, $blank, $frompdl, $topdl1, $topdl2) = (
+    0, "${type}Wrapper *", undef, '',
     "cw_${type}_DESTROY", "cw_${type}_new(NULL)",
   );
   if ($type eq 'Mat') {
@@ -31,16 +31,19 @@ sub genpp_par {
     $topdl2 = "memmove(\$P($name), cw_Mat_ptr(\$COMP($name)), \$PDL($name)->nbytes)";
   } elsif (my $spec = $DIMTYPES{$type}) {
     my ($indname, $indcount) = ("n${type}$pcount", scalar @{$spec->[1]});
-    $par = "indx $name($indname=$indcount)";
+    $par = "$name($indname=$indcount)";
+    $partype = $spec->[1][0][0] eq 'ptrdiff_t' ? "indx" : $spec->[1][0][0];
     $frompdl = sub {
       my ($iscomp) = @_;
       qq{cw_${type}_newWithDims(@{[join ',', map "\$$name($indname=>$_)", 0..$indcount-1]})};
     };
+    $topdl1 = "";
+    $topdl2 = qq{cw_${type}_getDims(\$COMP($name),@{[join ',', map "&\$$name($indname=>$_)", 0..$indcount-1]})};
   } else {
     $par = "PDL__OpenCV__$type $name";
     $is_other = 1;
   }
-  ($is_other, $par, $ctype, $destroy, $blank, $frompdl, $topdl1, $topdl2);
+  ($is_other, $par, $ctype, $partype, $destroy, $blank, $frompdl, $topdl1, $topdl2);
 }
 
 sub genpp {
@@ -78,7 +81,7 @@ EOF
       my %flags = map +($_=>1), @{$f||[]};
       my ($partype, $par, $is_other, $destroy, $blank, $frompdl, $topdl1, $topdl2) = '';
       if ($type =~ /^[A-Z]/) {
-        ($is_other, $par, $type, $destroy, $blank, $frompdl, $topdl1, $topdl2) = genpp_par($type, $var, $pcount);
+        ($is_other, $par, $type, $partype, $destroy, $blank, $frompdl, $topdl1, $topdl2) = genpp_par($type, $var, $pcount);
         if ($is_other) {
           die "Error: OtherPars '$var' is output" if $flags{'/O'};
           push @otherpars, [$par, $var];

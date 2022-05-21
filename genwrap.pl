@@ -157,7 +157,7 @@ for (sort keys %ALLTYPES) {
 print $fc sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fc <<'EOF';
 TrackerWrapper *cw_Tracker_new(char *klass) {
-	TrackerWrapper * Tr = new TrackerWrapper;
+	TrackerWrapper *Tr = new TrackerWrapper;
 	Tr->held = cv::TrackerKCF::create();
 	return Tr;
 }
