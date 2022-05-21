@@ -12,33 +12,25 @@ my %ALLTYPES = (%DIMTYPES,
 );
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 
-my ($tstr_l,$rstr_l);
-for my $type ( grep $_->real, PDL::Types::types ) {
-	next if (my $bs = PDL::Core::howbig($type)) > 8;
-	next if $type->ppsym =~/[KPQN]/;
-	my $nt = $type->numval;
-	my $ct = $type->realctype;
-	my $tt = $type->integer ? ($type->unsigned ? 'U' : 'S') : 'F';
-	my $s = 8*$bs;
-	$tstr_l.="\tcase $nt: return CV_$s${tt}C(planes); break;\n";
-	$rstr_l.="\tcase CV_$s$tt: return $nt; break;\n";
-}
-
-my $rstr="
+sub gen_gettype {
+  my @specs = map [
+    $_->numval, $_->integer ? ($_->unsigned ? 'U' : 'S') : 'F', 8*howbig($_)
+  ], grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
+  <<EOF;
 int get_pdltype(const int cvtype) {
-	switch(CV_MAT_DEPTH(cvtype)) {
-$rstr_l\t}
-	return -1;
+  switch (CV_MAT_DEPTH(cvtype)) {
+    @{[join "\n    ", map "case CV_$_->[2]$_->[1]: return $_->[0]; break;", @specs]}
+  }
+  return -1;
 }
-";
-
-my $tstr="
 int get_ocvtype(const int datatype,const int planes) {
-	switch (datatype) {
-$tstr_l\t}
-	return -1;
+  switch (datatype) {
+    @{[join "\n    ", map "case $_->[0]: return CV_$_->[2]$_->[1]C(planes); break;", @specs]}
+  }
+  return -1;
 }
-";
+EOF
+}
 
 sub gen_code {
 	my ($class, $name, $ismethod, $ret, $opt, @params) = @_;
@@ -102,8 +94,7 @@ extern "C" {
 
 EOF
 
-print $fc $tstr;
-print $fc $rstr;
+print $fc gen_gettype();
 
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
