@@ -102,6 +102,9 @@ extern "C" {
 
 EOF
 
+print $fc $tstr;
+print $fc $rstr;
+
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 #ifndef OPENCV_WRAPPER_H
@@ -181,17 +184,11 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 }
 EOF
 
-print $fc $tstr;
-print $fc $rstr;
-
 print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
 MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
-
-int get_pdltype(const int cvtype);
-int get_ocvtype(const int datatype,const int planes);
 EOF
 
 for my $func (@funclist) {
