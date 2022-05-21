@@ -173,7 +173,6 @@ char updateTracker(TrackerWrapper * Tr, MatWrapper * mw, RectWrapper *roi) {
 	TRACKER_RECT_TYPE box;
 	char res = Tr->held->update(mw->held,box);
 	roi->held = box;
-	cv::rectangle( mw->held, box, cv::Scalar( 255, 0, 0 ), 2, 1 );
 	return res;
 }
 
