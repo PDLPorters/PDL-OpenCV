@@ -3,17 +3,12 @@ use warnings;
 use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
 use File::Spec::Functions qw(catfile curdir);
+use Alien::Base::Wrapper ();
 
 require ''. catfile curdir, 'submodmf.pl';
-my @pkgs = qw(opencv4);
-our $libs = (
-  eval {require PkgConfig; join ' ', map PkgConfig->find($_)->get_ldflags, @pkgs} ||
-  eval {require ExtUtils::PkgConfig; join ' ', map ExtUtils::PkgConfig->libs($_), @pkgs} ||
-  `pkg-config @pkgs --libs`);
-our $inc = (
-  eval {require PkgConfig; join ' ', map PkgConfig->find($_)->get_cflags, @pkgs} ||
-  eval {require ExtUtils::PkgConfig; join ' ', map ExtUtils::PkgConfig->cflags($_), @pkgs} ||
-  `pkg-config @pkgs --cflags`);
+my %alien_cv = Alien::Base::Wrapper->new('Alien::OpenCV')->mm_args;
+our $libs = $alien_cv{LIBS}[0];
+our $inc = $alien_cv{INC};
 
 my $package = ["opencv.pd",'OpenCV','PDL::OpenCV'];
 my %hash = pdlpp_stdargs($package);
@@ -35,7 +30,8 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
     CONFIGURE_REQUIRES => {
         'ExtUtils::CppGuess' => '0.21',
         'ExtUtils::MakeMaker' => '6.3002',
-        'PDL'        => '2.079', # typemap-search in dirs above
+        'PDL' => '2.079', # typemap-search in dirs above
+        'Alien::OpenCV' => 0,
     },
     TEST_REQUIRES => {
         'Test::More' => '0.88',
