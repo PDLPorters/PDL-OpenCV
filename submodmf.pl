@@ -3,9 +3,7 @@ use warnings;
 use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
 use File::Spec::Functions;
-use ExtUtils::CppGuess;
-my %cpp_opts = ExtUtils::CppGuess->new->makemaker_options;
-our @cw_objs;
+our (%cpp_opts, @cw_objs);
 
 sub wmf {
   my ($last) = @_;

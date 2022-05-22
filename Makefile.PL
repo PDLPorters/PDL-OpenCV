@@ -17,7 +17,7 @@ $hash{LIBS}[0] .= $libs;
 $hash{INC} .= " $inc";
 
 use ExtUtils::CppGuess;
-my %cpp_opts = ExtUtils::CppGuess->new->makemaker_options;
+our %cpp_opts = ExtUtils::CppGuess->new->makemaker_options;
 $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
 our ($cppg_cc, $cppg_cflags) = @cpp_opts{qw(CC CCFLAGS)};
 
