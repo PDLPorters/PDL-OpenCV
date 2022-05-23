@@ -92,7 +92,6 @@ sub gen_code {
 		push @args, "${class}Wrapper *self";
 		$methodvar = 'self';
 	}
-	die "Error on $class/$name: attribute but args\n" if $ismethod == 2 and @params;
 	while (@params) {
 		my ($s, $v) = @{shift @params};
 		my $ctype = $s . ($s =~ /^[A-Z]/ ? "Wrapper *" : '');
@@ -110,7 +109,7 @@ sub gen_code {
 	  "$methodvar->held".($ptronly?'->':'.')."$name" .
 	  ($ismethod == 1 ? "(" : ";\n");
 	$opt->{argfix}->(\@cvargs) if $opt->{argfix};
-	$str .= join(', ', @cvargs).");\n" if $ismethod != 2;
+	$str .= join(', ', @cvargs).");\n";
 	$str .= $after_ret;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
 	$str .= "  return retval;\n" if $ret ne 'void';
