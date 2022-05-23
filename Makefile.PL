@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use PDL::Core::Dev;            # Pick up development utilities
 use ExtUtils::MakeMaker;
-use File::Spec::Functions qw(catfile curdir);
+use File::Spec::Functions qw(catfile curdir updir);
 use Alien::Base::Wrapper ();
 
 require ''. catfile curdir, 'submodmf.pl';
@@ -12,7 +12,7 @@ our $inc = $alien_cv{INC};
 
 my $package = ["opencv.pd",'OpenCV','PDL::OpenCV'];
 my %hash = pdlpp_stdargs($package);
-$hash{clean}{FILES} .= ' opencv_wrapper.h opencv_wrapper.cpp';
+$hash{clean}{FILES} .= join ' ', '', map "$_.h $_.cpp", qw(opencv_wrapper);
 $hash{LIBS}[0] .= $libs;
 $hash{INC} .= " $inc";
 
@@ -59,14 +59,20 @@ sub cxx_cmd {
 sub cpp_comp {
   join "\n", map "$_\$(OBJ_EXT) : $_.cpp\n\t\$(CXXCMD) \$(CCCDLFLAGS) $_.cpp\n", @_;
 }
+sub genwrap_from {
+  my ($genwhatstem, $updir, @params) = @_;
+  my $plfile = $updir ? catfile(updir, 'genwrap.pl') : 'genwrap.pl';
+  <<EOF;
+$genwhatstem.cpp : $genwhatstem.h # impose sequence so only run once
+$genwhatstem.h : $plfile
+	\$(PERLRUN) $plfile $genwhatstem @params
+EOF
+}
 sub MY::postamble {
   my ($self) = @_;
   my $cxx_cmd = cxx_cmd($self, $cppg_cc, $cppg_cflags);
   my $cxx_compile = cpp_comp(@cw_objs);
-  pdlpp_postamble($package) .
-    "\n" . <<'EOF' . "\n" . $cxx_cmd . $cxx_compile;
-opencv_wrapper.cpp : opencv_wrapper.h # impose sequence so only run once
-opencv_wrapper.h : genwrap.pl
-	$(PERLRUN) genwrap.pl
-EOF
+  join "\n", pdlpp_postamble($package),
+    genwrap_from('opencv_wrapper', 0, 'global'),
+    $cxx_cmd, $cxx_compile;
 }
