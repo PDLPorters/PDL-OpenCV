@@ -4,7 +4,7 @@ use Test::More;
 
 use PDL::LiteF;
 use PDL::OpenCV;
-use PDL::OpenCV::VideoCapture;
+use PDL::OpenCV::Videoio;
 
 my $vfile='t/Megamind.avi';
 my $vc = PDL::OpenCV::VideoCapture->new;

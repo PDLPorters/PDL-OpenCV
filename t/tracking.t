@@ -6,7 +6,7 @@ use PDL::OpenCV;
 use PDL::OpenCV::Highgui;
 use PDL::OpenCV::Imgproc;
 use PDL::OpenCV::Tracker;
-use PDL::OpenCV::VideoCapture;
+use PDL::OpenCV::Videoio;
 use PDL::OpenCV::VideoWriter;
 use File::Temp qw(tempfile);
 
