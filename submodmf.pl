@@ -14,6 +14,7 @@ sub wmf {
   $hash{INC} .= ' -I'.updir;
   our $libs;
   $hash{LIBS}[0] .= $libs;
+  $hash{clean}{FILES} .= join ' ', '', map "$_.h $_.cpp", qw(wraplocal);
   $hash{OBJECT} .= join ' ', '', map $_.'$(OBJ_EXT)', qw(wraplocal);
   $hash{depend} = {
     '$(OBJECT)'=>catfile(updir, 'opencv_wrapper.h'),
