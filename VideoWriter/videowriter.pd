@@ -1,8 +1,0 @@
-use strict;
-use warnings;
-use File::Spec::Functions;
-require ''.catfile(updir, 'genpp.pl');
-
-genheader("VideoWriter", [qw(VideoWriter)]);
-
-pp_done();

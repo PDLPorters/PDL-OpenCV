@@ -65,11 +65,13 @@ sub genpp {
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     $_ = '' for my ($callprefix, $compmode);
     my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");
+    $hash{PMFunc} = '' if $ismethod;
     my $pcount = 1;
     my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
     if (!grep /^[A-Z]/ && !(genpp_par $_, '', 0)[0], map $_->[0], @params, $ret ne 'void' ? [$ret] : ()) {
-      pp_addpm("=head2 $func\n\n$hash{Doc}\n");
+      pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
+      pp_addpm("*$func = \\&${main::PDLOBJ}::$func;\n") if !$ismethod;
       pp_add_exported($func);
       my @xs_params;
       for (@params) {
@@ -81,7 +83,7 @@ sub genpp {
         push @xs_params, $is_other ? $par : "$type $var";
       }
       pp_addxs(<<EOF);
-MODULE = ${main::PDLOBJ} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep length,'cw',$class]}_
+MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep length,'cw',$class]}_
 \n$ret $cfunc(@{[join ', ', @xs_params]})
   PROTOTYPE: DISABLE
 EOF
@@ -198,7 +200,7 @@ EOPM
 \n=cut
 EOD
     pp_addxs(<<EOF);
-MODULE = PDL::OpenCV::$last PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
+MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
 \nPDL__OpenCV__$c cw_${c}_new(char *klass)
 \nvoid cw_${c}_DESTROY(PDL__OpenCV__$c self)
 EOF
