@@ -8,7 +8,6 @@ use PDL::Core qw/howbig/;
 require ''. catfile $Bin, 'genpp.pl';
 our %DIMTYPES;
 my %GLOBALTYPES = (%DIMTYPES, Mat=>[]);
-my %LOCALTYPES = (VideoCapture=>[], VideoWriter=>[], Tracker=>[1]);
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
 #include "opencv_wrapper.h"
@@ -214,8 +213,9 @@ sub make_chfiles {
 
 my $filegen = $ARGV[0] || die "No file given";
 my @cvheaders = split /,/, $ARGV[1]||'';
+my @genclasses = @ARGV[2..$#ARGV];
 if ($filegen eq 'opencv_wrapper') {
-  make_chfiles($filegen, {%GLOBALTYPES,%LOCALTYPES}, \@cvheaders, \@funclist, gen_consts());
+  make_chfiles($filegen, {%GLOBALTYPES,map {my ($c, @v) = split /=/; ($c=>\@v)} @genclasses}, \@cvheaders, \@funclist, gen_consts());
 } else {
   open my $fh, '>', $_ for "$filegen.h", "$filegen.cpp";
 }
