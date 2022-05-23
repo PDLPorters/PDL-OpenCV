@@ -3,6 +3,6 @@ use warnings;
 use File::Spec::Functions;
 require ''.catfile(updir, 'genpp.pl');
 
-genheader("Imgproc",0);
+genheader("Imgproc",[]);
 
 pp_done();

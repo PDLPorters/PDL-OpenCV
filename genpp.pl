@@ -172,40 +172,47 @@ EOF
 }
 
 sub genheader {
-  my ($last, $want_new) = @_;
-  $want_new //= 1;
-  pp_bless("PDL::OpenCV::$last");
+  my ($last, $classes) = @_;
+  my $descrip_label = @$classes ? join(', ', @$classes) : $last;
+  my $synopsis = join '', map "\n \$obj = PDL::OpenCV::$_->new;", @$classes;
   pp_addpm({At=>'Top'},<<"EOPM");
 =head1 NAME
-\nPDL::OpenCV::$last - PDL bindings for OpenCV $last
+\nPDL::OpenCV::$last - PDL bindings for OpenCV $descrip_label
+\n=head1 SYNOPSIS
+\n use PDL::OpenCV::$last;$synopsis
 \n=cut
 \nuse strict;
 use warnings;
 EOPM
   pp_addhdr(qq{#include "opencv_wrapper.h"\n});
-  pp_addhdr(qq{typedef ${last}Wrapper *PDL__OpenCV__$last;\n}) if $want_new;
-  pp_addpm(<<EOD) if $want_new;
+  my @flist = genpp_readfile('funclist.pl');
+  for my $c (@$classes) {
+    pp_bless("PDL::OpenCV::$c");
+    pp_addhdr(qq{typedef ${c}Wrapper *PDL__OpenCV__$c;\n});
+    pp_addpm(<<EOD);
 =head2 new
 \n=for ref
-\nInitialize OpenCV $last object.
+\nInitialize OpenCV $c object.
 \n=for example
-\n  \$obj = PDL::OpenCV::$last->new;
+\n  \$obj = PDL::OpenCV::$c->new;
 \n=cut
 EOD
-  pp_addxs(<<EOF) if $want_new;
-MODULE = PDL::OpenCV::$last PACKAGE = PDL::OpenCV::$last PREFIX=cw_${last}_
-\nPDL__OpenCV__$last cw_${last}_new(char *klass)
-\nvoid
-cw_${last}_DESTROY(PDL__OpenCV__$last self)
+    pp_addxs(<<EOF);
+MODULE = PDL::OpenCV::$last PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
+\nPDL__OpenCV__$c cw_${c}_new(char *klass)
+\nvoid cw_${c}_DESTROY(PDL__OpenCV__$c self)
 EOF
-  genpp_fromfile('funclist.pl');
+    genpp(@$_) for grep $_->[0] eq $c, @flist;
+  }
+  pp_bless("PDL::OpenCV::$last");
+  genpp(@$_) for grep $_->[0] eq '', @flist;
 }
 
-sub genpp_fromfile {
+sub genpp_readfile {
   my ($file) = @_;
   my @flist = do ''. catfile curdir, $file;
   die if $@;
-  genpp(@$_) for @flist;
+  @flist;
 }
 
 1;
