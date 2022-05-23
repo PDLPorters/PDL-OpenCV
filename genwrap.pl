@@ -14,17 +14,7 @@ my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
 #include "opencv_wrapper.h"
 #include <opencv2/opencv.hpp>
-#include <opencv2/tracking.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/videoio.hpp>
-#include <opencv2/core/utility.hpp>
-#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
-# define TRACKER_RECT_TYPE cv::Rect
-#else
-# define TRACKER_RECT_TYPE cv::Rect2d
-#endif
-using namespace std;
+#include <opencv2/core/utility.hpp> /* allows control number of threads */
 /* use C name mangling */
 extern "C" {
 EOF
@@ -42,6 +32,11 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 }
 EOF
 my $CBODY_LOCAL = <<'EOF';
+#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
+# define TRACKER_RECT_TYPE cv::Rect
+#else
+# define TRACKER_RECT_TYPE cv::Rect2d
+#endif
 TrackerWrapper *cw_Tracker_new(char *klass) {
 	TrackerWrapper *Tr = new TrackerWrapper;
 	Tr->held = cv::TrackerKCF::create();
@@ -170,9 +165,10 @@ sub gen_const {
 }
 
 sub gen_chfiles {
-  my ($macro, @params) = @_;
+  my ($macro, $cvheaders, @params) = @_;
   my $hstr = sprintf $HHEADER, $macro;
-  my $cstr = $CHEADER;
+  my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
+  $cstr .= $CHEADER;
   $cstr .= gen_gettype();
   for (sort keys %ALLTYPES) {
     my ($xhstr, $xcstr) = gen_wrapper($_, @{$ALLTYPES{$_}});
@@ -212,4 +208,4 @@ sub make_chfiles {
   print $fh $hstr; print $fc $cstr;
 }
 
-make_chfiles("opencv_wrapper");
+make_chfiles("opencv_wrapper", [qw(tracking highgui imgproc videoio)]);
