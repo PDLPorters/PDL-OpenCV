@@ -22,7 +22,9 @@ sub wmf {
   $hash{NO_MYMETA} = 1;
   $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
   undef &MY::postamble;
-  *MY::postamble = sub { pdlpp_postamble($package); };
+  *MY::postamble = sub {
+    pdlpp_postamble($package);
+  };
   WriteMakefile(%hash);
 }
 
