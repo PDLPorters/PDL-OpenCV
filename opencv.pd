@@ -93,7 +93,7 @@ Ingo Schmid and the PDL Porters. Same terms as PDL itself.
 =cut
 EOPM
 
-our $VERSION = 0.02;
+our $VERSION = 0.001;
 pp_setversion($VERSION);
 
 pp_addhdr << 'EOH';
