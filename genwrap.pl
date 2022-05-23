@@ -164,39 +164,44 @@ sub gen_const {
 }
 
 sub gen_chfiles {
-  my ($macro, $typespecs, $cvheaders, $funclist, @params) = @_;
+  my ($macro, $typespecs, $cvheaders, $funclist, $consts, @params) = @_;
   my $hstr = sprintf $HHEADER, $macro;
   my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
   $cstr .= $CHEADER;
   $cstr .= gen_gettype();
   for (sort keys %$typespecs) {
     my ($xhstr, $xcstr) = gen_wrapper($_, @{$typespecs->{$_}});
-    $hstr .= $xhstr;
-    $cstr .= $xcstr;
+    $hstr .= $xhstr; $cstr .= $xcstr;
   }
   $cstr .= $CBODY_GLOBAL . $CBODY_LOCAL;
   $hstr .= $HBODY_GLOBAL;
-  for my $func (@$funclist) {
+  for my $func (@{$funclist||[]}) {
     my ($xhstr, $xcstr) = gen_code( $typespecs->{$func->[0]}[0], @$func );
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
-  for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
-    for (1..4) {
-      my ($xhstr, $xcstr) = gen_const([], "CV_$bits$_");
-      $hstr .= $xhstr; $cstr .= $xcstr;
-    }
-    my ($xhstr, $xcstr) = gen_const([[qw(int n)]], "CV_$bits");
-    $hstr .= $xhstr; $cstr .= $xcstr;
-  }
-  open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
-  while (!eof $consts) {
-    chomp(my $line = <$consts>);
-    my ($xhstr, $xcstr) = gen_const([], "cv::$line");
+  for my $c (@{$consts||[]}) {
+    my ($xhstr, $xcstr) = gen_const(@$c);
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   $hstr .= $HFOOTER;
   $cstr .= $CFOOTER;
   ($hstr, $cstr);
+}
+
+sub gen_consts {
+  my @consts;
+  for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
+    for (1..4) {
+      push @consts, [[], "CV_$bits$_"];
+    }
+    push @consts, [[[qw(int n)]], "CV_$bits"];
+  }
+  open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
+  while (!eof $consts) {
+    chomp(my $line = <$consts>);
+    push @consts, [[], "cv::$line"];
+  }
+  \@consts;
 }
 
 sub make_chfiles {
@@ -207,4 +212,4 @@ sub make_chfiles {
   print $fh $hstr; print $fc $cstr;
 }
 
-make_chfiles("opencv_wrapper", {%GLOBALTYPES,%LOCALTYPES}, [qw(tracking highgui imgproc videoio)], \@funclist);
+make_chfiles("opencv_wrapper", {%GLOBALTYPES,%LOCALTYPES}, [qw(tracking highgui imgproc videoio)], \@funclist, gen_consts());
