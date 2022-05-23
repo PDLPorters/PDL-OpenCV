@@ -61,7 +61,7 @@ sub genpp_par {
 }
 
 sub genpp {
-    my ($class,$func,$doc,$ismethod,$ret,$opt,@params) = @_;
+    my ($class,$func,$doc,$ismethod,$ret,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     $_ = '' for my ($callprefix, $compmode);
     my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");

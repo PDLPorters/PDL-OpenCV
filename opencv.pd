@@ -101,9 +101,9 @@ pp_addhdr << 'EOH';
 EOH
 
 genpp(@$_) for (
-  ['Mat','channels',"returns channels of the Mat-wrapped ndarray",1,'int',{}],
-  ['','minMaxIdx',"returns minimum and maximum values of Mat-wrapped ndarray",0,'void',{},['Mat','mw'],["double *","min","",["/O"]],["double *","max","",["/O"]]],
-  ['','cvtColor',"convert src to dest with given colour space",0,'void',{},["Mat","src","",[]],["Mat","dst","",["/O"]],["int","code","",[]],["int","dstCn","0",[]]],
+  ['Mat','channels',"returns channels of the Mat-wrapped ndarray",1,'int'],
+  ['','minMaxIdx',"returns minimum and maximum values of Mat-wrapped ndarray",0,'void',['Mat','mw'],["double *","min","",["/O"]],["double *","max","",["/O"]]],
+  ['','cvtColor',"convert src to dest with given colour space",0,'void',["Mat","src","",[]],["Mat","dst","",["/O"]],["int","code","",[]],["int","dstCn","0",[]]],
 );
 
 sub add_const {

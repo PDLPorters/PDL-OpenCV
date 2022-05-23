@@ -8,6 +8,11 @@ use PDL::Core qw/howbig/;
 require ''. catfile $Bin, 'genpp.pl';
 our %DIMTYPES;
 my %GLOBALTYPES = (%DIMTYPES, Mat=>[]);
+my %overrides = (
+  Tracker => {
+    update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
+  },
+);
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
 #include "opencv_wrapper.h"
@@ -82,8 +87,9 @@ EOF
 }
 
 sub gen_code {
-	my ($ptronly, $class, $name, $ismethod, $ret, $opt, @params) = @_;
+	my ($ptronly, $class, $name, $doc, $ismethod, $ret, @params) = @_;
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
+	my $opt = $overrides{$class}{$name} || {};
 	my (@args, @cvargs, $methodvar);
 	my $func_ret = $ret =~ /^[A-Z]/ ? "${ret}Wrapper *" : $ret;
 	my $cpp_ret = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? "cv::$ret cpp_" : "$ret ")."retval = ";
