@@ -11,6 +11,10 @@ our %DIMTYPES = (
   Scalar=>[0,[[qw(double v0 val[0])], [qw(double v1 val[1])], [qw(double v2 val[2])], [qw(double v3 val[3])]]],
   Size=>[0,[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]]],
 );
+our %type_overrides = (
+  String => ['char *', 'char *'], # PP, C
+  bool => ['byte', 'unsigned char'],
+);
 sub genpp_par {
   my ($type, $name, $pcount) = @_;
   my ($is_other, $ctype, $par, $partype, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2) = (
@@ -69,13 +73,15 @@ sub genpp {
     my $pcount = 1;
     my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
-    if (!grep /^[A-Z]/ && !(genpp_par $_, '', 0)[0], map $_->[0], @params, $ret ne 'void' ? [$ret] : ()) {
+    if (!grep /^[A-Z]/ && !(genpp_par $_, '', 0)[0], map $_->[0], @params, $ret ne 'void' ? [$type_overrides{$ret} ? $type_overrides{$ret}[0] : $ret] : ()) {
+      $ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
       pp_addpm("*$func = \\&${main::PDLOBJ}::$func;\n") if !$ismethod;
       pp_add_exported($func);
       my @xs_params;
       for (@params) {
         my ($type, $var) = @$_;
+        $type = $type_overrides{$type}[1] if $type_overrides{$type};
         my ($is_other, $par) = 0;
         if ($type =~ /^[A-Z]/) {
           ($is_other, $par, $type) = genpp_par($type, $var, 0);
@@ -89,10 +95,12 @@ MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep leng
 EOF
       return;
     }
+    $ret = $type_overrides{$ret}[0] if $type_overrides{$ret};
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     my (@c_input, @pp_input, @pars, @otherpars, @pdl_inits, @outputs, @pmpars, @defaults, %var2count, %var2usecomp);
     for (@params) {
       my ($type, $var, $default, $f) = @$_;
+      $type = $type_overrides{$type}[0] if $type_overrides{$type};
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
       my ($partype, $par, $is_other, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2) = '';

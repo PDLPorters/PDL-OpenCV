@@ -6,7 +6,7 @@ use PDL::Types;
 use PDL::Core qw/howbig/;
 
 require ''. catfile $Bin, 'genpp.pl';
-our %DIMTYPES;
+our (%DIMTYPES, %type_overrides);
 my %GLOBALTYPES = (%DIMTYPES, Mat=>[]);
 my %overrides = (
   Tracker => {
@@ -89,6 +89,7 @@ EOF
 sub gen_code {
 	my ($ptronly, $class, $name, $doc, $ismethod, $ret, @params) = @_;
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
+	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
 	my $opt = $overrides{$class}{$name} || {};
 	my (@args, @cvargs, $methodvar);
 	my $func_ret = $ret =~ /^[A-Z]/ ? "${ret}Wrapper *" : $ret;
@@ -100,6 +101,7 @@ sub gen_code {
 	}
 	while (@params) {
 		my ($s, $v) = @{shift @params};
+		$s = $type_overrides{$s}[1] if $type_overrides{$s};
 		my $ctype = $s . ($s =~ /^[A-Z]/ ? "Wrapper *" : '');
 		push @args, "$ctype $v";
 		push @cvargs, $s =~ /^[A-Z]/ ? "$v->held" : $v;
