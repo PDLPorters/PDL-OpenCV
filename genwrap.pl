@@ -212,4 +212,9 @@ sub make_chfiles {
   print $fh $hstr; print $fc $cstr;
 }
 
-make_chfiles("opencv_wrapper", {%GLOBALTYPES,%LOCALTYPES}, [qw(tracking highgui imgproc videoio)], \@funclist, gen_consts());
+my $filegen = $ARGV[0] || die "No file given";
+if ($filegen eq 'opencv_wrapper') {
+  make_chfiles($filegen, {%GLOBALTYPES,%LOCALTYPES}, [qw(tracking highgui imgproc videoio)], \@funclist, gen_consts());
+} else {
+  open my $fh, '>', $_ for "$filegen.h", "$filegen.cpp";
+}

@@ -12,9 +12,10 @@ our $inc = $alien_cv{INC};
 
 my $package = ["opencv.pd",'OpenCV','PDL::OpenCV'];
 my %hash = pdlpp_stdargs($package);
-$hash{clean}{FILES} .= join ' ', '', map "$_.h $_.cpp", qw(opencv_wrapper);
+$hash{clean}{FILES} .= join ' ', '', map "$_.h $_.cpp", qw(opencv_wrapper wraplocal);
 $hash{LIBS}[0] .= $libs;
 $hash{INC} .= " $inc";
+$hash{OBJECT} .= join ' ', '', map $_.'$(OBJ_EXT)', qw(wraplocal);
 
 use ExtUtils::CppGuess;
 our %cpp_opts = ExtUtils::CppGuess->new->makemaker_options;
@@ -42,7 +43,8 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
     MYEXTLIB => join(' ', @cw_objs),
     depend => {
       'opencv_wrapper$(OBJ_EXT)'=>'opencv_wrapper.h',
-      'opencv_wrapper.h OpenCV.pm'=>'constlist.txt funclist.pl genpp.pl', # .pm because that deps on .pd
+      'wraplocal$(OBJ_EXT)'=>'opencv_wrapper.h',
+      'wraplocal.h opencv_wrapper.h OpenCV.pm'=>'constlist.txt funclist.pl genpp.pl', # .pm because that deps on .pd
       '$(FIRST_MAKEFILE)'=>'submodmf.pl',
     },
 );
@@ -73,6 +75,7 @@ sub MY::postamble {
   my $cxx_cmd = cxx_cmd($self, $cppg_cc, $cppg_cflags);
   my $cxx_compile = cpp_comp(@cw_objs);
   join "\n", pdlpp_postamble($package),
-    genwrap_from('opencv_wrapper', 0, 'global'),
+    genwrap_from('opencv_wrapper', 0),
+    genwrap_from('wraplocal', 0),
     $cxx_cmd, $cxx_compile;
 }
