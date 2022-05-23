@@ -130,7 +130,7 @@ sub gen_wrapper {
   my $hstr = <<EOF;
 typedef struct ${class}Wrapper ${class}Wrapper;
 ${class}Wrapper *cw_${class}_new(char *klass);
-int cw_${class}_DESTROY(${class}Wrapper *wrapper);
+void cw_${class}_DESTROY(${class}Wrapper *wrapper);
 EOF
   my $cstr = <<EOF;
 struct ${class}Wrapper {
@@ -139,9 +139,8 @@ struct ${class}Wrapper {
 @{[$ptr_only ? '' : "${class}Wrapper *cw_${class}_new(char *klass) {
 	return new ${class}Wrapper;
 }"]}
-int cw_${class}_DESTROY(${class}Wrapper * wrapper) {
+void cw_${class}_DESTROY(${class}Wrapper * wrapper) {
 	delete wrapper;
-	return 1;
 }
 EOF
   if ($dims) {
