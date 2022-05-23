@@ -70,12 +70,14 @@ $genwhatstem.h : $plfile
 	\$(PERLRUN) $plfile $genwhatstem @params
 EOF
 }
+sub cpp_build {
+  my ($self, @bases) = @_;
+  (cxx_cmd($self, $cppg_cc, $cppg_cflags), cpp_comp(@bases));
+}
 sub MY::postamble {
   my ($self) = @_;
-  my $cxx_cmd = cxx_cmd($self, $cppg_cc, $cppg_cflags);
-  my $cxx_compile = cpp_comp(@cw_objs);
   join "\n", pdlpp_postamble($package),
     genwrap_from('opencv_wrapper', 0, 'tracking,highgui,imgproc,videoio', qw(VideoCapture VideoWriter Tracker=1)),
     genwrap_from('wraplocal', 0, '""'),
-    $cxx_cmd, $cxx_compile;
+    cpp_build($self, @cw_objs);
 }

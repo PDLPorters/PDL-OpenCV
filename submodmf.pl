@@ -14,6 +14,7 @@ sub wmf {
   $hash{INC} .= ' -I'.updir;
   our $libs;
   $hash{LIBS}[0] .= $libs;
+  $hash{OBJECT} .= join ' ', '', map $_.'$(OBJ_EXT)', qw(wraplocal);
   $hash{depend} = {
     '$(OBJECT)'=>catfile(updir, 'opencv_wrapper.h'),
     "$last.pm"=>join(' ', catfile(updir, 'genpp.pl'), 'funclist.pl'),
@@ -23,7 +24,10 @@ sub wmf {
   $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
   undef &MY::postamble;
   *MY::postamble = sub {
-    pdlpp_postamble($package);
+    my ($self) = @_;
+    join "\n", pdlpp_postamble($package),
+      genwrap_from('wraplocal', 1, '""'),
+      cpp_build($self, 'wraplocal');
   };
   WriteMakefile(%hash);
 }
