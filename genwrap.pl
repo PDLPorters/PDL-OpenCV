@@ -72,7 +72,6 @@ sub gen_code {
 open my $fh,">","opencv_wrapper.h" or die "cannot write header file\n";
 open my $fc,">","opencv_wrapper.cpp" or die "cannot write C++ file\n";
 
-print $fc sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fc <<'EOF';
 #include "opencv_wrapper.h"
 #include <opencv2/opencv.hpp>
@@ -96,7 +95,6 @@ EOF
 
 print $fc gen_gettype();
 
-print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 #ifndef OPENCV_WRAPPER_H
 #define OPENCV_WRAPPER_H
@@ -153,7 +151,6 @@ for (sort keys %ALLTYPES) {
   print $fc $cstr;
 }
 
-print $fc sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fc <<'EOF';
 TrackerWrapper *cw_Tracker_new(char *klass) {
 	TrackerWrapper *Tr = new TrackerWrapper;
@@ -175,7 +172,6 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 }
 EOF
 
-print $fh sprintf qq{#line %d "%s"\n}, __LINE__ + 2,  __FILE__;
 print $fh <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 
