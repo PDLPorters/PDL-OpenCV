@@ -7,9 +7,8 @@ use PDL::Core qw/howbig/;
 
 require ''. catfile $Bin, 'genpp.pl';
 our %DIMTYPES;
-my %ALLTYPES = (%DIMTYPES,
-  Mat=>[], VideoCapture=>[], VideoWriter=>[], Tracker=>[1],
-);
+my %GLOBALTYPES = (%DIMTYPES, Mat=>[]);
+my %LOCALTYPES = (VideoCapture=>[], VideoWriter=>[], Tracker=>[1]);
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
 #include "opencv_wrapper.h"
@@ -84,7 +83,7 @@ EOF
 }
 
 sub gen_code {
-	my ($class, $name, $ismethod, $ret, $opt, @params) = @_;
+	my ($ptronly, $class, $name, $ismethod, $ret, $opt, @params) = @_;
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	my (@args, @cvargs, $methodvar);
 	my $func_ret = $ret =~ /^[A-Z]/ ? "${ret}Wrapper *" : $ret;
@@ -109,7 +108,7 @@ sub gen_code {
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  $cpp_ret";
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $name)."(" :
-	  "$methodvar->held".($ALLTYPES{$class}[0]?'->':'.')."$name" .
+	  "$methodvar->held".($ptronly?'->':'.')."$name" .
 	  ($ismethod == 1 ? "(" : ";\n");
 	$opt->{argfix}->(\@cvargs) if $opt->{argfix};
 	$str .= join(', ', @cvargs).");\n" if $ismethod != 2;
@@ -165,20 +164,20 @@ sub gen_const {
 }
 
 sub gen_chfiles {
-  my ($macro, $cvheaders, @params) = @_;
+  my ($macro, $typespecs, $cvheaders, $funclist, @params) = @_;
   my $hstr = sprintf $HHEADER, $macro;
   my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
   $cstr .= $CHEADER;
   $cstr .= gen_gettype();
-  for (sort keys %ALLTYPES) {
-    my ($xhstr, $xcstr) = gen_wrapper($_, @{$ALLTYPES{$_}});
+  for (sort keys %$typespecs) {
+    my ($xhstr, $xcstr) = gen_wrapper($_, @{$typespecs->{$_}});
     $hstr .= $xhstr;
     $cstr .= $xcstr;
   }
   $cstr .= $CBODY_GLOBAL . $CBODY_LOCAL;
   $hstr .= $HBODY_GLOBAL;
-  for my $func (@funclist) {
-    my ($xhstr, $xcstr) = gen_code( @$func );
+  for my $func (@$funclist) {
+    my ($xhstr, $xcstr) = gen_code( $typespecs->{$func->[0]}[0], @$func );
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
@@ -208,4 +207,4 @@ sub make_chfiles {
   print $fh $hstr; print $fc $cstr;
 }
 
-make_chfiles("opencv_wrapper", [qw(tracking highgui imgproc videoio)]);
+make_chfiles("opencv_wrapper", {%GLOBALTYPES,%LOCALTYPES}, [qw(tracking highgui imgproc videoio)], \@funclist);
