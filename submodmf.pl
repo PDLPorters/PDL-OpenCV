@@ -14,7 +14,10 @@ sub wmf {
   $hash{INC} .= ' -I'.updir;
   our $libs;
   $hash{LIBS}[0] .= $libs;
-  $hash{depend} = { '$(OBJECT)'=>catfile(updir, 'opencv_wrapper.h'), "$last.pm"=>catfile(updir, 'genpp.pl') };
+  $hash{depend} = {
+    '$(OBJECT)'=>catfile(updir, 'opencv_wrapper.h'),
+    "$last.pm"=>join(' ', catfile(updir, 'genpp.pl'), 'funclist.pl'),
+  };
   $hash{LDFROM} .= join ' ', '', '$(OBJECT)', map catfile(updir, $_), @cw_objs;
   $hash{NO_MYMETA} = 1;
   $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
