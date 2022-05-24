@@ -33,6 +33,7 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 	*c = wrapper->held.cols;
 	*r = wrapper->held.rows;
 }
+void * cw_Mat_ptr(MatWrapper *self) { return self->held.ptr(); }
 EOF
 my $CBODY_LOCAL = <<'EOF';
 #if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
@@ -58,6 +59,7 @@ EOF
 my $HBODY_GLOBAL = <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
+void * cw_Mat_ptr(MatWrapper *self);
 EOF
 my $HFOOTER = <<'EOF';
 #ifdef __cplusplus
