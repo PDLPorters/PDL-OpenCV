@@ -67,8 +67,8 @@ bit-depth will be a multiple of 8, and the data type will be integer
 "Channels" resembles the above 1/3/4 point, with the important caveat
 that the default for OpenCV image-reading is to format data not as R,G,B,
 but B,G,R. This is for historical reasons, being the format returned by
-the cameras first used at the start of OpenCV. Use C<cvtColor> if your
-application requires otherwise.
+the cameras first used at the start of OpenCV. Use
+L<PDL::OpenCV::Imgproc/cvtColor> if your application requires otherwise.
 
 PDL data for use with OpenCV must be dimensioned C<(channels,x,y)>
 where C<channels> might be 1 if grayscale. This module will not use
