@@ -184,7 +184,6 @@ sub gen_chfiles {
   my $hstr = sprintf $HHEADER, $macro;
   my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
   $cstr .= $CHEADER;
-  $cstr .= gen_gettype();
   for (sort keys %$typespecs) {
     my ($xhstr, $xcstr) = gen_wrapper($_, @{$typespecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
@@ -229,9 +228,8 @@ sub make_chfiles {
 }
 
 my $filegen = $ARGV[0] || die "No file given";
-my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,$CBODY_GLOBAL] : [];
-my @genclasses = @ARGV[2..$#ARGV];
-my $typespec = {%GLOBALTYPES,map +($_=>[]), @genclasses};
+my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
+my $typespec = {%GLOBALTYPES,map +($_=>[]), @ARGV[2..$#ARGV]};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $consts = $filegen eq 'opencv_wrapper' ? gen_consts() : [];
 if ($filegen eq 'opencv_wrapper') {
