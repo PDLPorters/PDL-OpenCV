@@ -30,9 +30,9 @@ EOF
 );
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
-#include "opencv_wrapper.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/utility.hpp> /* allows control number of threads */
+#include "opencv_wrapper.h"
 /* use C name mangling */
 extern "C" {
 EOF
@@ -136,13 +136,15 @@ sub gen_wrapper {
   my $ptr_only = $ptr_only{$class};
   my $hstr = <<EOF;
 typedef struct ${class}Wrapper ${class}Wrapper;
+#ifdef __cplusplus
+struct ${class}Wrapper {
+	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : "cv::${class}"]} held;
+};
+#endif
 ${class}Wrapper *cw_${class}_new(char *klass);
 void cw_${class}_DESTROY(${class}Wrapper *wrapper);
 EOF
   my $cstr = <<EOF;
-struct ${class}Wrapper {
-	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : "cv::${class}"]} held;
-};
 @{[$ptr_only ? '' : "${class}Wrapper *cw_${class}_new(char *klass) {
 	return new ${class}Wrapper;
 }"]}
