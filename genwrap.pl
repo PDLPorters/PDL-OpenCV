@@ -227,8 +227,8 @@ sub make_chfiles {
 }
 
 my $filegen = $ARGV[0] || die "No file given";
-my @cvheaders = split /,/, $ARGV[1]||'';
 my @genclasses = @ARGV[2..$#ARGV];
+my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 if ($filegen eq 'opencv_wrapper') {
   make_chfiles($filegen, {%GLOBALTYPES,map +($_=>[]), @genclasses}, \@cvheaders, \@funclist, gen_consts());
 } else {
