@@ -13,6 +13,7 @@ my %overrides = (
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
   },
 );
+my %ptr_only = map +($_=>1), qw(Tracker);
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
 #include "opencv_wrapper.h"
@@ -89,7 +90,8 @@ EOF
 }
 
 sub gen_code {
-	my ($ptronly, $class, $name, $doc, $ismethod, $ret, @params) = @_;
+	my ($class, $name, $doc, $ismethod, $ret, @params) = @_;
+	my $ptr_only = $ptr_only{$class};
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
 	my $opt = $overrides{$class}{$name} || {};
@@ -116,7 +118,7 @@ sub gen_code {
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  $cpp_ret";
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $name)."(" :
-	  "$methodvar->held".($ptronly?'->':'.')."$name" .
+	  "$methodvar->held".($ptr_only?'->':'.')."$name" .
 	  ($ismethod == 1 ? "(" : ";\n");
 	$opt->{argfix}->(\@cvargs) if $opt->{argfix};
 	$str .= join(', ', @cvargs).");\n";
@@ -128,7 +130,8 @@ sub gen_code {
 }
 
 sub gen_wrapper {
-  my ($class, $ptr_only, $dims) = @_;
+  my ($class, @dims) = @_;
+  my $ptr_only = $ptr_only{$class};
   my $hstr = <<EOF;
 typedef struct ${class}Wrapper ${class}Wrapper;
 ${class}Wrapper *cw_${class}_new(char *klass);
@@ -145,19 +148,19 @@ void cw_${class}_DESTROY(${class}Wrapper * wrapper) {
 	delete wrapper;
 }
 EOF
-  if ($dims) {
+  if (@dims) {
     $hstr .= <<EOF;
-${class}Wrapper *cw_${class}_newWithVals(@{[join ',', map "@$_[0,1]", @$dims]});
-void cw_${class}_getVals(${class}Wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @$dims]});
+${class}Wrapper *cw_${class}_newWithVals(@{[join ',', map "@$_[0,1]", @dims]});
+void cw_${class}_getVals(${class}Wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @dims]});
 EOF
     $cstr .= <<EOF;
-${class}Wrapper *cw_${class}_newWithVals(@{[join ',', map "@$_[0,1]", @$dims]}) {
+${class}Wrapper *cw_${class}_newWithVals(@{[join ',', map "@$_[0,1]", @dims]}) {
   ${class}Wrapper *self = new ${class}Wrapper;
-  self->held = cv::${class}(@{[join ',', map $_->[1], @$dims]});
+  self->held = cv::${class}(@{[join ',', map $_->[1], @dims]});
   return self;
 }
-void cw_${class}_getVals(${class}Wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @$dims]}) {
-  @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @$dims]}
+void cw_${class}_getVals(${class}Wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @dims]}) {
+  @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @dims]}
 }
 EOF
   }
@@ -184,7 +187,7 @@ sub gen_chfiles {
   $cstr .= $CBODY_GLOBAL . $CBODY_LOCAL;
   $hstr .= $HBODY_GLOBAL;
   for my $func (@{$funclist||[]}) {
-    my ($xhstr, $xcstr) = gen_code( $typespecs->{$func->[0]}[0], @$func );
+    my ($xhstr, $xcstr) = gen_code( @$func );
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for my $c (@{$consts||[]}) {
@@ -224,7 +227,7 @@ my $filegen = $ARGV[0] || die "No file given";
 my @cvheaders = split /,/, $ARGV[1]||'';
 my @genclasses = @ARGV[2..$#ARGV];
 if ($filegen eq 'opencv_wrapper') {
-  make_chfiles($filegen, {%GLOBALTYPES,map {my ($c, @v) = split /=/; ($c=>\@v)} @genclasses}, \@cvheaders, \@funclist, gen_consts());
+  make_chfiles($filegen, {%GLOBALTYPES,map +($_=>[]), @genclasses}, \@cvheaders, \@funclist, gen_consts());
 } else {
   open my $fh, '>', $_ for "$filegen.h", "$filegen.cpp";
 }

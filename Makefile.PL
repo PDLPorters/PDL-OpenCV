@@ -77,7 +77,7 @@ sub cpp_build {
 sub MY::postamble {
   my ($self) = @_;
   join "\n", pdlpp_postamble($package),
-    genwrap_from('opencv_wrapper', 0, 'tracking,highgui,imgproc,videoio', qw(VideoCapture VideoWriter Tracker=1)),
+    genwrap_from('opencv_wrapper', 0, 'tracking,highgui,imgproc,videoio', qw(VideoCapture VideoWriter Tracker)),
     genwrap_from('wraplocal', 0, '""'),
     cpp_build($self, qw(opencv_wrapper wraplocal));
 }

@@ -6,10 +6,10 @@ use File::Spec::Functions qw(catfile curdir);
 my $T = [qw(A B S U L F D)];
 
 our %DIMTYPES = (
-  Point=>[0,[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)]]],
-  Rect=>[0,[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)], [qw(ptrdiff_t width)], [qw(ptrdiff_t height)]]],
-  Scalar=>[0,[[qw(double v0 val[0])], [qw(double v1 val[1])], [qw(double v2 val[2])], [qw(double v3 val[3])]]],
-  Size=>[0,[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]]],
+  Point=>[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)]],
+  Rect=>[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)], [qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
+  Scalar=>[[qw(double v0 val[0])], [qw(double v1 val[1])], [qw(double v2 val[2])], [qw(double v3 val[3])]],
+  Size=>[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
 );
 our %type_overrides = (
   String => ['char *', 'char *'], # PP, C
@@ -43,10 +43,10 @@ sub genpp_par {
       "memmove(\$P($name), cw_Mat_ptr($varname), \$PDL($name)->nbytes)";
     };
   } elsif (my $spec = $DIMTYPES{$type}) {
-    my ($indname, $indcount) = ("n${type}$pcount", scalar @{$spec->[1]});
+    my ($indname, $indcount) = ("n${type}$pcount", scalar @$spec);
     $par = "$name($indname=$indcount)";
     $fixeddims = 1;
-    $partype = $spec->[1][0][0] eq 'ptrdiff_t' ? "indx" : $spec->[1][0][0];
+    $partype = $spec->[0][0] eq 'ptrdiff_t' ? "indx" : $spec->[0][0];
     $frompdl = sub {
       my ($iscomp) = @_;
       qq{cw_${type}_newWithVals(@{[join ',', map "\$$name($indname=>$_)", 0..$indcount-1]})};
