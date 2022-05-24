@@ -103,25 +103,15 @@ EOH
 
 genpp(@$_) for genpp_readfile('funclist.pl');
 
-sub add_const {
-  my ($args, $text) = @_;
-  pp_add_exported($text);
-  pp_addxs(<<EOF);
-MODULE = PDL::OpenCV PACKAGE = PDL::OpenCV PREFIX=cw_const_
-
-int cw_const_$text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})
-EOF
-}
-
 for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
-  add_const([], "CV_$bits$_") for 1..4;
-  add_const([[qw(int n)]], "CV_$bits");
+  add_const('PDL::OpenCV', [], "CV_$bits$_") for 1..4;
+  add_const('PDL::OpenCV', [[qw(int n)]], "CV_$bits");
 }
 
 open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
 while (!eof $consts) {
   chomp(my $line = <$consts>);
-  add_const([], $line);
+  add_const('PDL::OpenCV', [], $line);
 }
 
 pp_done();

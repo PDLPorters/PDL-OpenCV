@@ -181,6 +181,15 @@ EOF
     pp_def($func, %hash);
 }
 
+sub add_const {
+  my ($pkg, $args, $text) = @_;
+  pp_add_exported($text);
+  pp_addxs(<<EOF);
+MODULE = ${main::PDLMOD} PACKAGE = $pkg PREFIX=cw_const_
+\nint cw_const_$text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})
+EOF
+}
+
 sub genheader {
   my ($last, $classes) = @_;
   my $descrip_label = @$classes ? join(', ', @$classes) : $last;
