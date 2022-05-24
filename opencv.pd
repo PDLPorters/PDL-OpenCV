@@ -12,17 +12,19 @@ PDL::OpenCV - PDL interface to OpenCV
 
 =head1 SYNOPSIS
 
-  use PDL::OpenCV::VideoCapture;
-  use PDL::OpenCV::VideoWriter;
+  use PDL::OpenCV::Videoio; # ucfirsted name of the OpenCV "module"
   my $vfile='t/Megamind.avi';
-  my $vc = PDL::OpenCV::VideoCapture->new;
-  $vc->open($vfile);
-  my $frame = $vc->read;
+  my $vc = PDL::OpenCV::VideoCapture->new; # name of the OpenCV class
+  die "Failed to open $vfile" if !$vc->open($vfile);
+  my ($frame, $res) = $vc->read;
+  die "Failed to read" if !$res;
   my $writer = PDL::OpenCV::VideoWriter->new;
-  $writer->open($outfile, 'MP4V', 20, (map $frame->dim($_), 1,2), 1);
-  while (defined $frame) {
+  # note 4th arg is an OpenCV "Size" - PDL upgrades array-ref to ndarray
+  $writer->open($outfile, fourcc('M','P','4','V'), 20, [map $frame->dim($_), 1,2], 1);
+  while ($res) {
     $writer->write($frame);
     # and/or display it, or feed it to a Tracker, or...
+    ($frame, $res) = $vc->read;
   }
 
 =head1 DESCRIPTION
@@ -76,6 +78,20 @@ Be careful when scaling byte-valued inputs to maximise dynamic range:
 
   $frame = ($frame * (255/$max))->byte; # works
   $frame = ($frame * 255/$max)->byte;   # multiply happens first and overflows
+
+=head1 OPENCV MINOR DATA-TYPES
+
+In OpenCV, as well as the most important type (C<Mat>), there are various
+helper types including C<Rect>, C<Size>, and C<Scalar> (often used for
+specifying colours). This distribution wraps these as ndarrays of
+appropriate types and dimensions.
+
+While in C++ there are often default values for the constructors
+and/or polymorphic ways to call them with fewer than the full number
+of arguments, this is currently not possible in PDL. Therefore, e.g. with
+a C<Scalar>, you have to supply all four values (just give zeroes for
+the ones that don't matter, e.g. the alpha value for a colour on a
+non-alpha image).
 
 =cut
 EOPM
