@@ -14,6 +14,20 @@ my %overrides = (
   },
 );
 my %ptr_only = map +($_=>1), qw(Tracker);
+my %constructor_override = (
+  Tracker => <<'EOF',
+#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
+# define TRACKER_RECT_TYPE cv::Rect
+#else
+# define TRACKER_RECT_TYPE cv::Rect2d
+#endif
+TrackerWrapper *cw_Tracker_new(char *klass) {
+	TrackerWrapper *Tr = new TrackerWrapper;
+	Tr->held = cv::TrackerKCF::create();
+	return Tr;
+}
+EOF
+);
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
 #include "opencv_wrapper.h"
@@ -35,18 +49,6 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 	*r = wrapper->held.rows;
 }
 void * cw_Mat_ptr(MatWrapper *self) { return self->held.ptr(); }
-EOF
-my $CBODY_LOCAL = <<'EOF';
-#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
-# define TRACKER_RECT_TYPE cv::Rect
-#else
-# define TRACKER_RECT_TYPE cv::Rect2d
-#endif
-TrackerWrapper *cw_Tracker_new(char *klass) {
-	TrackerWrapper *Tr = new TrackerWrapper;
-	Tr->held = cv::TrackerKCF::create();
-	return Tr;
-}
 EOF
 my $CFOOTER = "}\n";
 my $HHEADER = <<'EOF';
@@ -164,6 +166,7 @@ void cw_${class}_getVals(${class}Wrapper *self, @{[join ',', map "$_->[0] *$_->[
 }
 EOF
   }
+  $cstr .= $constructor_override{$class} || '';
   ($hstr, $cstr);
 }
 
@@ -184,8 +187,8 @@ sub gen_chfiles {
     my ($xhstr, $xcstr) = gen_wrapper($_, @{$typespecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
-  $cstr .= $CBODY_GLOBAL . $CBODY_LOCAL;
   $hstr .= $HBODY_GLOBAL;
+  $cstr .= $CBODY_GLOBAL;
   for my $func (@{$funclist||[]}) {
     my ($xhstr, $xcstr) = gen_code( @$func );
     $hstr .= $xhstr; $cstr .= $xcstr;
