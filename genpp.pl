@@ -194,7 +194,7 @@ sub genheader {
 \nuse strict;
 use warnings;
 EOPM
-  pp_addhdr(qq{#include "opencv_wrapper.h"\n});
+  pp_addhdr(qq{#include "opencv_wrapper.h"\n#include "wraplocal.h"\n});
   my @flist = genpp_readfile('funclist.pl');
   for my $c (@$classes) {
     pp_bless("PDL::OpenCV::$c");

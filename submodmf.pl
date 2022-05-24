@@ -6,7 +6,7 @@ use File::Spec::Functions;
 our (%cpp_opts, @cw_objs);
 
 sub wmf {
-  my ($last) = @_;
+  my ($last, $hdrs, $classes) = @_;
   my $pkg = "PDL::OpenCV::$last";
   my $package = [lc($last).".pd",$last,$pkg];
   my %hash = pdlpp_stdargs($package);
@@ -27,7 +27,7 @@ sub wmf {
   *MY::postamble = sub {
     my ($self) = @_;
     join "\n", pdlpp_postamble($package),
-      genwrap_from('wraplocal', 1, '""'),
+      genwrap_from('wraplocal', 1, join(',', '', @$hdrs), @$classes),
       cpp_build($self, 'wraplocal');
   };
   WriteMakefile(%hash);

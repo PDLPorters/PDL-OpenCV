@@ -33,6 +33,7 @@ my $CHEADER = <<'EOF';
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/utility.hpp> /* allows control number of threads */
 #include "opencv_wrapper.h"
+#include "wraplocal.h"
 /* use C name mangling */
 extern "C" {
 EOF
@@ -229,11 +230,8 @@ sub make_chfiles {
 
 my $filegen = $ARGV[0] || die "No file given";
 my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
-my $typespec = {%GLOBALTYPES,map +($_=>[]), @ARGV[2..$#ARGV]};
+my $typespec = $filegen eq 'opencv_wrapper' ? \%GLOBALTYPES : {map +($_=>[]), @ARGV[2..$#ARGV]};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
-my $consts = $filegen eq 'opencv_wrapper' ? gen_consts() : [];
-if ($filegen eq 'opencv_wrapper') {
-  make_chfiles($filegen, $extras, $typespec, \@cvheaders, \@funclist, $consts);
-} else {
-  open my $fh, '>', $_ for "$filegen.h", "$filegen.cpp";
-}
+my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
+my $consts = ($filegen ne 'opencv_wrapper' && -f 'constlist.txt') ? gen_consts() : [];
+make_chfiles($filegen, $extras, $typespec, \@cvheaders, $funclist, $consts);

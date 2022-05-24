@@ -1,1 +1,1 @@
-wmf('Tracker');
+wmf('Tracker', ['tracking'], [qw(Tracker)]);

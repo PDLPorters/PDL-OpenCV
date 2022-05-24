@@ -98,12 +98,10 @@ pp_setversion($VERSION);
 
 pp_addhdr << 'EOH';
 #include "opencv_wrapper.h"
+#include "wraplocal.h"
 EOH
 
-genpp(@$_) for (
-  ['','minMaxIdx',"returns minimum and maximum values of Mat-wrapped ndarray",0,'void',['Mat','mw'],["double *","min","",["/O"]],["double *","max","",["/O"]]],
-  ['','cvtColor',"convert src to dest with given colour space",0,'void',["Mat","src","",[]],["Mat","dst","",["/O"]],["int","code","",[]],["int","dstCn","0",[]]],
-);
+genpp(@$_) for genpp_readfile('funclist.pl');
 
 sub add_const {
   my ($args, $text) = @_;
