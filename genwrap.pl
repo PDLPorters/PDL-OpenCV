@@ -178,7 +178,7 @@ sub gen_const {
 }
 
 sub gen_chfiles {
-  my ($macro, $typespecs, $cvheaders, $funclist, $consts, @params) = @_;
+  my ($macro, $extras, $typespecs, $cvheaders, $funclist, $consts, @params) = @_;
   my $hstr = sprintf $HHEADER, $macro;
   my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
   $cstr .= $CHEADER;
@@ -187,8 +187,8 @@ sub gen_chfiles {
     my ($xhstr, $xcstr) = gen_wrapper($_, @{$typespecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
-  $hstr .= $HBODY_GLOBAL;
-  $cstr .= $CBODY_GLOBAL;
+  $hstr .= $extras->[0] || '';
+  $cstr .= $extras->[1] || '';
   for my $func (@{$funclist||[]}) {
     my ($xhstr, $xcstr) = gen_code( @$func );
     $hstr .= $xhstr; $cstr .= $xcstr;
@@ -227,10 +227,13 @@ sub make_chfiles {
 }
 
 my $filegen = $ARGV[0] || die "No file given";
+my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,$CBODY_GLOBAL] : [];
 my @genclasses = @ARGV[2..$#ARGV];
+my $typespec = {%GLOBALTYPES,map +($_=>[]), @genclasses};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
+my $consts = $filegen eq 'opencv_wrapper' ? gen_consts() : [];
 if ($filegen eq 'opencv_wrapper') {
-  make_chfiles($filegen, {%GLOBALTYPES,map +($_=>[]), @genclasses}, \@cvheaders, \@funclist, gen_consts());
+  make_chfiles($filegen, $extras, $typespec, \@cvheaders, \@funclist, $consts);
 } else {
   open my $fh, '>', $_ for "$filegen.h", "$filegen.cpp";
 }
