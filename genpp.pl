@@ -6,6 +6,7 @@ use File::Spec::Functions qw(catfile curdir);
 my $T = [qw(A B S U L F D)];
 
 our %DIMTYPES = (
+  Point2f=>[[qw(float x)], [qw(float y)]],
   Point=>[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)]],
   Rect=>[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)], [qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
   Scalar=>[[qw(double v0 val[0])], [qw(double v1 val[1])], [qw(double v2 val[2])], [qw(double v3 val[3])]],
@@ -49,7 +50,10 @@ sub genpp_par {
     $partype = $spec->[0][0] eq 'ptrdiff_t' ? "indx" : $spec->[0][0];
     $frompdl = sub {
       my ($iscomp) = @_;
-      qq{cw_${type}_newWithVals(@{[join ',', map "\$$name($indname=>$_)", 0..$indcount-1]})};
+      qq{cw_${type}_newWithVals(@{[
+        join ',', map $iscomp ? "(($spec->[0][0] *)$name->data)[$_]" : "\$$name($indname=>$_)",
+          0..$indcount-1
+      ]})};
     };
     $topdl1 = sub { "" };
     $topdl2 = sub {
