@@ -26,14 +26,14 @@ sub new {
     name => $name,
     pcount => $pcount,
     ctype => "${type}Wrapper *",
-    partype => '',
+    pdltype => '',
     fixeddims => 0,
     destroy => "cw_${type}_DESTROY",
     blank => "cw_${type}_new(NULL)",
   };
   if (my $spec = $DIMTYPES{$type}) {
     $self->{fixeddims} = 1;
-    $self->{partype} = $spec->[0][0] eq 'ptrdiff_t' ? "indx" : $spec->[0][0];
+    $self->{pdltype} = $spec->[0][0] eq 'ptrdiff_t' ? "indx" : $spec->[0][0];
   } elsif ($type ne 'Mat') {
     $self->{is_other} = 1;
   }
@@ -121,10 +121,10 @@ EOF
       $type = $type_overrides{$type}[0] if $type_overrides{$type};
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
-      my ($partype, $par, $is_other, $obj) = '';
+      my ($pdltype, $par, $is_other, $obj) = '';
       if ($type =~ /^[A-Z]/) {
         $obj = PP::OpenCV->new($type, $var, $pcount);
-        ($par, $partype, $is_other, $type) = ($obj->par, @$obj{qw(partype is_other ctype)});
+        ($par, $pdltype, $is_other, $type) = ($obj->par, @$obj{qw(pdltype is_other ctype)});
         if ($obj->{is_other}) {
           die "Error: OtherPars '$var' is output" if $flags{'/O'};
           push @otherpars, [$par, $var];
@@ -141,9 +141,9 @@ EOF
         $var2usecomp{$var} = 1;
         push @c_input, $var;
       } else {
-        ($partype = $type) =~ s#\s*\*$##;
+        ($pdltype = $type) =~ s#\s*\*$##;
         $par = "$var()";
-        push @c_input, [($type =~ /\*$/ ? '&' : ''), $var, $partype];
+        push @c_input, [($type =~ /\*$/ ? '&' : ''), $var, $pdltype];
       }
       if ($flags{'/O'}) {
         push @outputs, [$type, $var, sub {$obj->topdl1(@_)}, sub {$obj->topdl2(@_)}];
@@ -154,7 +154,7 @@ EOF
       push @defaults, "\$$var = $default if !defined \$$var;" if length $default;
       if (!$is_other) {
         push @pp_input, $var;
-        push @pars, join ' ', grep length, $partype, ($flags{'/O'} ? '[o]' : ()), $par;
+        push @pars, join ' ', grep length, $pdltype, ($flags{'/O'} ? '[o]' : ()), $par;
       }
     }
     push @pp_input, map $_->[1], @otherpars;
