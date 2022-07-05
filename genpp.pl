@@ -4,6 +4,10 @@ use PDL::Types;
 use File::Spec::Functions qw(catfile curdir);
 
 my $T = [qw(A B S U L F D)];
+our %type_overrides = (
+  String => ['char *', 'char *'], # PP, C
+  bool => ['byte', 'unsigned char'],
+);
 
 our %DIMTYPES = (
   Point2f=>[[qw(float x)], [qw(float y)]],
@@ -11,10 +15,6 @@ our %DIMTYPES = (
   Rect=>[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)], [qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
   Scalar=>[[qw(double v0 val[0])], [qw(double v1 val[1])], [qw(double v2 val[2])], [qw(double v3 val[3])]],
   Size=>[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
-);
-our %type_overrides = (
-  String => ['char *', 'char *'], # PP, C
-  bool => ['byte', 'unsigned char'],
 );
 sub genpp_par {
   my ($type, $name, $pcount) = @_;
