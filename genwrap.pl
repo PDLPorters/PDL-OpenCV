@@ -6,8 +6,8 @@ use PDL::Types;
 use PDL::Core qw/howbig/;
 
 require ''. catfile $Bin, 'genpp.pl';
-our (%DIMTYPES, %type_overrides);
-my %GLOBALTYPES = (%DIMTYPES, Mat=>[]);
+our %type_overrides;
+my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, Mat=>[]) };
 my %overrides = (
   Tracker => {
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},

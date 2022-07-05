@@ -9,6 +9,8 @@ our %type_overrides = (
   bool => ['byte', 'unsigned char'],
 );
 
+{
+package PP::OpenCV;
 our %DIMTYPES = (
   Point2f=>[[qw(float x)], [qw(float y)]],
   Point=>[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)]],
@@ -16,56 +18,67 @@ our %DIMTYPES = (
   Scalar=>[[qw(double v0 val[0])], [qw(double v1 val[1])], [qw(double v2 val[2])], [qw(double v3 val[3])]],
   Size=>[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
 );
-sub genpp_par {
-  my ($type, $name, $pcount) = @_;
-  my ($is_other, $ctype, $par, $partype, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2) = (
-    0, "${type}Wrapper *", undef, '', 0,
-    "cw_${type}_DESTROY", "cw_${type}_new(NULL)",
-  );
-  if ($type eq 'Mat') {
-    $par = "$name(l$pcount,c$pcount,r$pcount)";
-    $frompdl = sub {
-      my ($iscomp) = @_;
-      "cw_Mat_newWithDims(" .
-        ($iscomp
-          ? join ',', (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
-          : "\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype,\$P($name)"
-        ) .
-        ")"
-    };
-    $topdl1 = sub {
-      my ($iscomp) = @_;
-      my $varname = $iscomp ? "\$COMP($name)" : $name;
-      "cw_Mat_pdlDims($varname, &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount))";
-    };
-    $topdl2 = sub {
-      my ($iscomp) = @_;
-      my $varname = $iscomp ? "\$COMP($name)" : $name;
-      "memmove(\$P($name), cw_Mat_ptr($varname), \$PDL($name)->nbytes)";
-    };
-  } elsif (my $spec = $DIMTYPES{$type}) {
-    my ($indname, $indcount) = ("n${type}$pcount", scalar @$spec);
-    $par = "$name($indname=$indcount)";
-    $fixeddims = 1;
-    $partype = $spec->[0][0] eq 'ptrdiff_t' ? "indx" : $spec->[0][0];
-    $frompdl = sub {
-      my ($iscomp) = @_;
-      qq{cw_${type}_newWithVals(@{[
-        join ',', map $iscomp ? "(($spec->[0][0] *)$name->data)[$_]" : "\$$name($indname=>$_)",
-          0..$indcount-1
-      ]})};
-    };
-    $topdl1 = sub { "" };
-    $topdl2 = sub {
-      my ($iscomp) = @_;
-      my $varname = $iscomp ? "\$COMP($name)" : $name;
-      qq{cw_${type}_getVals($varname,@{[join ',', map "&\$$name($indname=>$_)", 0..$indcount-1]})};
-    };
-  } else {
-    $par = "PDL__OpenCV__$type $name";
-    $is_other = 1;
+sub new {
+  my ($class, $type, $name, $pcount) = @_;
+  my $self = {
+    is_other => 0,
+    type => $type,
+    name => $name,
+    pcount => $pcount,
+    ctype => "${type}Wrapper *",
+    partype => '',
+    fixeddims => 0,
+    destroy => "cw_${type}_DESTROY",
+    blank => "cw_${type}_new(NULL)",
+  };
+  if (my $spec = $DIMTYPES{$type}) {
+    $self->{fixeddims} = 1;
+    $self->{partype} = $spec->[0][0] eq 'ptrdiff_t' ? "indx" : $spec->[0][0];
+  } elsif ($type ne 'Mat') {
+    $self->{is_other} = 1;
   }
-  ($is_other, $par, $ctype, $partype, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2);
+  bless $self, $class;
+}
+sub par {
+  my ($self) = @_;
+  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  return "$name(l$pcount,c$pcount,r$pcount)" if $type eq 'Mat';
+  return "$name(n${type}$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims};
+  "PDL__OpenCV__$type $name";
+}
+sub frompdl {
+  my ($self, $iscomp) = @_;
+  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  return undef if $self->{is_other};
+  return "cw_Mat_newWithDims(" .
+    ($iscomp
+      ? join ',', (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
+      : "\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype,\$P($name)"
+    ) .
+    ")" if !$self->{fixeddims};
+  qq{cw_${type}_newWithVals(@{[
+      join ',', map $iscomp ? "(($DIMTYPES{$type}[0][0] *)$name->data)[$_]" : "\$$name(n${type}$pcount=>$_)",
+        0..@{$DIMTYPES{$type}}-1
+    ]})};
+}
+sub topdl1 {
+  my ($self, $iscomp) = @_;
+  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  return undef if $self->{is_other};
+  return
+    "cw_Mat_pdlDims(".($iscomp ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount))"
+    if !$self->{fixeddims};
+  "";
+}
+sub topdl2 {
+  my ($self, $iscomp) = @_;
+  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  return undef if $self->{is_other};
+  return
+    "memmove(\$P($name), cw_Mat_ptr(".($iscomp ? "\$COMP($name)" : $name)."), \$PDL($name)->nbytes)"
+    if !$self->{fixeddims};
+  qq{cw_${type}_getVals(}.($iscomp ? "\$COMP($name)" : $name).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]})};
+}
 }
 
 sub genpp {
@@ -77,7 +90,7 @@ sub genpp {
     my $pcount = 1;
     my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
-    if (!grep /^[A-Z]/ && !(genpp_par $_, '', 0)[0], map $_->[0], @params, $ret ne 'void' ? [$type_overrides{$ret} ? $type_overrides{$ret}[0] : $ret] : ()) {
+    if (!grep /^[A-Z]/ && !PP::OpenCV->new($_, '', 0)->{is_other}, map $_->[0], @params, $ret ne 'void' ? [$type_overrides{$ret} ? $type_overrides{$ret}[0] : $ret] : ()) {
       $ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
       pp_addpm("*$func = \\&${main::PDLOBJ}::$func;\n") if !$ismethod;
@@ -88,7 +101,8 @@ sub genpp {
         $type = $type_overrides{$type}[1] if $type_overrides{$type};
         my ($is_other, $par) = 0;
         if ($type =~ /^[A-Z]/) {
-          ($is_other, $par, $type) = genpp_par($type, $var, 0);
+          my $obj = PP::OpenCV->new($type, $var, 0);
+          ($is_other, $type, $par) = (@$obj{qw(is_other type)}, $obj->par);
         }
         push @xs_params, $is_other ? $par : "$type $var";
       }
@@ -107,16 +121,17 @@ EOF
       $type = $type_overrides{$type}[0] if $type_overrides{$type};
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
-      my ($partype, $par, $is_other, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2) = '';
+      my ($partype, $par, $is_other, $obj) = '';
       if ($type =~ /^[A-Z]/) {
-        ($is_other, $par, $type, $partype, $fixeddims, $destroy, $blank, $frompdl, $topdl1, $topdl2) = genpp_par($type, $var, $pcount);
-        if ($is_other) {
+        $obj = PP::OpenCV->new($type, $var, $pcount);
+        ($par, $partype, $is_other, $type) = ($obj->par, @$obj{qw(partype is_other ctype)});
+        if ($obj->{is_other}) {
           die "Error: OtherPars '$var' is output" if $flags{'/O'};
           push @otherpars, [$par, $var];
           $var2usecomp{$var} = 1;
         } else {
-          push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, $destroy, $blank, $frompdl];
-          $compmode = $var2usecomp{$var} = 1 if $flags{'/O'} and !$fixeddims;
+          push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, @$obj{qw(destroy blank)}, sub {$obj->frompdl(@_)}];
+          $compmode = $var2usecomp{$var} = 1 if $flags{'/O'} and !$obj->{fixeddims};
           $var2count{$var} = $pcount++;
         }
         push @c_input, $var;
@@ -131,7 +146,7 @@ EOF
         push @c_input, [($type =~ /\*$/ ? '&' : ''), $var, $partype];
       }
       if ($flags{'/O'}) {
-        push @outputs, [$type, $var, $topdl1, $topdl2];
+        push @outputs, [$type, $var, sub {$obj->topdl1(@_)}, sub {$obj->topdl2(@_)}];
         $default = 'PDL->null' if !length $default;
       } else {
         push @pmpars, $var;
