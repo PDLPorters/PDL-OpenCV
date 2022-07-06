@@ -20,7 +20,7 @@ our %DIMTYPES = (
 );
 sub new {
   my ($class, $type, $name, $pcount) = @_;
-  my $self = bless {is_other=>0, type=>$type, name=>$name}, $class;
+  my $self = bless {type=>$type, name=>$name}, $class;
   @$self{qw(is_other naive_otherpar)} = (1,1), return $self if $type eq 'char *';
   if ($type !~ /^[A-Z]/) {
     (my $pdltype = $type) =~ s#\s*\*$##;
@@ -133,16 +133,20 @@ EOF
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
       my $obj = PP::OpenCV->new($type, $var, $pcount);
-      (my ($par, $pdltype, $is_other), $type) = ($obj->par, @$obj{qw(pdltype is_other ctype)});
+      (my ($par, $pdltype), $type) = ($obj->par, @$obj{qw(pdltype ctype)});
       push @c_input, $obj->c_input;
       if ($obj->{is_other}) {
         die "Error: OtherPars '$var' is output" if $flags{'/O'};
         push @otherpars, [$par, $var];
         $var2usecomp{$var} = 1;
-      } elsif (!$obj->{simple_pdl}) {
-        push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, @$obj{qw(destroy blank)}, sub {$obj->frompdl(@_)}];
-        $compmode = $var2usecomp{$var} = 1 if $flags{'/O'} and !$obj->{fixeddims};
-        $var2count{$var} = $pcount++;
+      } else {
+        push @pp_input, $var;
+        push @pars, join ' ', grep length, $pdltype, ($flags{'/O'} ? '[o]' : ()), $par;
+        if (!$obj->{simple_pdl}) {
+          push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, @$obj{qw(destroy blank)}, sub {$obj->frompdl(@_)}];
+          $compmode = $var2usecomp{$var} = 1 if $flags{'/O'} and !$obj->{fixeddims};
+          $var2count{$var} = $pcount++;
+        }
       }
       if ($flags{'/O'}) {
         push @outputs, [$type, $var, sub {$obj->topdl1(@_)}, sub {$obj->topdl2(@_)}];
@@ -151,10 +155,6 @@ EOF
         push @pmpars, $var;
       }
       push @defaults, "\$$var = $default if !defined \$$var;" if length $default;
-      if (!$is_other) {
-        push @pp_input, $var;
-        push @pars, join ' ', grep length, $pdltype, ($flags{'/O'} ? '[o]' : ()), $par;
-      }
     }
     push @pp_input, map $_->[1], @otherpars;
     $callprefix = ($ret =~ /^[A-Z]/ ? 'res' : '$res()').' = ', pop @c_input if $ret ne 'void';
