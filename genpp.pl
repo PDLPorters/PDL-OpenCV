@@ -20,17 +20,15 @@ our %DIMTYPES = (
 );
 sub new {
   my ($class, $type, $name, $pcount) = @_;
-  my $self = {
-    is_other => 0,
-    type => $type,
-    name => $name,
+  my $self = bless {is_other=>0, type=>$type, name=>$name}, $class;
+  %$self = (%$self,
     pcount => $pcount,
     ctype => "${type}Wrapper *",
     pdltype => '',
     fixeddims => 0,
     destroy => "cw_${type}_DESTROY",
     blank => "cw_${type}_new(NULL)",
-  };
+  );
   if (my $spec = $DIMTYPES{$type}) {
     $self->{fixeddims} = 1;
     $self->{pdltype} = $spec->[0][0] eq 'ptrdiff_t' ? "indx" : $spec->[0][0];
