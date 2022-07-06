@@ -90,6 +90,11 @@ sub topdl2 {
     if !$self->{fixeddims};
   qq{cw_${type}_getVals(}.($iscomp ? "\$COMP($name)" : $name).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]})};
 }
+sub destroy_code {
+  my ($self, $iscomp, $isin) = @_;
+  return "$self->{destroy}($self->{name});\n" if !$iscomp;
+  "$self->{destroy}(".($isin ? "$self->{name}_LOCAL" : "\$COMP($self->{name})").");\n";
+}
 }
 
 sub genpp {
@@ -143,7 +148,7 @@ EOF
         push @pp_input, $var;
         push @pars, join ' ', grep length, $pdltype, ($flags{'/O'} ? '[o]' : ()), $par;
         if (!$obj->{simple_pdl}) {
-          push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, @$obj{qw(destroy blank)}, sub {$obj->frompdl(@_)}];
+          push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, $obj, @$obj{qw(blank)}, sub {$obj->frompdl(@_)}];
           $compmode = $var2usecomp{$var} = 1 if $flags{'/O'} and !$obj->{fixeddims};
           $var2count{$var} = $pcount++;
         }
@@ -170,10 +175,10 @@ sub ${main::PDLOBJ}::$func {
 }
 EOF
     );
+    my $destroy_in = join '', map $_->[4]->destroy_code($compmode,1), grep !$_->[1], @pdl_inits;
+    my $destroy_out = join '', map $_->[4]->destroy_code($compmode,0), grep $_->[1], @pdl_inits;
     if ($compmode) {
       $hash{Comp} = join '; ', map +($_->[0] =~ /^[A-Z]/ ? $_->[0] : PDL::Type->new($_->[0])->ctype)." $_->[1]", @outputs;
-      my $destroy_in = join '', map "$_->[4]($_->[0]_LOCAL);\n", grep !$_->[1], @pdl_inits;
-      my $destroy_out = join '', map "$_->[4](\$COMP($_->[0]));\n", grep $_->[1], @pdl_inits;
       $hash{MakeComp} = join '',
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->[1]));\n", grep ref, @c_input),
         (map $_->[1] ? "\$COMP($_->[0]) = $_->[5];\n" : "@$_[2,0]_LOCAL = ".$_->[6]->(1).";\n", @pdl_inits),
@@ -186,8 +191,6 @@ EOF
       $hash{Code} = join '', map "$_->[3];\n", @map_tuples;
       $hash{Code} .= $callprefix.'$COMP(res);'."\n" if $callprefix;
     } else {
-      my $destroy_in = join '', map "$_->[4]($_->[0]);\n", grep !$_->[1], @pdl_inits;
-      my $destroy_out = join '', map "$_->[4]($_->[0]);\n", grep $_->[1], @pdl_inits;
       my @map_tuples = map [$_->[1], $var2count{$_->[1]}, map $_->(0), @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
       $hash{Code} = join '',
         (map "@$_[2,0] = ".$_->[6]->(0).";\n", @pdl_inits),
