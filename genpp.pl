@@ -21,6 +21,12 @@ our %DIMTYPES = (
 sub new {
   my ($class, $type, $name, $pcount) = @_;
   my $self = bless {is_other=>0, type=>$type, name=>$name}, $class;
+  @$self{qw(is_other naive_otherpar)} = (1,1), return $self if $type eq 'char *';
+  if ($type !~ /^[A-Z]/) {
+    (my $pdltype = $type) =~ s#\s*\*$##;
+    @$self{qw(simple_pdl pdltype ctype)} = (1, $pdltype, $type);
+    return $self;
+  }
   %$self = (%$self,
     pcount => $pcount,
     ctype => "${type}Wrapper *",
@@ -37,8 +43,15 @@ sub new {
   }
   bless $self, $class;
 }
+sub c_input {
+  my ($self) = @_;
+  return $self->{name} if !$self->{simple_pdl};
+  [($self->{type} =~ /\*$/ ? '&' : ''), @$self{qw(name pdltype)}];
+}
 sub par {
   my ($self) = @_;
+  return "$self->{name}()" if $self->{simple_pdl};
+  return "@$self{qw(type name)}" if $self->{naive_otherpar};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return "$name(l$pcount,c$pcount,r$pcount)" if $type eq 'Mat';
   return "$name(n${type}$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims};
@@ -119,29 +132,17 @@ EOF
       $type = $type_overrides{$type}[0] if $type_overrides{$type};
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
-      my ($pdltype, $par, $is_other, $obj) = '';
-      if ($type eq 'char *') {
-        $is_other = 1;
-        push @otherpars, ["$type $var", $var];
+      my $obj = PP::OpenCV->new($type, $var, $pcount);
+      (my ($par, $pdltype, $is_other), $type) = ($obj->par, @$obj{qw(pdltype is_other ctype)});
+      push @c_input, $obj->c_input;
+      if ($obj->{is_other}) {
+        die "Error: OtherPars '$var' is output" if $flags{'/O'};
+        push @otherpars, [$par, $var];
         $var2usecomp{$var} = 1;
-        push @c_input, $var;
-      } elsif ($type !~ /^[A-Z]/) {
-        ($pdltype = $type) =~ s#\s*\*$##;
-        $par = "$var()";
-        push @c_input, [($type =~ /\*$/ ? '&' : ''), $var, $pdltype];
-      } else {
-        $obj = PP::OpenCV->new($type, $var, $pcount);
-        ($par, $pdltype, $is_other, $type) = ($obj->par, @$obj{qw(pdltype is_other ctype)});
-        if ($obj->{is_other}) {
-          die "Error: OtherPars '$var' is output" if $flags{'/O'};
-          push @otherpars, [$par, $var];
-          $var2usecomp{$var} = 1;
-        } else {
-          push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, @$obj{qw(destroy blank)}, sub {$obj->frompdl(@_)}];
-          $compmode = $var2usecomp{$var} = 1 if $flags{'/O'} and !$obj->{fixeddims};
-          $var2count{$var} = $pcount++;
-        }
-        push @c_input, $var;
+      } elsif (!$obj->{simple_pdl}) {
+        push @pdl_inits, [$var, $flags{'/O'}, $type, $pcount, @$obj{qw(destroy blank)}, sub {$obj->frompdl(@_)}];
+        $compmode = $var2usecomp{$var} = 1 if $flags{'/O'} and !$obj->{fixeddims};
+        $var2count{$var} = $pcount++;
       }
       if ($flags{'/O'}) {
         push @outputs, [$type, $var, sub {$obj->topdl1(@_)}, sub {$obj->topdl2(@_)}];
