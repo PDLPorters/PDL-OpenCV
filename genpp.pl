@@ -120,7 +120,16 @@ EOF
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
       my ($pdltype, $par, $is_other, $obj) = '';
-      if ($type =~ /^[A-Z]/) {
+      if ($type eq 'char *') {
+        $is_other = 1;
+        push @otherpars, ["$type $var", $var];
+        $var2usecomp{$var} = 1;
+        push @c_input, $var;
+      } elsif ($type !~ /^[A-Z]/) {
+        ($pdltype = $type) =~ s#\s*\*$##;
+        $par = "$var()";
+        push @c_input, [($type =~ /\*$/ ? '&' : ''), $var, $pdltype];
+      } else {
         $obj = PP::OpenCV->new($type, $var, $pcount);
         ($par, $pdltype, $is_other, $type) = ($obj->par, @$obj{qw(pdltype is_other ctype)});
         if ($obj->{is_other}) {
@@ -133,15 +142,6 @@ EOF
           $var2count{$var} = $pcount++;
         }
         push @c_input, $var;
-      } elsif ($type eq 'char *') {
-        $is_other = 1;
-        push @otherpars, ["$type $var", $var];
-        $var2usecomp{$var} = 1;
-        push @c_input, $var;
-      } else {
-        ($pdltype = $type) =~ s#\s*\*$##;
-        $par = "$var()";
-        push @c_input, [($type =~ /\*$/ ? '&' : ''), $var, $pdltype];
       }
       if ($flags{'/O'}) {
         push @outputs, [$type, $var, sub {$obj->topdl1(@_)}, sub {$obj->topdl2(@_)}];
