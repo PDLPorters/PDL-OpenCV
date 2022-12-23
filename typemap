@@ -6,14 +6,14 @@ PDL__OpenCV__VideoWriter       T_PTROBJ_SPECIAL
 
 INPUT
 T_PTROBJ_SPECIAL
-  if (sv_derived_from($arg, \"${(my $ntt=$ntype)=~s/__/::/g;\$ntt}\")){
+  if (sv_derived_from($arg, \"${(my $ntt=$type)=~s/__/::/g;\$ntt}\")){
     IV tmp = SvIV((SV*)SvRV($arg));
     $var = INT2PTR($type, tmp);
   }
   else
-    croak(\"$var is not of type ${(my $ntt=$ntype)=~s/__/::/g;\$ntt}\")
+    croak(\"$var is not of type ${(my $ntt=$type)=~s/__/::/g;\$ntt}\")
 
 OUTPUT
 T_PTROBJ_SPECIAL
-  sv_setref_pv($arg, \"${(my $ntt=$ntype)=~s/__/::/g;\$ntt}\",
+  sv_setref_pv($arg, \"${(my $ntt=$type)=~s/__/::/g;\$ntt}\",
                (void*)$var);
