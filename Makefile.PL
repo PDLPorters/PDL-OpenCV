@@ -44,6 +44,7 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
     depend => {
       'opencv_wrapper$(OBJ_EXT) $(OBJECT)'=>'opencv_wrapper.h wraplocal.h',
       'wraplocal.h opencv_wrapper.h OpenCV.pm'=>'funclist.pl genpp.pl', # .pm because that deps on .pd
+      'OpenCV.c'=>'typemap',
       '$(FIRST_MAKEFILE)'=>'submodmf.pl',
     },
 );
