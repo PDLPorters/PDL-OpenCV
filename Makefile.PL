@@ -42,8 +42,7 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
     },
     MYEXTLIB => join(' ', @cw_objs),
     depend => {
-      'opencv_wrapper$(OBJ_EXT)'=>'opencv_wrapper.h',
-      'wraplocal$(OBJ_EXT)'=>'opencv_wrapper.h',
+      'opencv_wrapper$(OBJ_EXT) $(OBJECT)'=>'opencv_wrapper.h wraplocal.h',
       'wraplocal.h opencv_wrapper.h OpenCV.pm'=>'funclist.pl genpp.pl', # .pm because that deps on .pd
       '$(FIRST_MAKEFILE)'=>'submodmf.pl',
     },
