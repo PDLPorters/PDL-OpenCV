@@ -168,7 +168,7 @@ EOF
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
   my (@{[join ',', map "\$$_", @pmpars]}) = \@_;
-  my (@{[join ',', map "\$$_->[1]", @outputs]});
+  @{[!@outputs ? '' : "my (@{[join ',', map qq{\$$_->[1]}, @outputs]});"]}
   @{[ join "\n  ", @defaults ]}
   ${main::PDLOBJ}::_${func}_int(@{[join ',', map "\$$_", @pp_input]});
   @{[!@outputs ? '' : "!wantarray ? \$$outputs[-1][1] : (@{[join ',', map qq{\$$_->[1]}, @outputs]})"]}
