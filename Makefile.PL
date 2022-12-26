@@ -18,7 +18,9 @@ $hash{INC} .= " $inc";
 $hash{OBJECT} .= join ' ', '', map $_.'$(OBJ_EXT)', qw(wraplocal);
 
 use ExtUtils::CppGuess;
-our %cpp_opts = ExtUtils::CppGuess->new->makemaker_options;
+my $guess = ExtUtils::CppGuess->new;
+our %cpp_opts = $guess->makemaker_options;
+$cpp_opts{CCFLAGS} .= ' ' . $guess->cpp_standard_flag('C++11');
 $hash{dynamic_lib} = $cpp_opts{dynamic_lib};
 our ($cppg_cc, $cppg_cflags) = @cpp_opts{qw(CC CCFLAGS)};
 
@@ -29,7 +31,7 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
     AUTHOR              => 'Ingo Schmid',
     LICENSE => 'perl',
     CONFIGURE_REQUIRES => {
-        'ExtUtils::CppGuess' => '0.21',
+        'ExtUtils::CppGuess' => '0.22',
         'ExtUtils::MakeMaker' => '6.3002',
         'PDL' => '2.079', # typemap-search in dirs above
         'Alien::OpenCV' => 0,
