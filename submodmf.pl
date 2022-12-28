@@ -18,7 +18,7 @@ sub wmf {
   $hash{OBJECT} .= join ' ', '', map $_.'$(OBJ_EXT)', qw(wraplocal);
   $hash{depend} = {
     '$(OBJECT)'=>catfile(updir, 'opencv_wrapper.h') . ' wraplocal.h',
-    "$last.pm wraplocal.h"=>join(' ', catfile(updir, 'genpp.pl'), 'funclist.pl'),
+    "$last.pm wraplocal.h"=>join(' ', catfile(updir, 'genpp.pl'), 'funclist.pl', (!-f 'constlist.txt' ? () : ('constlist.txt'))),
     "$last.c"=>catfile(updir, 'typemap'),
     (!-f 'constlist.txt' ? () : ("wraplocal.h"=>'constlist.txt')),
   };
