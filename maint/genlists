@@ -1,0 +1,62 @@
+#!perl
+
+use strict;
+use warnings;
+use JSON::PP;
+use File::Basename;
+use File::Spec::Functions;
+use Cwd;
+use IPC::Open2;
+
+my $HEADERS = 'maint/headers.txt';
+my $HEADERS_DIR = '/usr/include/opencv4';
+my $CVDIR = '../opencv/modules/python/src2';
+my $PYSCRIPT = <<'EOF';
+import hdr_parser, json, sys
+parser = hdr_parser.CppHeaderParser()
+json.dump([[x,parser.parse(x)] for x in sys.stdin.read().splitlines()], sys.stdout)
+EOF
+
+my @HEADERS_FILES = do { local @ARGV = $HEADERS; grep !/^\s*#/, <> };
+chomp @HEADERS_FILES;
+
+my $json_data;
+{
+my $old_dir = getcwd();
+chdir $CVDIR or die "chdir: $!";
+my $pid = open2(my $child_out, my $child_in, qw(python3 -c), $PYSCRIPT);
+print $child_in map catfile($HEADERS_DIR, $_)."\n", @HEADERS_FILES;
+close $child_in;
+$json_data = decode_json do { local $/; <$child_out> };
+chdir $old_dir or die "chdir: $!";
+}
+
+#use Data::Dumper; print Dumper $json_data;
+my %dest2enums;
+for (@$json_data) {
+  my ($file, $d) = @$_;
+  my $dest = $file =~ /core/ ? "" : basename($file, ".hpp");
+print "$file -> |$dest|\n";
+  for my $t (@$d) {
+    my ($name, undef, undef, $tuples) = @$t;
+    if ($name =~ /^enum\s+/) {
+print "enum: $name\n";
+      for my $t (@$tuples) {
+        my ($ename) = @$t;
+        die "badly-formatted enum name $ename\n" if !(my ($epref, $elast) = $ename =~ /^const\s+cv\.(.+\.)?(.+)/);
+        $epref ||= "";
+        print(" skipping\n"), last if $epref;
+        push @{$dest2enums{$dest}}, $elast;
+print " val: ($epref)$elast\n";
+      }
+    }
+  }
+}
+
+for my $dest (keys %dest2enums) {
+  next if !$dest;
+  my $d = $dest2enums{$dest};
+  my $file = catfile(ucfirst($dest), 'constlist.txt');
+  open my $fh, '>', $file or die "$file: $!";
+  print $fh map "$_\n", @$d;
+}
