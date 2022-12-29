@@ -53,7 +53,6 @@ print " val: $pname\n";
   }
 }
 
-delete $dest2enums{''};
 for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
   push @{$dest2enums{''}}, (map "CV_$bits$_", 1..4), "CV_$bits|int n";
 }
