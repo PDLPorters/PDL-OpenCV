@@ -202,15 +202,6 @@ EOF
     pp_def($func, %hash);
 }
 
-sub add_const {
-  my ($pkg, $text, $args) = @_;
-  pp_add_exported($text);
-  pp_addxs(<<EOF);
-MODULE = ${main::PDLMOD} PACKAGE = $pkg PREFIX=cw_const_
-\nint cw_const_$text(@{[$args || '']})
-EOF
-}
-
 sub genheader {
   my ($last, $classes) = @_;
   my $descrip_label = @$classes ? join(', ', @$classes) : $last;
@@ -253,11 +244,19 @@ sub genconsts {
   my ($last) = @_;
   return if !-f 'constlist.txt';
   open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
+  my $xslines = '';
   while (!eof $consts) {
     chomp(my $line = <$consts>);
     $line =~ s/^cv:://;
-    add_const("PDL::OpenCV$last", split /\|/, $line);
+    my ($text, $args) = split /\|/, $line;
+    pp_add_exported($text);
+    $xslines .= "\nint cw_const_$text(@{[$args || '']})\n";
   }
+  my $pkg = "PDL::OpenCV$last";
+  pp_addxs(<<EOF);
+MODULE = ${main::PDLMOD} PACKAGE = $pkg PREFIX=cw_const_
+$xslines
+EOF
 }
 
 sub genpp_readfile {
