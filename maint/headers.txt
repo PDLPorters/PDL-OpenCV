@@ -1,4 +1,5 @@
 opencv2/core/base.hpp
+opencv2/core/mat.hpp
 opencv2/core.hpp
 opencv2/highgui.hpp
 opencv2/imgproc.hpp
