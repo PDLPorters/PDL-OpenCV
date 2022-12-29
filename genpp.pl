@@ -246,11 +246,16 @@ EOF
   }
   pp_bless("PDL::OpenCV::$last");
   genpp(@$_) for grep $_->[0] eq '', @flist;
+  genconsts("::$last");
+}
+
+sub genconsts {
+  my ($last) = @_;
   return if !-f 'constlist.txt';
   open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
   while (!eof $consts) {
     chomp(my $line = <$consts>);
-    add_const("PDL::OpenCV::$last", [], $line);
+    add_const("PDL::OpenCV$last", [], $line);
   }
 }
 
