@@ -53,19 +53,14 @@ print " val: $pname\n";
   }
 }
 
+delete $dest2enums{''};
+for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
+  push @{$dest2enums{''}}, (map "CV_$bits$_", 1..4), "CV_$bits|int n";
+}
+
 for my $dest (keys %dest2enums) {
-  next if !$dest;
   my $d = $dest2enums{$dest};
-  my $file = catfile(ucfirst($dest), 'constlist.txt');
+  my $file = $dest ? catfile(ucfirst($dest), 'constlist.txt') : 'constlist.txt';
   open my $fh, '>', $file or die "$file: $!";
   print $fh map "$_\n", @$d;
 }
-
-my @topconsts;
-for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
-  push @topconsts, map ["CV_$bits$_"], 1..4;
-  push @topconsts, ["CV_$bits", "int n"];
-}
-my $file = 'constlist.txt';
-open my $fh, '>', $file or die "$file: $!";
-print $fh map join('|', @$_)."\n", @topconsts;
