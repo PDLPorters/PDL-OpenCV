@@ -93,6 +93,20 @@ a C<Scalar>, you have to supply all four values (just give zeroes for
 the ones that don't matter, e.g. the alpha value for a colour on a
 non-alpha image).
 
+=head1 MODULES AND PACKAGES
+
+This distro reproduces the structure of OpenCV's various
+modules, so that e.g. the C<tracking> module is made available
+as L<PDL::OpenCV::Tracking>. Loading that makes available the
+C<PDL::OpenCV::Tracker> package which has various methods like C<new>.
+
+=head1 CONSTANTS
+
+OpenCV defines various constants in its different modules. This distro
+will remove C<cv::> from the beginning of these, then put them in
+their loading module. E.g. in C<imgproc>, C<COLOR_GRAY2RGB> will be
+C<PDL::OpenCV::Imgproc::COLOR_GRAY2RGB> (and exported by default).
+
 =cut
 EOPM
 
