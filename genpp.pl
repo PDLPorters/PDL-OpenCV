@@ -255,6 +255,7 @@ sub genconsts {
   open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
   while (!eof $consts) {
     chomp(my $line = <$consts>);
+    $line =~ s/^cv:://;
     add_const("PDL::OpenCV$last", $line);
   }
 }

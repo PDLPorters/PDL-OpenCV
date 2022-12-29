@@ -43,11 +43,11 @@ print "$file -> |$dest|\n";
 print "enum: $name\n";
       for my $t (@$tuples) {
         my ($ename) = @$t;
-        die "badly-formatted enum name $ename\n" if !(my ($epref, $elast) = $ename =~ /^const\s+cv\.(.+\.)?(.+)/);
-        $epref ||= "";
-        print(" skipping\n"), last if $epref;
-        push @{$dest2enums{$dest}}, $elast;
-print " val: ($epref)$elast\n";
+        die "badly-formatted enum name $ename\n" if !(my ($pname) = $ename =~ /^const\s+(cv\..+)/);
+        print(" skipping\n"), last if $pname =~ /\..*\./;
+        $pname =~ s#\.#::#g;
+        push @{$dest2enums{$dest}}, $pname;
+print " val: $pname\n";
       }
     }
   }

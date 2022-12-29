@@ -219,7 +219,7 @@ sub gen_consts {
   open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
   while (!eof $consts) {
     chomp(my $line = <$consts>);
-    push @consts, ["cv::$line"];
+    push @consts, [$line];
   }
   \@consts;
 }
