@@ -60,3 +60,12 @@ for my $dest (keys %dest2enums) {
   open my $fh, '>', $file or die "$file: $!";
   print $fh map "$_\n", @$d;
 }
+
+my @topconsts;
+for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
+  push @topconsts, map ["CV_$bits$_"], 1..4;
+  push @topconsts, ["CV_$bits", "int n"];
+}
+my $file = 'constlist.txt';
+open my $fh, '>', $file or die "$file: $!";
+print $fh map join('|', @$_)."\n", @topconsts;

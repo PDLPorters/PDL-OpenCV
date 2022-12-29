@@ -205,21 +205,11 @@ sub gen_chfiles {
 }
 
 sub gen_consts {
-  my ($global) = @_;
   my @consts;
-  if ($global) {
-    for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
-      for (1..4) {
-        push @consts, ["CV_$bits$_"];
-      }
-      push @consts, ["CV_$bits", "int n"];
-    }
-    return \@consts;
-  }
   open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
   while (!eof $consts) {
     chomp(my $line = <$consts>);
-    push @consts, [$line];
+    push @consts, [split /\|/, $line];
   }
   \@consts;
 }
@@ -237,5 +227,5 @@ my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_
 my $typespec = $filegen eq 'opencv_wrapper' ? \%GLOBALTYPES : {map +($_=>[]), @ARGV[2..$#ARGV]};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
-my $consts = $filegen eq 'opencv_wrapper' ? gen_consts(1) : -f 'constlist.txt' ? gen_consts(0) : [];
+my $consts = $filegen eq 'opencv_wrapper' ? [] : -f 'constlist.txt' ? gen_consts() : [];
 make_chfiles($filegen, $extras, $typespec, \@cvheaders, $funclist, $consts);

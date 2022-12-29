@@ -256,7 +256,7 @@ sub genconsts {
   while (!eof $consts) {
     chomp(my $line = <$consts>);
     $line =~ s/^cv:://;
-    add_const("PDL::OpenCV$last", $line);
+    add_const("PDL::OpenCV$last", split /\|/, $line);
   }
 }
 
