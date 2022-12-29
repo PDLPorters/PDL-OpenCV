@@ -203,11 +203,11 @@ EOF
 }
 
 sub add_const {
-  my ($pkg, $args, $text) = @_;
+  my ($pkg, $text, $args) = @_;
   pp_add_exported($text);
   pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = $pkg PREFIX=cw_const_
-\nint cw_const_$text(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})
+\nint cw_const_$text(@{[$args || '']})
 EOF
 }
 
@@ -255,7 +255,7 @@ sub genconsts {
   open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
   while (!eof $consts) {
     chomp(my $line = <$consts>);
-    add_const("PDL::OpenCV$last", [], $line);
+    add_const("PDL::OpenCV$last", $line);
   }
 }
 

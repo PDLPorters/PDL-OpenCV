@@ -174,10 +174,10 @@ EOF
 }
 
 sub gen_const {
-  my ($args, $text) = @_;
+  my ($text, $args) = @_;
   (my $funcname = $text) =~ s#cv::##;
-  my $t = "int cw_const_$funcname(@{[@$args ? join(',',map qq{@$_}, @$args) : '']})";
-  ("$t;\n", "$t { return $text@{[@$args ? '('.join(',',map $_->[1], @$args).')' : '']}; }\n");
+  my $t = "int cw_const_$funcname(@{[$args || '']})";
+  ("$t;\n", "$t { return $text@{[$args ? '('.join(',',map +(split ' ')[-1], split '\s*,\s*', $args).')' : '']}; }\n");
 }
 
 sub gen_chfiles {
@@ -210,16 +210,16 @@ sub gen_consts {
   if ($global) {
     for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
       for (1..4) {
-        push @consts, [[], "CV_$bits$_"];
+        push @consts, ["CV_$bits$_"];
       }
-      push @consts, [[[qw(int n)]], "CV_$bits"];
+      push @consts, ["CV_$bits", "int n"];
     }
     return \@consts;
   }
   open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
   while (!eof $consts) {
     chomp(my $line = <$consts>);
-    push @consts, [[], "cv::$line"];
+    push @consts, ["cv::$line"];
   }
   \@consts;
 }

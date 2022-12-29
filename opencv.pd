@@ -120,8 +120,8 @@ EOH
 genpp(@$_) for genpp_readfile('funclist.pl');
 
 for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
-  add_const('PDL::OpenCV', [], "CV_$bits$_") for 1..4;
-  add_const('PDL::OpenCV', [[qw(int n)]], "CV_$bits");
+  add_const('PDL::OpenCV', "CV_$bits$_") for 1..4;
+  add_const('PDL::OpenCV', "CV_$bits", 'int n');
 }
 
 pp_done();
