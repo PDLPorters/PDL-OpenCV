@@ -18,7 +18,7 @@ sub wmf {
   $hash{OBJECT} .= join ' ', '', map $_.'$(OBJ_EXT)', qw(wraplocal);
   $hash{depend} = {
     '$(OBJECT)'=>catfile(updir, 'opencv_wrapper.h') . ' wraplocal.h',
-    "$last.pm wraplocal.h"=>join(' ', catfile(updir, 'genpp.pl'), 'funclist.pl', (!-f 'constlist.txt' ? () : ('constlist.txt'))),
+    "$last.pm wraplocal.h"=>join(' ', catfile(updir, 'genpp.pl'), 'funclist.pl'),
     "$last.c"=>catfile(updir, 'typemap'),
   };
   $hash{LDFROM} .= join ' ', '', '$(OBJECT)', map catfile(updir, $_), @cw_objs;
@@ -27,8 +27,10 @@ sub wmf {
   undef &MY::postamble;
   *MY::postamble = sub {
     my ($self) = @_;
+    my $const = -f 'constlist.txt' ? 'wraplocal.h : constlist.txt' : '';
     join "\n", pdlpp_postamble($package),
       genwrap_from('wraplocal', 1, join(',', '', @$hdrs), @$classes),
+      $const,
       cpp_build($self, 'wraplocal');
   };
   WriteMakefile(%hash);

@@ -44,7 +44,8 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
     },
     MYEXTLIB => join(' ', @cw_objs),
     depend => {
-      'opencv_wrapper$(OBJ_EXT) $(OBJECT)'=>'opencv_wrapper.h wraplocal.h',
+      '$(OBJECT)'=>'opencv_wrapper.h wraplocal.h',
+      'opencv_wrapper$(OBJ_EXT)'=>'opencv_wrapper.h',
       'wraplocal.h opencv_wrapper.h OpenCV.pm'=>'funclist.pl genpp.pl', # .pm because that deps on .pd
       'OpenCV.c'=>'typemap',
       '$(FIRST_MAKEFILE)'=>'submodmf.pl',
@@ -78,8 +79,10 @@ sub cpp_build {
 }
 sub MY::postamble {
   my ($self) = @_;
+  my $const = -f 'constlist.txt' ? 'wraplocal.h : constlist.txt' : '';
   join "\n", pdlpp_postamble($package),
     genwrap_from('opencv_wrapper', 0, ','),
     genwrap_from('wraplocal', 0, ','),
+    $const,
     cpp_build($self, qw(opencv_wrapper wraplocal));
 }
