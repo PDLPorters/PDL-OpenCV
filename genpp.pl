@@ -251,18 +251,22 @@ sub genconsts {
     my ($text, $args) = split /\|/, $line;
     pp_add_exported($text) if $text !~ /(.*)::/;
     my $pkgsuff = $1 || '';
+    $pkgsuff2defs{$pkgsuff} ||= ['',''];
+    $pkgsuff2defs{$pkgsuff}[1] .= "=item PDL::OpenCV$last\::$text(@{[$args || '']})\n\n";
     $text =~ s/::/_/g;
-    $pkgsuff2defs{$pkgsuff} //= '';
-    $pkgsuff2defs{$pkgsuff} .= "\nint cw_const_$text(@{[$args || '']})\n";
+    $pkgsuff2defs{$pkgsuff}[0] .= "\nint cw_const_$text(@{[$args || '']})\n";
   }
+  my $pod = "=head1 CONSTANTS\n\n=over\n\n";
   for my $key (sort keys %pkgsuff2defs) {
     my $pkg = join '::', grep length, "PDL::OpenCV$last", $key;
     my $pref = join '_', (grep length, "cw_const", $key), '';
     pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = $pkg PREFIX=$pref
-$pkgsuff2defs{$key}
+$pkgsuff2defs{$key}[0]
 EOF
+    $pod .= $pkgsuff2defs{$key}[1];
   }
+  pp_addpm("$pod\n=back\n\n=cut\n\n");
 }
 
 sub genpp_readfile {

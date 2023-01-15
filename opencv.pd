@@ -37,6 +37,8 @@ match the "classes" and/or "modules" in OpenCV, with the obvious exception
 of the C<Mat> class which needs special handling to thinly wrap ndarrays
 going into and coming back from OpenCV.
 
+=head1 BINDING NOTES
+
 This includes method/function names which are exactly the same
 as in OpenCV, without being modified for the common Perl idiom
 of snake_casing. This is intended to make the OpenCV documentation
@@ -51,7 +53,7 @@ Where things do not work as you would expect from a PDL and/or OpenCV
 point of view, and it is not documented as doing so, this is a bug -
 please report it as shown at L</BUGS> below.
 
-=head1 IMAGE FORMATS
+=head2 Image formats
 
 In PDL, images are often C<byte,3,x,y> or occasionally (e.g. in
 L<PDL::Graphics::Simple>) C<byte,x,y,3>. The 3 is always R,G,B. Sometimes
@@ -79,7 +81,7 @@ Be careful when scaling byte-valued inputs to maximise dynamic range:
   $frame = ($frame * (255/$max))->byte; # works
   $frame = ($frame * 255/$max)->byte;   # multiply happens first and overflows
 
-=head1 OPENCV MINOR DATA-TYPES
+=head2 OpenCV minor data-types
 
 In OpenCV, as well as the most important type (C<Mat>), there are various
 helper types including C<Rect>, C<Size>, and C<Scalar> (often used for
@@ -93,19 +95,23 @@ a C<Scalar>, you have to supply all four values (just give zeroes for
 the ones that don't matter, e.g. the alpha value for a colour on a
 non-alpha image).
 
-=head1 MODULES AND PACKAGES
+=head2 Modules and packages
 
 This distro reproduces the structure of OpenCV's various
 modules, so that e.g. the C<tracking> module is made available
 as L<PDL::OpenCV::Tracking>. Loading that makes available the
 C<PDL::OpenCV::Tracker> package which has various methods like C<new>.
 
-=head1 CONSTANTS
+=head2 Constants
 
 OpenCV defines various constants in its different modules. This distro
 will remove C<cv::> from the beginning of these, then put them in
 their loading module. E.g. in C<imgproc>, C<COLOR_GRAY2RGB> will be
 C<PDL::OpenCV::Imgproc::COLOR_GRAY2RGB> (and exported by default).
+
+However, further-namespaced constants, like C<cv::Subdiv2D::PTLOC_VERTEX>,
+will I<not> be exported, and will be available as
+e.g. C<PDL::OpenCV::Imgproc::Subdiv2D::PTLOC_VERTEX>.
 
 =cut
 EOPM
