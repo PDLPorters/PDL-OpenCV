@@ -176,6 +176,7 @@ EOF
 sub gen_const {
   my ($text, $args) = @_;
   (my $funcname = $text) =~ s#cv::##;
+  $funcname =~ s#::#_#g;
   my $t = "int cw_const_$funcname(@{[$args || '']})";
   ("$t;\n", "$t { return (int)$text@{[$args ? '('.join(',',map +(split ' ')[-1], split /\s*,\s*/, $args).')' : '']}; }\n");
 }

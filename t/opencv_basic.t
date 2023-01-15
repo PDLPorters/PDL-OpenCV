@@ -15,5 +15,6 @@ is_deeply [map $_->sclr, $slice->minMaxIdx], [0,74],'minMaxIdx';
 is PDL::OpenCV::CV_8UC3(), 16, 'depth constant';
 is COLOR_GRAY2RGB, 8, 'colour-conversion constant exported';
 is PDL::OpenCV::Imgproc::COLOR_GRAY2RGB, 8, 'constant in module space';
+is PDL::OpenCV::Error::StsNullPtr, -27, 'deep namespace constant';
 
 done_testing();

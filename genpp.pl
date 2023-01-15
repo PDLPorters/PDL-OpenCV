@@ -244,19 +244,25 @@ sub genconsts {
   my ($last) = @_;
   return if !-f 'constlist.txt';
   open my $consts, '<', 'constlist.txt' or die "constlist.txt: $!";
-  my $xslines = '';
+  my %pkgsuff2defs;
   while (!eof $consts) {
     chomp(my $line = <$consts>);
     $line =~ s/^cv:://;
     my ($text, $args) = split /\|/, $line;
-    pp_add_exported($text);
-    $xslines .= "\nint cw_const_$text(@{[$args || '']})\n";
+    pp_add_exported($text) if $text !~ /(.*)::/;
+    my $pkgsuff = $1 || '';
+    $text =~ s/::/_/g;
+    $pkgsuff2defs{$pkgsuff} //= '';
+    $pkgsuff2defs{$pkgsuff} .= "\nint cw_const_$text(@{[$args || '']})\n";
   }
-  my $pkg = "PDL::OpenCV$last";
-  pp_addxs(<<EOF);
-MODULE = ${main::PDLMOD} PACKAGE = $pkg PREFIX=cw_const_
-$xslines
+  for my $key (sort keys %pkgsuff2defs) {
+    my $pkg = join '::', grep length, "PDL::OpenCV$last", $key;
+    my $pref = join '_', (grep length, "cw_const", $key), '';
+    pp_addxs(<<EOF);
+MODULE = ${main::PDLMOD} PACKAGE = $pkg PREFIX=$pref
+$pkgsuff2defs{$key}
 EOF
+  }
 }
 
 sub genpp_readfile {
