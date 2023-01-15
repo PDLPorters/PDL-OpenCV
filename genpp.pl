@@ -141,7 +141,7 @@ EOF
       (my ($par, $pdltype), $type) = ($obj->par, @$obj{qw(pdltype ctype)});
       push @c_input, $obj->c_input;
       if ($obj->{is_other}) {
-        die "Error: OtherPars '$var' is output" if $flags{'/O'};
+        die "Error: OtherPars '$var' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($obj)} if $flags{'/O'};
         push @otherpars, [$par, $var];
         $var2usecomp{$var} = 1;
       } else {
