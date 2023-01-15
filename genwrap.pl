@@ -103,10 +103,11 @@ sub gen_code {
 	if ($ret =~ /^[A-Z]/) {
 		$func_ret = "${ret}Wrapper *";
 		$cpp_ret = "cv::$ret cpp_retval = ";
-		$after_ret = "  ${func_ret}retval = cw_${ret}_new(NULL); retval->held = cpp_retval;\n";
+		$after_ret = "  *cw_retval = cw_${ret}_new(NULL); (*cw_retval)->held = cpp_retval;\n";
 	} elsif ($ret ne 'void') {
-		$cpp_ret = "$ret retval = ";
+		$cpp_ret = "*cw_retval = ";
 	}
+	push @input_args, "$func_ret*cw_retval" if $ret ne 'void';
 	if ($ismethod) {
 		push @input_args, "${class}Wrapper *self";
 		$methodvar = 'self';
@@ -119,7 +120,7 @@ sub gen_code {
 		push @cvargs, $s =~ /^[A-Z]/ ? "$v->held" : $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $name;
-	my $str = "$func_ret $fname(" . join(", ", @input_args) . ")";
+	my $str = "void $fname(" . join(", ", @input_args) . ")";
 	my $hstr = $str.";\n";
 	$str .= " {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
@@ -131,7 +132,6 @@ sub gen_code {
 	$str .= join(', ', @cvargs).");\n";
 	$str .= $after_ret;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
-	$str .= "  return retval;\n" if $ret ne 'void';
 	$str .= "}\n\n";
 	return ($hstr,$str);
 }

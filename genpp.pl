@@ -111,7 +111,7 @@ sub genpp {
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
       pp_addpm("*$func = \\&${main::PDLOBJ}::$func;\n") if !$ismethod;
       pp_add_exported($func);
-      my @xs_params;
+      my (@xs_params, @cw_params);
       for (@params) {
         my ($type, $var) = @$_;
         $type = $type_overrides{$type}[1] if $type_overrides{$type};
@@ -121,8 +121,15 @@ sub genpp {
           ($is_other, $type, $par) = (@$obj{qw(is_other type)}, $obj->par);
         }
         push @xs_params, $is_other ? $par : "$type $var";
+        push @cw_params, $var;
       }
-      pp_addxs(<<EOF);
+      my $code = $ret eq 'void' ? '' : <<EOF;
+  CODE:
+    $cfunc(&RETVAL@{[join ', ', (@cw_params ? '' : ()), @cw_params]});
+  OUTPUT:
+    RETVAL
+EOF
+      pp_addxs(<<EOF . $code);
 MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep length,'cw',$class]}_
 \n$ret $cfunc(@{[join ', ', @xs_params]})
   PROTOTYPE: DISABLE
@@ -183,7 +190,7 @@ EOF
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->[1]));\n", grep ref, @c_input),
         (map $_->[1] ? "\$COMP($_->[0]) = $_->[5];\n" : "@$_[2,0]_LOCAL = ".$_->[6]->(1).";\n", @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".($_->[1]?"\$COMP($_->[0])":"$_->[0]_LOCAL"), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        ($retcapture && '$COMP(res) = ').$cfunc."(".join(',', map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
+        $cfunc."(".join(',', ($retcapture ? '&$COMP(res)' : ()), map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
         $destroy_in;
       $hash{CompFreeCodeComp} = $destroy_out;
       my @map_tuples = map [$_->[1], $var2count{$_->[1]}, map $_->(1), @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
@@ -195,7 +202,7 @@ EOF
       $hash{Code} = join '',
         (map "@$_[2,0] = ".$_->[6]->(0).";\n", @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->[0]", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        ($retcapture && "$retcapture = ")."$cfunc(".join(',', map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
+        "$cfunc(".join(',', ($retcapture ? "&$retcapture" : ()), map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
         (map "$_->[3];\n", @map_tuples),
         $destroy_in, $destroy_out;
     }
