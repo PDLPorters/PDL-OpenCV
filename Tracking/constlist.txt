@@ -1,0 +1,3 @@
+cv::TrackerKCF::GRAY
+cv::TrackerKCF::CN
+cv::TrackerKCF::CUSTOM
