@@ -98,7 +98,7 @@ sub gen_code {
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
 	my $opt = $overrides{$class}{$name} || {};
-	my (@args, @cvargs, $methodvar);
+	my (@input_args, @cvargs, $methodvar);
 	my ($func_ret, $cpp_ret, $after_ret) = ($ret, '', '');
 	if ($ret =~ /^[A-Z]/) {
 		$func_ret = "${ret}Wrapper *";
@@ -108,19 +108,18 @@ sub gen_code {
 		$cpp_ret = "$ret retval = ";
 	}
 	if ($ismethod) {
-		push @args, "${class}Wrapper *self";
+		push @input_args, "${class}Wrapper *self";
 		$methodvar = 'self';
 	}
 	while (@params) {
 		my ($s, $v) = @{shift @params};
 		$s = $type_overrides{$s}[1] if $type_overrides{$s};
 		my $ctype = $s . ($s =~ /^[A-Z]/ ? "Wrapper *" : '');
-		push @args, "$ctype $v";
+		push @input_args, "$ctype $v";
 		push @cvargs, $s =~ /^[A-Z]/ ? "$v->held" : $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $name;
-	my $str = "$func_ret $fname(";
-	$str .= join(", ", @args) . ")";
+	my $str = "$func_ret $fname(" . join(", ", @input_args) . ")";
 	my $hstr = $str.";\n";
 	$str .= " {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
