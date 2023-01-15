@@ -99,9 +99,14 @@ sub gen_code {
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
 	my $opt = $overrides{$class}{$name} || {};
 	my (@args, @cvargs, $methodvar);
-	my $func_ret = $ret =~ /^[A-Z]/ ? "${ret}Wrapper *" : $ret;
-	my $cpp_ret = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? "cv::$ret cpp_" : "$ret ")."retval = ";
-	my $after_ret = $ret =~ /^[A-Z]/ ? "  ${func_ret}retval = cw_${ret}_new(NULL); retval->held = cpp_retval;\n" : '';
+	my ($func_ret, $cpp_ret, $after_ret) = ($ret, '', '');
+	if ($ret =~ /^[A-Z]/) {
+		$func_ret = "${ret}Wrapper *";
+		$cpp_ret = "cv::$ret cpp_retval = ";
+		$after_ret = "  ${func_ret}retval = cw_${ret}_new(NULL); retval->held = cpp_retval;\n";
+	} elsif ($ret ne 'void') {
+		$cpp_ret = "$ret retval = ";
+	}
 	if ($ismethod) {
 		push @args, "${class}Wrapper *self";
 		$methodvar = 'self';
