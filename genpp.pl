@@ -123,16 +123,14 @@ sub genpp {
         push @xs_params, $is_other ? $par : "$type $var";
         push @cw_params, $var;
       }
-      my $code = $ret eq 'void' ? '' : <<EOF;
-  CODE:
-    $cfunc(&RETVAL@{[join ', ', (@cw_params ? '' : ()), @cw_params]});
-  OUTPUT:
-    RETVAL
-EOF
-      pp_addxs(<<EOF . $code);
+      unshift @cw_params, '&RETVAL' if $ret ne 'void';
+      pp_addxs(<<EOF . ($ret eq 'void' ? '' : "  OUTPUT:\n    RETVAL\n"));
 MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep length,'cw',$class]}_
 \n$ret $cfunc(@{[join ', ', @xs_params]})
   PROTOTYPE: DISABLE
+  CODE:
+    cw_error CW_err = $cfunc(@{[join ', ', @cw_params]});
+    PDL->barf_if_error(*(pdl_error *)&CW_err);
 EOF
       return;
     }
@@ -190,8 +188,9 @@ EOF
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->[1]));\n", grep ref, @c_input),
         (map $_->[1] ? "\$COMP($_->[0]) = $_->[5];\n" : "@$_[2,0]_LOCAL = ".$_->[6]->(1).";\n", @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".($_->[1]?"\$COMP($_->[0])":"$_->[0]_LOCAL"), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        $cfunc."(".join(',', ($retcapture ? '&$COMP(res)' : ()), map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
-        $destroy_in;
+        "cw_error CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
+        $destroy_in,
+        "if (CW_err.error) return *(pdl_error *)&CW_err;\n";
       $hash{CompFreeCodeComp} = $destroy_out;
       my @map_tuples = map [$_->[1], $var2count{$_->[1]}, map $_->(1), @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
       $hash{RedoDimsCode} = join '', map "$_->[2];\n", @map_tuples;
@@ -202,9 +201,10 @@ EOF
       $hash{Code} = join '',
         (map "@$_[2,0] = ".$_->[6]->(0).";\n", @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->[0]", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        "$cfunc(".join(',', ($retcapture ? "&$retcapture" : ()), map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
+        "cw_error CW_err = $cfunc(".join(',', ($retcapture ? "&$retcapture" : ()), map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
         (map "$_->[3];\n", @map_tuples),
-        $destroy_in, $destroy_out;
+        $destroy_in, $destroy_out,
+        "if (CW_err.error) return *(pdl_error *)&CW_err;\n";
     }
     pp_def($func, %hash);
 }

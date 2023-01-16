@@ -59,6 +59,20 @@ my $HHEADER = <<'EOF';
 extern "C" {
 #endif
 #include <stddef.h>
+#ifndef _CW_ERROR_ALREADY
+#define _CW_ERROR_ALREADY
+/* can't directly include pdl.h so copy-paste and modify names: */
+typedef enum {
+  CW_ENONE = 0, /* usable as boolean */
+  CW_EUSERERROR, /* user error, no need to destroy */
+  CW_EFATAL
+} cw_error_type;
+typedef struct {
+  cw_error_type error;
+  const char *message; /* if error but this NULL, parsing/alloc error */
+  char needs_free;
+} cw_error;
+#endif
 EOF
 my $HBODY_GLOBAL = <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
@@ -120,9 +134,10 @@ sub gen_code {
 		push @cvargs, $s =~ /^[A-Z]/ ? "$v->held" : $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $name;
-	my $str = "void $fname(" . join(", ", @input_args) . ")";
+	my $str = "cw_error $fname(" . join(", ", @input_args) . ")";
 	my $hstr = $str.";\n";
 	$str .= " {\n";
+	$str .= " cw_error CW_err = {CW_ENONE, NULL, 0};\n try {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  $cpp_ret";
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $name)."(" :
@@ -132,6 +147,7 @@ sub gen_code {
 	$str .= join(', ', @cvargs).");\n";
 	$str .= $after_ret;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
+	$str .= " } catch (const std::exception& e) {\n  CW_err = {CW_EUSERERROR,strdup(e.what()),1};\n }\n return CW_err;\n";
 	$str .= "}\n\n";
 	return ($hstr,$str);
 }
