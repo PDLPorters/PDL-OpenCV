@@ -21,10 +21,15 @@ my %constructor_override = (
 #else
 # define TRACKER_RECT_TYPE cv::Rect2d
 #endif
-TrackerWrapper *cw_Tracker_new(char *klass) {
-	TrackerWrapper *Tr = new TrackerWrapper;
-	Tr->held = cv::TrackerKCF::create();
-	return Tr;
+cw_error cw_Tracker_new(TrackerWrapper **cw_retval, char *klass) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *cw_retval = new TrackerWrapper;
+  (*cw_retval)->held = cv::TrackerKCF::create();
+ } catch (const std::exception& e) {
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
+ }
+ return CW_err;
 }
 EOF
 );
@@ -38,16 +43,27 @@ my $CHEADER = <<'EOF';
 extern "C" {
 EOF
 my $CBODY_GLOBAL = <<'EOF';
-MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
-	MatWrapper *mw = new MatWrapper;
-	mw->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
-	return mw;
+cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *cw_retval = new MatWrapper;
+  (*cw_retval)->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
+ } catch (const std::exception& e) {
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
+ }
+ return CW_err;
 }
-void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
-	*t = get_pdltype(wrapper->held.type());
-	*l = wrapper->held.channels();
-	*c = wrapper->held.cols;
-	*r = wrapper->held.rows;
+cw_error cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *t = get_pdltype(wrapper->held.type());
+  *l = wrapper->held.channels();
+  *c = wrapper->held.cols;
+  *r = wrapper->held.rows;
+ } catch (const std::exception& e) {
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
+ }
+ return CW_err;
 }
 cw_error cw_Mat_ptr(void **cw_retval, MatWrapper *self) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
@@ -83,8 +99,8 @@ typedef struct {
 #endif
 EOF
 my $HBODY_GLOBAL = <<'EOF';
-void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
-MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
+cw_error cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
+cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
 cw_error cw_Mat_ptr(void **cw_retval, MatWrapper *self);
 EOF
 my $HFOOTER = <<'EOF';
@@ -125,7 +141,7 @@ sub gen_code {
 	if ($ret =~ /^[A-Z]/) {
 		$func_ret = "${ret}Wrapper *";
 		$cpp_ret = "cv::$ret cpp_retval = ";
-		$after_ret = "  *cw_retval = cw_${ret}_new(NULL); (*cw_retval)->held = cpp_retval;\n";
+		$after_ret = "  cw_${ret}_new(cw_retval, NULL); (*cw_retval)->held = cpp_retval;\n";
 	} elsif ($ret ne 'void') {
 		$cpp_ret = "*cw_retval = ";
 	}
@@ -171,12 +187,18 @@ struct ${class}Wrapper {
 	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : "cv::${class}"]} held;
 };
 #endif
-${class}Wrapper *cw_${class}_new(char *klass);
+cw_error cw_${class}_new(${class}Wrapper **cw_retval, char *klass);
 void cw_${class}_DESTROY(${class}Wrapper *wrapper);
 EOF
   my $cstr = <<EOF;
-@{[$ptr_only ? '' : "${class}Wrapper *cw_${class}_new(char *klass) {
-	return new ${class}Wrapper;
+@{[$ptr_only ? '' : "cw_error cw_${class}_new(${class}Wrapper **cw_retval, char *klass) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *cw_retval = new ${class}Wrapper;
+ } catch (const std::exception& e) {
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
+ }
+ return CW_err;
 }"]}
 void cw_${class}_DESTROY(${class}Wrapper * wrapper) {
 	delete wrapper;
@@ -184,17 +206,28 @@ void cw_${class}_DESTROY(${class}Wrapper * wrapper) {
 EOF
   if (@dims) {
     $hstr .= <<EOF;
-${class}Wrapper *cw_${class}_newWithVals(@{[join ',', map "@$_[0,1]", @dims]});
-void cw_${class}_getVals(${class}Wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @dims]});
+cw_error cw_${class}_newWithVals(${class}Wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]});
+cw_error cw_${class}_getVals(${class}Wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @dims]});
 EOF
     $cstr .= <<EOF;
-${class}Wrapper *cw_${class}_newWithVals(@{[join ',', map "@$_[0,1]", @dims]}) {
-  ${class}Wrapper *self = new ${class}Wrapper;
-  self->held = cv::${class}(@{[join ',', map $_->[1], @dims]});
-  return self;
+cw_error cw_${class}_newWithVals(${class}Wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]}) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *cw_retval = new ${class}Wrapper;
+  (*cw_retval)->held = cv::${class}(@{[join ',', map $_->[1], @dims]});
+ } catch (const std::exception& e) {
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
+ }
+ return CW_err;
 }
-void cw_${class}_getVals(${class}Wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @dims]}) {
+cw_error cw_${class}_getVals(${class}Wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @dims]}) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
   @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @dims]}
+ } catch (const std::exception& e) {
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
+ }
+ return CW_err;
 }
 EOF
   }

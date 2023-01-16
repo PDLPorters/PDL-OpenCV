@@ -34,7 +34,7 @@ sub new {
     pdltype => '',
     fixeddims => 0,
     destroy => "cw_${type}_DESTROY",
-    blank => "cw_${type}_new(NULL)",
+    blank => "CW_err = cw_${type}_new(&\$COMP($name), NULL); if (CW_err.error) return *(pdl_error *)&CW_err",
   );
   if (my $spec = $DIMTYPES{$type}) {
     $self->{fixeddims} = 1;
@@ -59,17 +59,17 @@ sub par {
   "PDL__OpenCV__$type $name";
 }
 sub frompdl {
-  my ($self, $iscomp) = @_;
+  my ($self, $iscomp, $localname) = @_;
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return undef if $self->{is_other};
-  return "cw_Mat_newWithDims(" .
+  return "CW_err = cw_Mat_newWithDims(" .
     ($iscomp
-      ? join ',', (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
-      : "\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype,\$P($name)"
+      ? join ',', "&$localname", (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
+      : "&$localname,\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype,\$P($name)"
     ) .
     ")" if !$self->{fixeddims};
-  qq{cw_${type}_newWithVals(@{[
-      join ',', map $iscomp ? "(($DIMTYPES{$type}[0][0] *)$name->data)[$_]" : "\$$name(n${type}$pcount=>$_)",
+  qq{CW_err = cw_${type}_newWithVals(@{[
+      join ',', "&$localname", map $iscomp ? "(($DIMTYPES{$type}[0][0] *)$name->data)[$_]" : "\$$name(n${type}$pcount=>$_)",
         0..@{$DIMTYPES{$type}}-1
     ]})};
 }
@@ -87,7 +87,7 @@ sub topdl2 {
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return undef if $self->{is_other};
   return <<EOF if !$self->{fixeddims};
-cw_error CW_err = cw_Mat_ptr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
+CW_err = cw_Mat_ptr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
 if (CW_err.error) return *(pdl_error *)&CW_err;
 memmove(\$P($name), vptmp, \$PDL($name)->nbytes)
 EOF
@@ -188,23 +188,25 @@ EOF
     if ($compmode) {
       $hash{Comp} = join '; ', map +($_->[0] =~ /^[A-Z]/ ? $_->[0] : PDL::Type->new($_->[0])->ctype)." $_->[1]", @outputs;
       $hash{MakeComp} = join '',
+        "cw_error CW_err;\n",
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->[1]));\n", grep ref, @c_input),
-        (map $_->[1] ? "\$COMP($_->[0]) = $_->[5];\n" : "@$_[2,0]_LOCAL = ".$_->[6]->(1).";\n", @pdl_inits),
+        (map $_->[1] ? "$_->[5];\n" : "@$_[2,0]_LOCAL;\n".$_->[6]->(1,"$_->[0]_LOCAL")."; if (CW_err.error) return *(pdl_error *)&CW_err;\n", @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".($_->[1]?"\$COMP($_->[0])":"$_->[0]_LOCAL"), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        "cw_error CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
+        "CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map ref()?"$_->[0](($_->[2]*)($_->[1]->data))[0]":$var2usecomp{$_}?"\$COMP($_)":$_.'_LOCAL', @c_input).");\n",
         $destroy_in,
         "if (CW_err.error) return *(pdl_error *)&CW_err;\n";
       $hash{CompFreeCodeComp} = $destroy_out;
       my @map_tuples = map [$_->[1], $var2count{$_->[1]}, map $_->(1), @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
-      $hash{RedoDimsCode} = join '', map "$_->[2];\n", @map_tuples;
-      $hash{Code} = join '', "void *vptmp;\n", map "$_->[3];\n", @map_tuples;
+      $hash{RedoDimsCode} = join '', "cw_error CW_err;\n", map "$_->[2];\n", @map_tuples;
+      $hash{Code} = join '', "void *vptmp;\ncw_error CW_err;\n", map "$_->[3];\n", @map_tuples;
       $hash{Code} .= "$retcapture = \$COMP(res);\n" if $retcapture;
     } else {
       my @map_tuples = map [$_->[1], $var2count{$_->[1]}, map $_->(0), @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
       $hash{Code} = join '',
-        (map "@$_[2,0] = ".$_->[6]->(0).";\n", @pdl_inits),
+        "cw_error CW_err;\n",
+        (map "@$_[2,0];\n".$_->[6]->(0,"$_->[0]")."; if (CW_err.error) return *(pdl_error *)&CW_err;\n", @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->[0]", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        "cw_error CW_err = $cfunc(".join(',', ($retcapture ? "&$retcapture" : ()), map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
+        "CW_err = $cfunc(".join(',', ($retcapture ? "&$retcapture" : ()), map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
         "void *vptmp;\n",
         (map "$_->[3];\n", @map_tuples),
         $destroy_in, $destroy_out,
@@ -242,6 +244,7 @@ EOD
     pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
 \nPDL__OpenCV__$c cw_${c}_new(char *klass)
+  CODE:\n  cw_${c}_new(&RETVAL, klass);\n  OUTPUT:\n  RETVAL
 \nvoid cw_${c}_DESTROY(PDL__OpenCV__$c self)
 EOF
     genpp(@$_) for grep $_->[0] eq $c, @flist;
