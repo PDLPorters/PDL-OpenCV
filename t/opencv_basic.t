@@ -11,7 +11,7 @@ my $data = (xvals(5,8,3)+10*yvals(5,8,3)+zvals(1,1,3))->mv(2,0);
 my $slice = float $data(0);
 my $slice2 = long $data(0:2);
 
-is_deeply [map $_->sclr, $slice->minMaxIdx], [0,74],'minMaxIdx';
+is_deeply [map $_->sclr, ($slice->minMaxLoc)[0..1]], [0,74],'minMaxIdx';
 is PDL::OpenCV::CV_8UC3(), 16, 'depth constant';
 is COLOR_GRAY2RGB, 8, 'colour-conversion constant exported';
 is PDL::OpenCV::Imgproc::COLOR_GRAY2RGB, 8, 'constant in module space';

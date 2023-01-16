@@ -23,10 +23,11 @@ sub new {
   my $self = bless {type=>$type, name=>$name}, $class;
   @$self{qw(is_other naive_otherpar)} = (1,1), return $self if $type eq 'char *';
   if ($type !~ /^[A-Z]/) {
-    (my $pdltype = $type) =~ s#\s*\*$##;
+    (my $pdltype = $type) =~ s#\s*\*+$##;
     @$self{qw(simple_pdl pdltype ctype)} = (1, $pdltype, $type);
     return $self;
   }
+  @$self{qw(was_ptr type)} = (1, $type) if $type =~ s/\s*\*+$//;
   %$self = (%$self,
     pcount => $pcount,
     ctype => "${type}Wrapper *",
@@ -160,7 +161,7 @@ EOF
       }
       if ($flags{'/O'}) {
         push @outputs, [$type, $var, sub {$obj->topdl1(@_)}, sub {$obj->topdl2(@_)}];
-        $default = 'PDL->null' if !length $default;
+        $default = 'PDL->null' if !length $default or ($default eq '0' && $obj->{was_ptr});
       } else {
         push @pmpars, $var;
       }

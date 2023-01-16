@@ -128,10 +128,11 @@ sub gen_code {
 	}
 	while (@params) {
 		my ($s, $v) = @{shift @params};
+		my $was_ptr = $s =~ /^[A-Z]/ ? $s =~ s/\s*\*+$// : 0;
 		$s = $type_overrides{$s}[1] if $type_overrides{$s};
 		my $ctype = $s . ($s =~ /^[A-Z]/ ? "Wrapper *" : '');
 		push @input_args, "$ctype $v";
-		push @cvargs, $s =~ /^[A-Z]/ ? "$v->held" : $v;
+		push @cvargs, $s =~ /^[A-Z]/ ? ($was_ptr ? '&' : '')."$v->held" : $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $name;
 	my $str = "cw_error $fname(" . join(", ", @input_args) . ")";

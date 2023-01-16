@@ -54,7 +54,7 @@ done_testing();
 
 sub frame_scale {
   my ($frame) = @_;
-  my ($min, $max) = PDL::OpenCV::minMaxIdx($frame);
+  my ($min, $max) = PDL::OpenCV::minMaxLoc($frame->clump(2)->dummy(0));
   $frame = ($frame * (255/$max))->byte if $max->sclr != 255;
   $frame->dim(0) == 1 ? $frame->cvtColor(COLOR_GRAY2RGB) : $frame;
 }
