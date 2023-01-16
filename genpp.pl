@@ -86,9 +86,11 @@ sub topdl2 {
   my ($self, $iscomp) = @_;
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return undef if $self->{is_other};
-  return
-    "memmove(\$P($name), cw_Mat_ptr(".($iscomp ? "\$COMP($name)" : $name)."), \$PDL($name)->nbytes)"
-    if !$self->{fixeddims};
+  return <<EOF if !$self->{fixeddims};
+cw_error CW_err = cw_Mat_ptr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
+if (CW_err.error) return *(pdl_error *)&CW_err;
+memmove(\$P($name), vptmp, \$PDL($name)->nbytes)
+EOF
   qq{cw_${type}_getVals(}.($iscomp ? "\$COMP($name)" : $name).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]})};
 }
 sub destroy_code {
@@ -195,7 +197,7 @@ EOF
       $hash{CompFreeCodeComp} = $destroy_out;
       my @map_tuples = map [$_->[1], $var2count{$_->[1]}, map $_->(1), @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
       $hash{RedoDimsCode} = join '', map "$_->[2];\n", @map_tuples;
-      $hash{Code} = join '', map "$_->[3];\n", @map_tuples;
+      $hash{Code} = join '', "void *vptmp;\n", map "$_->[3];\n", @map_tuples;
       $hash{Code} .= "$retcapture = \$COMP(res);\n" if $retcapture;
     } else {
       my @map_tuples = map [$_->[1], $var2count{$_->[1]}, map $_->(0), @$_[2,3]], grep $var2count{$_->[1]}, @outputs;
@@ -203,6 +205,7 @@ EOF
         (map "@$_[2,0] = ".$_->[6]->(0).";\n", @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->[0]", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         "cw_error CW_err = $cfunc(".join(',', ($retcapture ? "&$retcapture" : ()), map ref()?"$_->[0]\$$_->[1]()":$var2usecomp{$_}?"\$COMP($_)":$_, @c_input).");\n",
+        "void *vptmp;\n",
         (map "$_->[3];\n", @map_tuples),
         $destroy_in, $destroy_out,
         "if (CW_err.error) return *(pdl_error *)&CW_err;\n";

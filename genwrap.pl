@@ -49,7 +49,15 @@ void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptr
 	*c = wrapper->held.cols;
 	*r = wrapper->held.rows;
 }
-void * cw_Mat_ptr(MatWrapper *self) { return self->held.ptr(); }
+cw_error cw_Mat_ptr(void **cw_retval, MatWrapper *self) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *cw_retval = self->held.ptr();
+ } catch (const std::exception& e) {
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
+ }
+ return CW_err;
+}
 EOF
 my $CFOOTER = "}\n";
 my $HHEADER = <<'EOF';
@@ -77,7 +85,7 @@ EOF
 my $HBODY_GLOBAL = <<'EOF';
 void cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 MatWrapper * cw_Mat_newWithDims(const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
-void * cw_Mat_ptr(MatWrapper *self);
+cw_error cw_Mat_ptr(void **cw_retval, MatWrapper *self);
 EOF
 my $HFOOTER = <<'EOF';
 #ifdef __cplusplus
