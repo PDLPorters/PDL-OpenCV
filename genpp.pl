@@ -166,6 +166,7 @@ EOF
         $default = 'PDL->null' if !length $default or ($default eq '0' && $obj->{was_ptr});
       } else {
         push @pmpars, $var;
+        $default = 'PDL->zeroes(0,0,0)' if $default eq 'Mat()';
       }
       push @defaults, "\$$var = $default if !defined \$$var;" if length $default;
     }
