@@ -8,6 +8,7 @@ our %type_overrides = (
   String => ['char *', 'char *'], # PP, C
   bool => ['byte', 'unsigned char'],
 );
+our $IF_ERROR_RETURN = "if (CW_err.error) return *(pdl_error *)&CW_err";
 
 {
 package PP::OpenCV;
@@ -34,7 +35,7 @@ sub new {
     pdltype => '',
     fixeddims => 0,
     destroy => "cw_${type}_DESTROY",
-    blank => "CW_err = cw_${type}_new(&\$COMP($name), NULL); if (CW_err.error) return *(pdl_error *)&CW_err",
+    blank => "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN",
   );
   if (my $spec = $DIMTYPES{$type}) {
     $self->{fixeddims} = 1;
@@ -76,18 +77,18 @@ sub frompdl {
       ? join ',', "&$localname", (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
       : "&$localname,\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype,\$P($name)"
     ) .
-    ")" if !$self->{fixeddims};
+    "); $IF_ERROR_RETURN;\n" if !$self->{fixeddims};
   qq{CW_err = cw_${type}_newWithVals(@{[
       join ',', "&$localname", map $iscomp ? "(($DIMTYPES{$type}[0][0] *)$name->data)[$_]" : "\$$name(n${type}$pcount=>$_)",
         0..@{$DIMTYPES{$type}}-1
-    ]})};
+    ]})}."; $IF_ERROR_RETURN;\n";
 }
 sub topdl1 {
   my ($self, $iscomp) = @_;
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return undef if $self->{is_other};
   return
-    "cw_Mat_pdlDims(".($iscomp ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount))"
+    "CW_err = cw_Mat_pdlDims(".($iscomp ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"
     if !$self->{fixeddims};
   "";
 }
@@ -97,10 +98,10 @@ sub topdl2 {
   return undef if $self->{is_other};
   return <<EOF if !$self->{fixeddims};
 CW_err = cw_Mat_ptr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
-if (CW_err.error) return *(pdl_error *)&CW_err;
-memmove(\$P($name), vptmp, \$PDL($name)->nbytes)
+$IF_ERROR_RETURN;
+memmove(\$P($name), vptmp, \$PDL($name)->nbytes);
 EOF
-  qq{cw_${type}_getVals(}.($iscomp ? "\$COMP($name)" : $name).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]})};
+  qq{CW_err = cw_${type}_getVals(}.($iscomp ? "\$COMP($name)" : $name).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]}); $IF_ERROR_RETURN;\n};
 }
 sub destroy_code {
   my ($self, $iscomp, $isin) = @_;
@@ -178,6 +179,7 @@ sub ${main::PDLOBJ}::$func {
   @{[!@outputs ? '' : "!wantarray ? \$$outputs[-1]{name} : (@{[join ',', map qq{\$$_->{name}}, @outputs]})"]}
 }
 EOF
+      Code => "void *vptmp;\ncw_error CW_err;\n",
     );
     my $destroy_in = join '', map $_->destroy_code($compmode,1), grep !$_->{is_output}, @pdl_inits;
     my $destroy_out = join '', map $_->destroy_code($compmode,0), grep $_->{is_output}, @pdl_inits;
@@ -187,25 +189,23 @@ EOF
       $hash{MakeComp} = join '',
         "cw_error CW_err;\n",
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", grep $_->{simple_pdl}, @allpars),
-        (map $_->{is_output} ? "$_->{blank};\n" : "@$_{qw(ctype name)}_LOCAL;\n".$_->frompdl(1,"$_->{name}_LOCAL")."; if (CW_err.error) return *(pdl_error *)&CW_err;\n", @pdl_inits),
+        (map $_->{is_output} ? "$_->{blank};\n" : "@$_{qw(ctype name)}_LOCAL;\n".$_->frompdl(1,"$_->{name}_LOCAL"), @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".($_->{is_output}?"\$COMP($_->{name})":"$_->{name}_LOCAL"), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         "CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map $_->c_input(1), @allpars).");\n",
         $destroy_in,
-        "if (CW_err.error) return *(pdl_error *)&CW_err;\n";
+        "$IF_ERROR_RETURN;\n";
       $hash{CompFreeCodeComp} = $destroy_out;
-      $hash{RedoDimsCode} = join '', "cw_error CW_err;\n", map $_->topdl1(1).";\n", @nonfixed_outputs;
-      $hash{Code} = join '', "void *vptmp;\ncw_error CW_err;\n", map $_->topdl2(1).";\n", @nonfixed_outputs;
+      $hash{RedoDimsCode} = join '', "cw_error CW_err;\n", map $_->topdl1(1), @nonfixed_outputs;
+      $hash{Code} .= join '', map $_->topdl2(1), @nonfixed_outputs;
       $hash{Code} .= "$retcapture = \$COMP(res);\n" if $retcapture;
     } else {
-      $hash{Code} = join '',
-        "cw_error CW_err;\n",
-        (map "@$_{qw(ctype name)};\n".$_->frompdl(0,$_->{name})."; if (CW_err.error) return *(pdl_error *)&CW_err;\n", @pdl_inits),
+      $hash{Code} .= join '',
+        (map "@$_{qw(ctype name)};\n".$_->frompdl(0,$_->{name}), @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->{name}", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         "CW_err = $cfunc(".join(',', ($retcapture ? "&$retcapture" : ()), map $_->c_input, @allpars).");\n",
-        "void *vptmp;\n",
-        (map $_->topdl2(0).";\n", @nonfixed_outputs),
+        (map $_->topdl2(0), @nonfixed_outputs),
         $destroy_in, $destroy_out,
-        "if (CW_err.error) return *(pdl_error *)&CW_err;\n";
+        "$IF_ERROR_RETURN;\n";
     }
     pp_def($func, %hash);
 }
