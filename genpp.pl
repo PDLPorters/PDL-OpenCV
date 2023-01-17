@@ -160,6 +160,7 @@ EOF
       my %flags = map +($_=>1), @{$f||[]};
       push @allpars, my $obj = PP::OpenCV->new($type, $var, $pcount++, $flags{'/O'});
       die "Error: OtherPars '$var' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($obj)} if $obj->{is_other} and $obj->{is_output};
+      $default .= '()' if length $default and $default !~ /\(/ and $default =~ /[^0-9\.]/;
       if ($obj->{is_output}) {
         $default = 'PDL->null' if !length $default or ($default eq '0' && $obj->{was_ptr});
       } else {
