@@ -38,6 +38,11 @@ my %force = map +($_=>1), qw(
   cv.logPolar
   cv.normalize
   cv.minMaxLoc
+  cv.imshow
+  cv.waitKey
+  cv.namedWindow
+  cv.selectROI
+  cv.destroyWindow
 );
 
 #use Data::Dumper; print Dumper $json_data;
