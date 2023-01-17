@@ -7,6 +7,7 @@ use File::Basename;
 use File::Spec::Functions;
 use Cwd;
 use IPC::Open2;
+use Data::Dumper;
 
 my $HEADERS = 'maint/headers.txt';
 my $HEADERS_DIR = '/usr/include/opencv4';
@@ -31,8 +32,14 @@ $json_data = decode_json do { local $/; <$child_out> };
 chdir $old_dir or die "chdir: $!";
 }
 
+my %force = map +($_=>1), qw(
+  cv.cvtColor
+  cv.rectangle
+  cv.logPolar
+);
+
 #use Data::Dumper; print Dumper $json_data;
-my %dest2enums;
+my (%dest2enums, %dest2funcs);
 for (@$json_data) {
   my ($file, $d) = @$_;
   my $dest = $file =~ /core/ ? "" : basename($file, ".hpp");
@@ -48,6 +55,17 @@ print "enum: $name\n";
         push @{$dest2enums{$dest}}, $pname;
 print " val: $pname\n";
       }
+    } elsif ($force{$name}) {
+      my ($name, $ret, $flags, $args, $ret_cpp, $doc) = @$t;
+      next if $doc =~ /\@overload/;
+      my (undef, @n) = split /\./, $name;
+      unshift @n, '' if @n == 1;
+      push @n, $doc, 0+!!$n[0], $ret, @$args;
+      local $Data::Dumper::Indent = 0;
+      local $Data::Dumper::Sortkeys = 1;
+      local $Data::Dumper::Terse = 1;
+      push @{$dest2funcs{$dest}}, Dumper(\@n);
+      print "$name\n";
     }
   }
 }
@@ -61,4 +79,13 @@ for my $dest (keys %dest2enums) {
   my $file = $dest ? catfile(ucfirst($dest), 'constlist.txt') : 'constlist.txt';
   open my $fh, '>', $file or die "$file: $!";
   print $fh map "$_\n", @$d;
+}
+
+for my $dest (keys %dest2funcs) {
+  my $d = $dest2funcs{$dest};
+  my $file = $dest ? catfile(ucfirst($dest), 'funclist.pl') : 'funclist.pl';
+  open my $fh, '>', $file or die "$file: $!";
+  print $fh "(\n";
+  print $fh "$_,\n" for @$d;
+  print $fh ");\n";
 }
