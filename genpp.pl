@@ -2,6 +2,8 @@ use strict;
 use warnings;
 use PDL::Types;
 use File::Spec::Functions qw(catfile curdir);
+use File::Basename 'dirname';
+require ''. catfile dirname(__FILE__), 'doxyparse.pl';
 
 my $T = [qw(A B S U L F D)];
 our %type_overrides = (
@@ -113,13 +115,15 @@ sub destroy_code {
 sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
-    my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0, Doc=>"=for ref\n\n$doc");
+    my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0);
     $hash{PMFunc} = '' if $ismethod;
     my $pcount = 1;
     my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
     if (!grep /^[A-Z]/ && !PP::OpenCV->new($_, '', 0)->{is_other}, map $_->[0], @params, $ret ne 'void' ? [$type_overrides{$ret} ? $type_overrides{$ret}[0] : $ret] : ()) {
       $ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
+      my $doxy = doxyparse($doc);
+      $hash{Doc} = doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
       pp_addpm("*$func = \\&${main::PDLOBJ}::$func;\n") if !$ismethod;
       pp_add_exported($func);
@@ -181,6 +185,9 @@ sub ${main::PDLOBJ}::$func {
 EOF
       Code => "void *vptmp;\ncw_error CW_err;\n",
     );
+    my $doxy = doxyparse($doc);
+    $doxy->{brief}[0] .= " NO BROADCASTING." if $compmode;
+    $hash{Doc} = doxy2pdlpod($doxy);
     my $destroy_in = join '', map $_->destroy_code($compmode,1), grep !$_->{is_output}, @pdl_inits;
     my $destroy_out = join '', map $_->destroy_code($compmode,0), grep $_->{is_output}, @pdl_inits;
     my @nonfixed_outputs = grep $_->{is_output}, @pdl_inits;
