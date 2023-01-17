@@ -1,5 +1,5 @@
 (
-  ['','rectangle',"Draw rectangle",0,"void",["Mat","img"],["Rect","rec"],["Scalar","color"],["int","thickness"],["int","lineType"],["int","shift"]],
+  ['','rectangle',"Draw rectangle",0,"void",["Mat","img"],["Point","pt1"],["Point","pt2"],["Scalar","color"],["int","thickness"],["int","lineType"],["int","shift"]],
   ['','cvtColor',
     '@brief Converts an image from one color space to another.
 
