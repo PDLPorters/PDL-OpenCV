@@ -27,7 +27,7 @@ sub new {
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $type eq 'char *';
   if ($type !~ /^[A-Z]/) {
     (my $pdltype = $type) =~ s#\s*\*+$##;
-    @$self{qw(simple_pdl pdltype ctype)} = (1, $pdltype, $type);
+    @$self{qw(simple_pdl pdltype ctype was_ptr)} = (1, $pdltype, $type, $type ne $pdltype);
     return $self;
   }
   @$self{qw(was_ptr type)} = (1, $type) if $type =~ s/\s*\*+$//;
@@ -160,7 +160,7 @@ EOF
       my %flags = map +($_=>1), @{$f||[]};
       push @allpars, my $obj = PP::OpenCV->new($type, $var, $pcount++, $flags{'/O'});
       die "Error: OtherPars '$var' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($obj)} if $obj->{is_other} and $obj->{is_output};
-      $default .= '()' if length $default and $default !~ /\(/ and $default =~ /[^0-9\.]/;
+      $default .= '()' if length $default and $default !~ /\(/ and $default =~ /[^0-9\.\-]/;
       if ($obj->{is_output}) {
         $default = 'PDL->null' if !length $default or ($default eq '0' && $obj->{was_ptr});
       } else {
