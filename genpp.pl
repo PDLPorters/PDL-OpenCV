@@ -239,7 +239,9 @@ EOD
     pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
 \nPDL__OpenCV__$c cw_${c}_new(char *klass)
-  CODE:\n  cw_${c}_new(&RETVAL, klass);\n  OUTPUT:\n  RETVAL
+  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL, klass);
+    PDL->barf_if_error(*(pdl_error *)&CW_err);
+  OUTPUT:\n    RETVAL
 \nvoid cw_${c}_DESTROY(PDL__OpenCV__$c self)
 EOF
     genpp(@$_) for grep $_->[0] eq $c, @flist;
