@@ -147,31 +147,25 @@ EOF
     }
     $ret = $type_overrides{$ret}[0] if $type_overrides{$ret};
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
-    my (@allpars, @pars, @otherpars, @pdl_inits, @outputs, @defaults);
+    my (@allpars, @defaults);
     for (@params) {
       my ($type, $var, $default, $f) = @$_;
       $type = $type_overrides{$type}[0] if $type_overrides{$type};
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
-      push @allpars, my $obj = PP::OpenCV->new($type, $var, $pcount, $flags{'/O'});
-      push @{$obj->{is_other} ? \@otherpars : \@pars}, $obj;
-      if ($obj->{is_other}) {
-        die "Error: OtherPars '$var' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($obj)} if $obj->{is_output};
-      } else {
-        if (!$obj->{simple_pdl}) {
-          push @pdl_inits, $obj;
-          $pcount++;
-        }
-      }
+      push @allpars, my $obj = PP::OpenCV->new($type, $var, $pcount++, $flags{'/O'});
+      die "Error: OtherPars '$var' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($obj)} if $obj->{is_other} and $obj->{is_output};
       if ($obj->{is_output}) {
-        push @outputs, $obj;
         $default = 'PDL->null' if !length $default or ($default eq '0' && $obj->{was_ptr});
       } else {
         $default = 'PDL->zeroes(0,0,0)' if $default eq 'Mat()';
       }
       push @defaults, "\$$var = $default if !defined \$$var;" if length $default;
     }
-    my $compmode = grep !$_->{is_other} && !$_->{simple_pdl} && $_->{use_comp}, @allpars;
+    my (@pars, @otherpars); push @{$_->{is_other} ? \@otherpars : \@pars}, $_ for @allpars;
+    my @outputs = grep $_->{is_output}, @allpars;
+    my @pdl_inits = grep !$_->{simple_pdl}, @pars;
+    my $compmode = grep $_->{use_comp}, @pdl_inits;
     pop @allpars if my $retcapture = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? 'res' : '$res()');
     %hash = (%hash,
       Pars => join('; ', map $_->par, @pars), OtherPars => join('; ', map $_->par, @otherpars),
@@ -187,7 +181,7 @@ EOF
     );
     my $destroy_in = join '', map $_->destroy_code($compmode,1), grep !$_->{is_output}, @pdl_inits;
     my $destroy_out = join '', map $_->destroy_code($compmode,0), grep $_->{is_output}, @pdl_inits;
-    my @nonfixed_outputs = grep !$_->{is_other} && !$_->{simple_pdl}, @outputs;
+    my @nonfixed_outputs = grep $_->{is_output}, @pdl_inits;
     if ($compmode) {
       $hash{Comp} = join '; ', map +($_->{ctype} =~ /^[A-Z]/ ? $_->{ctype} : PDL::Type->new($_->{ctype})->ctype)." $_->{name}", @outputs;
       $hash{MakeComp} = join '',
