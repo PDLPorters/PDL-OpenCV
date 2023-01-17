@@ -36,6 +36,8 @@ my %force = map +($_=>1), qw(
   cv.cvtColor
   cv.rectangle
   cv.logPolar
+  cv.normalize
+  cv.minMaxLoc
 );
 
 #use Data::Dumper; print Dumper $json_data;
