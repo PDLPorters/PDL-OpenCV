@@ -131,12 +131,8 @@ sub genpp {
       for (@params) {
         my ($type, $var, $default) = @$_;
         $type = $type_overrides{$type}[1] if $type_overrides{$type};
-        my ($is_other, $par) = 0;
-        if ($type =~ /^[A-Z]/) {
-          my $obj = PP::OpenCV->new($type, $var, 0);
-          ($is_other, $type, $par) = (@$obj{qw(is_other type)}, $obj->par);
-        }
-        my $xs_par = $is_other ? $par : "$type $var";
+        my $obj = PP::OpenCV->new($type, $var, 0);
+        my $xs_par = ($type =~ /^[A-Z]/ && $obj->{is_other}) ? $obj->par : "$type $var";
         if (length $default and $default !~ /\(/ and $default =~ /[^0-9\.\-]/) {
           $default = 'cw_const_' . $default . '()';
         }
