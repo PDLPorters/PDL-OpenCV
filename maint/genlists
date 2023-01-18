@@ -43,6 +43,12 @@ my %force = map +($_=>1), qw(
   cv.namedWindow
   cv.selectROI
   cv.destroyWindow
+  cv.VideoCapture.read
+  cv.VideoCapture.open
+  cv.VideoCapture.get
+  cv.VideoWriter.open
+  cv.VideoWriter.write
+  cv.VideoWriter.fourcc
 );
 
 #use Data::Dumper; print Dumper $json_data;
@@ -93,6 +99,7 @@ for my $dest (keys %dest2func2name2defs) {
     push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
     @defs = grep $_->[2] ne '@overload', @defs;
     push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
+    @defs = grep +(!grep $_->[0] =~ /^vector_/, @$_[5..$#$_]), @defs; # remove any with vector args
     @defs = sort { @$b <=> @$a } @defs; # descending order of number of args
     push(@{$dest2funcs{$dest}}, $defs[0]);
   }
