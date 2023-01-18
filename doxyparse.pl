@@ -70,7 +70,7 @@ sub doxy2pdlpod {
     }
   }
   if (my $p = $r->{params}) {
-    $text .= qq{Parameters:\n\n=over\n\n};
+    $text .= qq{\n\nParameters:\n\n=over\n\n};
     for (@$p) {
       my ($name, $rest) = split /\s+/, $_, 2;
       $text .= "=item $name\n\n$rest\n\n";
