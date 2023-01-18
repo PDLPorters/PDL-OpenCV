@@ -70,10 +70,7 @@ print " val: $pname\n";
       my $ismethod = 0+!!$n[0];
       $ismethod = 0 if grep $_ eq '/S', @$flags;
       push @n, $doc, $ismethod, $ret, @$args;
-      local $Data::Dumper::Indent = 0;
-      local $Data::Dumper::Sortkeys = 1;
-      local $Data::Dumper::Terse = 1;
-      push @{$dest2funcs{$dest}}, Dumper(\@n);
+      push @{$dest2funcs{$dest}}, \@n;
       print "$name\n";
     }
   }
@@ -94,7 +91,10 @@ for my $dest (keys %dest2funcs) {
   my $d = $dest2funcs{$dest};
   my $file = $dest ? catfile(ucfirst($dest), 'funclist.pl') : 'funclist.pl';
   open my $fh, '>', $file or die "$file: $!";
+  local $Data::Dumper::Indent = 0;
+  local $Data::Dumper::Sortkeys = 1;
+  local $Data::Dumper::Terse = 1;
   print $fh "(\n";
-  print $fh "$_,\n" for @$d;
+  print $fh Dumper($_).",\n" for @$d;
   print $fh ");\n";
 }
