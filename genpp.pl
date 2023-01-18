@@ -27,7 +27,7 @@ sub new {
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $type eq 'char *';
   if ($type !~ /^[A-Z]/) {
     (my $pdltype = $type) =~ s#\s*\*+$##;
-    @$self{qw(simple_pdl pdltype ctype was_ptr)} = (1, $pdltype, $type, $type ne $pdltype);
+    @$self{qw(dimless pdltype ctype was_ptr)} = (1, $pdltype, $type, $type ne $pdltype);
     return $self;
   }
   @$self{qw(was_ptr type)} = (1, $type) if $type =~ s/\s*\*+$//;
@@ -45,14 +45,14 @@ sub new {
   } elsif ($type ne 'Mat') {
     @$self{qw(is_other use_comp)} = (1,1);
   }
-  $self->{use_comp} = 1 if !$self->{simple_pdl} and $is_output and !$self->{fixeddims};
+  $self->{use_comp} = 1 if !$self->{dimless} and $is_output and !$self->{fixeddims};
   bless $self, $class;
 }
 sub c_input {
   my ($self, $compmode) = @_;
   return $self->{use_comp}?"\$COMP($self->{name})":
     $self->{name}.($compmode?'_LOCAL':'')
-    if !$self->{simple_pdl};
+    if !$self->{dimless};
   ($self->{type} =~ /\*$/ ? '&' : '').
     ($compmode ? "(($self->{pdltype}*)($self->{name}->data))[0]" : "\$$self->{name}()")
 }
@@ -63,7 +63,7 @@ sub par {
 }
 sub _par {
   my ($self) = @_;
-  return "$self->{name}()" if $self->{simple_pdl};
+  return "$self->{name}()" if $self->{dimless};
   return "@$self{qw(type name)}" if $self->{naive_otherpar};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return "$name(l$pcount,c$pcount,r$pcount)" if $type eq 'Mat';
@@ -171,7 +171,7 @@ EOF
     }
     my (@pars, @otherpars); push @{$_->{is_other} ? \@otherpars : \@pars}, $_ for @allpars;
     my @outputs = grep $_->{is_output}, @allpars;
-    my @pdl_inits = grep !$_->{simple_pdl}, @pars;
+    my @pdl_inits = grep !$_->{dimless}, @pars;
     my $compmode = grep $_->{use_comp}, @pdl_inits;
     pop @allpars if my $retcapture = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? 'res' : '$res()');
     %hash = (%hash,
@@ -197,7 +197,7 @@ EOF
       $hash{Comp} = join '; ', map +($_->{ctype} =~ /^[A-Z]/ ? $_->{ctype} : PDL::Type->new($_->{ctype})->ctype)." $_->{name}", @outputs;
       $hash{MakeComp} = join '',
         "cw_error CW_err;\n",
-        (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", grep $_->{simple_pdl}, @allpars),
+        (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", grep $_->{dimless}, @allpars),
         (map $_->{is_output} ? "$_->{blank};\n" : "@$_{qw(ctype name)}_LOCAL;\n".$_->frompdl(1,"$_->{name}_LOCAL"), @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".($_->{is_output}?"\$COMP($_->{name})":"$_->{name}_LOCAL"), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         "CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map $_->c_input(1), @allpars).");\n",
