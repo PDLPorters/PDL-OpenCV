@@ -46,7 +46,7 @@ my %force = map +($_=>1), qw(
 );
 
 #use Data::Dumper; print Dumper $json_data;
-my (%dest2enums, %dest2funcs);
+my (%dest2enums, %dest2func2name2defs);
 for (@$json_data) {
   my ($file, $d) = @$_;
   my $dest = $file =~ /core/ ? "" : basename($file, ".hpp");
@@ -70,7 +70,7 @@ print " val: $pname\n";
       my $ismethod = 0+!!$n[0];
       $ismethod = 0 if grep $_ eq '/S', @$flags;
       push @n, $doc, $ismethod, $ret, @$args;
-      push @{$dest2funcs{$dest}}, \@n;
+      push @{$dest2func2name2defs{$dest}{$name}}, \@n;
       print "$name\n";
     }
   }
@@ -85,6 +85,14 @@ for my $dest (keys %dest2enums) {
   my $file = $dest ? catfile(ucfirst($dest), 'constlist.txt') : 'constlist.txt';
   open my $fh, '>', $file or die "$file: $!";
   print $fh map "$_\n", @$d;
+}
+
+my %dest2funcs;
+for my $dest (keys %dest2func2name2defs) {
+  for my $name (sort keys %{$dest2func2name2defs{$dest}}) {
+    my $defs = $dest2func2name2defs{$dest}{$name};
+    push(@{$dest2funcs{$dest}}, $defs->[0]), next if @$defs == 1;
+  }
 }
 
 for my $dest (keys %dest2funcs) {

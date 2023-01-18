@@ -1,4 +1,21 @@
 (
+['','minMaxLoc','@brief Finds the global minimum and maximum in an array.
+
+The function cv::minMaxLoc finds the minimum and maximum element values and their positions. The
+extremums are searched across the whole array or, if mask is not an empty array, in the specified
+array region.
+
+The function do not work with multi-channel arrays. If you need to find minimum or maximum
+elements across all the channels, use Mat::reshape first to reinterpret the array as
+single-channel. Or you may extract the particular channel using either extractImageCOI , or
+mixChannels , or split .
+@param src input single-channel array.
+@param minVal pointer to the returned minimum value; NULL is used if not required.
+@param maxVal pointer to the returned maximum value; NULL is used if not required.
+@param minLoc pointer to the returned minimum location (in 2D case); NULL is used if not required.
+@param maxLoc pointer to the returned maximum location (in 2D case); NULL is used if not required.
+@param mask optional mask used to select a sub-array.
+@sa max, min, compare, inRange, extractImageCOI, mixChannels, split, Mat::reshape',0,'void',['Mat','src','',[]],['double*','minVal','',['/O']],['double*','maxVal','0',['/O']],['Point*','minLoc','0',['/O']],['Point*','maxLoc','0',['/O']],['Mat','mask','Mat()',[]]],
 ['','normalize','@brief Normalizes the norm or value range of an array.
 
 The function cv::normalize normalizes scale and shift the input array elements so that
@@ -56,21 +73,4 @@ normalization.
 number of channels as src and the depth =CV_MAT_DEPTH(dtype).
 @param mask optional operation mask.
 @sa norm, Mat::convertTo, SparseMat::convertTo',0,'void',['Mat','src','',[]],['Mat','dst','',['/IO']],['double','alpha','1',[]],['double','beta','0',[]],['int','norm_type','NORM_L2',[]],['int','dtype','-1',[]],['Mat','mask','Mat()',[]]],
-['','minMaxLoc','@brief Finds the global minimum and maximum in an array.
-
-The function cv::minMaxLoc finds the minimum and maximum element values and their positions. The
-extremums are searched across the whole array or, if mask is not an empty array, in the specified
-array region.
-
-The function do not work with multi-channel arrays. If you need to find minimum or maximum
-elements across all the channels, use Mat::reshape first to reinterpret the array as
-single-channel. Or you may extract the particular channel using either extractImageCOI , or
-mixChannels , or split .
-@param src input single-channel array.
-@param minVal pointer to the returned minimum value; NULL is used if not required.
-@param maxVal pointer to the returned maximum value; NULL is used if not required.
-@param minLoc pointer to the returned minimum location (in 2D case); NULL is used if not required.
-@param maxLoc pointer to the returned maximum location (in 2D case); NULL is used if not required.
-@param mask optional mask used to select a sub-array.
-@sa max, min, compare, inRange, extractImageCOI, mixChannels, split, Mat::reshape',0,'void',['Mat','src','',[]],['double*','minVal','',['/O']],['double*','maxVal','0',['/O']],['Point*','minLoc','0',['/O']],['Point*','maxLoc','0',['/O']],['Mat','mask','Mat()',[]]],
 );
