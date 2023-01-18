@@ -64,7 +64,6 @@ print " val: $pname\n";
       }
     } elsif ($force{$name}) {
       my ($name, $ret, $flags, $args, $ret_cpp, $doc) = @$t;
-      next if $doc =~ /\@overload/;
       my (undef, @n) = split /\./, $name;
       unshift @n, '' if @n == 1;
       my $ismethod = 0+!!$n[0];
@@ -90,8 +89,12 @@ for my $dest (keys %dest2enums) {
 my %dest2funcs;
 for my $dest (keys %dest2func2name2defs) {
   for my $name (sort keys %{$dest2func2name2defs{$dest}}) {
-    my $defs = $dest2func2name2defs{$dest}{$name};
-    push(@{$dest2funcs{$dest}}, $defs->[0]), next if @$defs == 1;
+    my @defs = @{ $dest2func2name2defs{$dest}{$name} };
+    push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
+    @defs = grep $_->[2] ne '@overload', @defs;
+    push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
+    @defs = sort { @$b <=> @$a } @defs; # descending order of number of args
+    push(@{$dest2funcs{$dest}}, $defs[0]);
   }
 }
 
