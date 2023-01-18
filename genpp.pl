@@ -129,14 +129,19 @@ sub genpp {
       pp_add_exported($func);
       my (@xs_params, @cw_params);
       for (@params) {
-        my ($type, $var) = @$_;
+        my ($type, $var, $default) = @$_;
         $type = $type_overrides{$type}[1] if $type_overrides{$type};
         my ($is_other, $par) = 0;
         if ($type =~ /^[A-Z]/) {
           my $obj = PP::OpenCV->new($type, $var, 0);
           ($is_other, $type, $par) = (@$obj{qw(is_other type)}, $obj->par);
         }
-        push @xs_params, $is_other ? $par : "$type $var";
+        my $xs_par = $is_other ? $par : "$type $var";
+        if (length $default and $default !~ /\(/ and $default =~ /[^0-9\.\-]/) {
+          $default = 'cw_const_' . $default . '()';
+        }
+        $xs_par .= "=$default" if length $default;
+        push @xs_params, $xs_par;
         push @cw_params, $var;
       }
       unshift @cw_params, '&RETVAL' if $ret ne 'void';
