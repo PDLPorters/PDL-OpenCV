@@ -107,8 +107,10 @@ EOF
 }
 sub destroy_code {
   my ($self, $iscomp) = @_;
-  return "$self->{destroy}($self->{name});\n" if !$iscomp;
-  "$self->{destroy}(".(!$self->{is_output} ? "$self->{name}_LOCAL" : "\$COMP($self->{name})").");\n";
+  "$self->{destroy}(".(
+    !$iscomp ? $self->{name} :
+    !$self->{is_output} ? "$self->{name}_LOCAL" : "\$COMP($self->{name})"
+  ).");\n";
 }
 }
 
