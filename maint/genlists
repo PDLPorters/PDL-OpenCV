@@ -66,7 +66,6 @@ print "enum: $name\n";
         die "badly-formatted enum name $ename\n" if !(my ($pname) = $ename =~ /^const\s+(cv\..+)/);
         $pname =~ s#\.#::#g;
         push @{$dest2enums{$dest}}, $pname;
-print " val: $pname\n";
       }
     } elsif ($force{$name}) {
       my ($name, $ret, $flags, $args, $ret_cpp, $doc) = @$t;
@@ -96,10 +95,11 @@ my %dest2funcs;
 for my $dest (keys %dest2func2name2defs) {
   for my $name (sort keys %{$dest2func2name2defs{$dest}}) {
     my @defs = @{ $dest2func2name2defs{$dest}{$name} };
+    @defs = grep +(!grep !ref() || $_->[0] =~ /^(vector_|TermCriteria|RNG)/, @$_[5..$#$_]), @defs; # remove any with vector args
+    print("none left for $name\n"), next if !@defs; # no candidates!
     push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
     @defs = grep $_->[2] ne '@overload', @defs;
     push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
-    @defs = grep +(!grep $_->[0] =~ /^vector_/, @$_[5..$#$_]), @defs; # remove any with vector args
     @defs = sort { @$b <=> @$a } @defs; # descending order of number of args
     push(@{$dest2funcs{$dest}}, $defs[0]);
   }
