@@ -106,9 +106,9 @@ EOF
   qq{CW_err = cw_${type}_getVals(}.($iscomp ? "\$COMP($name)" : $name).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]}); $IF_ERROR_RETURN;\n};
 }
 sub destroy_code {
-  my ($self, $iscomp, $isin) = @_;
+  my ($self, $iscomp) = @_;
   return "$self->{destroy}($self->{name});\n" if !$iscomp;
-  "$self->{destroy}(".($isin ? "$self->{name}_LOCAL" : "\$COMP($self->{name})").");\n";
+  "$self->{destroy}(".(!$self->{is_output} ? "$self->{name}_LOCAL" : "\$COMP($self->{name})").");\n";
 }
 }
 
@@ -190,8 +190,8 @@ EOF
     my $doxy = doxyparse($doc);
     $doxy->{brief}[0] .= " NO BROADCASTING." if $compmode;
     $hash{Doc} = doxy2pdlpod($doxy);
-    my $destroy_in = join '', map $_->destroy_code($compmode,1), grep !$_->{is_output}, @pdl_inits;
-    my $destroy_out = join '', map $_->destroy_code($compmode,0), grep $_->{is_output}, @pdl_inits;
+    my $destroy_in = join '', map $_->destroy_code($compmode), grep !$_->{is_output}, @pdl_inits;
+    my $destroy_out = join '', map $_->destroy_code($compmode), grep $_->{is_output}, @pdl_inits;
     my @nonfixed_outputs = grep $_->{is_output}, @pdl_inits;
     if ($compmode) {
       $hash{Comp} = join '; ', map +($_->{ctype} =~ /^[A-Z]/ ? $_->{ctype} : PDL::Type->new($_->{ctype})->ctype)." $_->{name}", @outputs;
