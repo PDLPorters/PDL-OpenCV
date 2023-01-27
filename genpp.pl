@@ -22,8 +22,9 @@ our %DIMTYPES = (
   Size=>[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
 );
 sub new {
-  my ($class, $type, $name, $pcount, $is_output) = @_;
+  my ($class, $type, $name, $default, $pcount, $is_output) = @_;
   my $self = bless {type=>$type, name=>$name, is_output=>$is_output}, $class;
+  $self->{default} = $default if defined $default and length $default;
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $type eq 'char *';
   if ($type !~ /^[A-Z]/) {
     (my $pdltype = $type) =~ s#\s*\*+$##;
@@ -112,6 +113,23 @@ sub destroy_code {
     !$self->{is_output} ? "$self->{name}_LOCAL" : "\$COMP($self->{name})"
   ).");\n";
 }
+sub default_pl {
+  my ($self) = @_;
+  my $d = $self->{default} // '';
+  $d .= '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
+  if ($self->{is_output}) {
+    $d = 'PDL->null' if !length $d or ($d eq '0' && $self->{was_ptr});
+  } elsif ($d eq 'Mat()') {
+    $d = 'PDL->zeroes(0,0,0)';
+  }
+  length $d ? "\$$self->{name} = $d if !defined \$$self->{name};" : ();
+}
+sub default_xs {
+  my ($self) = @_;
+  my $d = $self->{default} // '';
+  $d = 'cw_const_' . $d . '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
+  length $d ? "=$d" : '';
+}
 }
 
 sub genpp {
@@ -122,7 +140,7 @@ sub genpp {
     my $pcount = 1;
     my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
-    if (!grep /^[A-Z]/ && !PP::OpenCV->new($_, '', 0)->{is_other}, map $_->[0], @params, $ret ne 'void' ? [$type_overrides{$ret} ? $type_overrides{$ret}[0] : $ret] : ()) {
+    if (!grep /^[A-Z]/ && !PP::OpenCV->new($_, '', '', 0)->{is_other}, map $_->[0], @params, $ret ne 'void' ? [$type_overrides{$ret} ? $type_overrides{$ret}[0] : $ret] : ()) {
       $ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
       my $doxy = doxyparse($doc);
       $hash{Doc} = doxy2pdlpod($doxy);
@@ -133,12 +151,9 @@ sub genpp {
       for (@params) {
         my ($type, $var, $default) = @$_;
         $type = $type_overrides{$type}[1] if $type_overrides{$type};
-        my $obj = PP::OpenCV->new($type, $var, 0);
+        my $obj = PP::OpenCV->new($type, $var, $default, 0);
         my $xs_par = ($type =~ /^[A-Z]/ && $obj->{is_other}) ? $obj->par : "$type $var";
-        if (length $default and $default !~ /\(/ and $default =~ /[^0-9\.\-]/) {
-          $default = 'cw_const_' . $default . '()';
-        }
-        $xs_par .= "=$default" if length $default;
+        $xs_par .= $obj->default_xs;
         push @xs_params, $xs_par;
         push @cw_params, $var;
       }
@@ -155,22 +170,16 @@ EOF
     }
     $ret = $type_overrides{$ret}[0] if $type_overrides{$ret};
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
-    my (@allpars, @defaults);
+    my @allpars;
     for (@params) {
       my ($type, $var, $default, $f) = @$_;
       $type = $type_overrides{$type}[0] if $type_overrides{$type};
       $default //= '';
       my %flags = map +($_=>1), @{$f||[]};
-      push @allpars, my $obj = PP::OpenCV->new($type, $var, $pcount++, $flags{'/O'});
+      push @allpars, my $obj = PP::OpenCV->new($type, $var, $default, $pcount++, $flags{'/O'});
       die "Error: OtherPars '$var' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($obj)} if $obj->{is_other} and $obj->{is_output};
-      $default .= '()' if length $default and $default !~ /\(/ and $default =~ /[^0-9\.\-]/;
-      if ($obj->{is_output}) {
-        $default = 'PDL->null' if !length $default or ($default eq '0' && $obj->{was_ptr});
-      } else {
-        $default = 'PDL->zeroes(0,0,0)' if $default eq 'Mat()';
-      }
-      push @defaults, "\$$var = $default if !defined \$$var;" if length $default;
     }
+    my @defaults = map $_->default_pl, @allpars;
     my (@pars, @otherpars); push @{$_->{is_other} ? \@otherpars : \@pars}, $_ for @allpars;
     my @outputs = grep $_->{is_output}, @allpars;
     my @pdl_inits = grep !$_->{dimless}, @pars;
