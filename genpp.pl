@@ -124,11 +124,12 @@ sub default_pl {
   }
   length $d ? "\$$self->{name} = $d if !defined \$$self->{name};" : ();
 }
-sub default_xs {
+sub xs_par {
   my ($self) = @_;
+  my $xs_par = ($self->{type} =~ /^[A-Z]/ && $self->{is_other}) ? $self->par : "@$self{qw(type name)}";
   my $d = $self->{default} // '';
   $d = 'cw_const_' . $d . '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
-  length $d ? "=$d" : '';
+  $xs_par . (length $d ? "=$d" : '');
 }
 }
 
@@ -152,9 +153,7 @@ sub genpp {
         my ($type, $var, $default) = @$_;
         $type = $type_overrides{$type}[1] if $type_overrides{$type};
         my $obj = PP::OpenCV->new($type, $var, $default, 0);
-        my $xs_par = ($type =~ /^[A-Z]/ && $obj->{is_other}) ? $obj->par : "$type $var";
-        $xs_par .= $obj->default_xs;
-        push @xs_params, $xs_par;
+        push @xs_params, $obj->xs_par;
         push @cw_params, $var;
       }
       unshift @cw_params, '&RETVAL' if $ret ne 'void';
