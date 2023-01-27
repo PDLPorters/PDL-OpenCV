@@ -46,7 +46,7 @@ sub new {
   } elsif ($type ne 'Mat') {
     @$self{qw(is_other use_comp)} = (1,1);
   }
-  $self->{use_comp} = 1 if !$self->{dimless} and $is_output and !$self->{fixeddims};
+  $self->{use_comp} = 1 if $is_output and !$self->{fixeddims};
   bless $self, $class;
 }
 sub c_input {
