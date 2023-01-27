@@ -92,10 +92,11 @@ for my $dest (keys %dest2enums) {
 }
 
 my %dest2funcs;
+my $no_want = qr/^(vector_|TermCriteria|RNG|RotatedRect|Ptr_CLAHE|Ptr_GeneralizedHough|Ptr_LineSegmentDetector|Ptr_Tracker)/;
 for my $dest (keys %dest2func2name2defs) {
   for my $name (sort keys %{$dest2func2name2defs{$dest}}) {
     my @defs = @{ $dest2func2name2defs{$dest}{$name} };
-    @defs = grep +(!grep !ref() || $_->[0] =~ /^(vector_|TermCriteria|RNG)/, @$_[5..$#$_]), @defs; # remove any with vector args
+    @defs = grep $_->[4] !~ $no_want && (!grep !ref() || $_->[0] =~ $no_want, @$_[5..$#$_]), @defs; # remove any with vector etc return-type or args
     print("none left for $name\n"), next if !@defs; # no candidates!
     push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
     @defs = grep $_->[2] ne '@overload', @defs;
