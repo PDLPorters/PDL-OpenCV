@@ -72,24 +72,27 @@ sub _par {
   "PDL__OpenCV__$type $name";
 }
 sub frompdl {
-  my ($self, $iscomp, $localname) = @_;
-  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  my ($self, $iscomp) = @_;
   die "Called frompdl on OtherPar" if $self->{is_other};
-  return "CW_err = cw_Mat_newWithDims(" .
+  return "$self->{blank};\n" if $iscomp and $self->{is_output};
+  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  my $localname = $iscomp ? "${name}_LOCAL" : $name;
+  my $decl = "$self->{ctype} $localname;\n";
+  return $decl."CW_err = cw_Mat_newWithDims(" .
     ($iscomp
       ? join ',', "&$localname", (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
       : "&$localname,\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype,\$P($name)"
     ) .
     "); $IF_ERROR_RETURN;\n" if !$self->{fixeddims};
-  qq{CW_err = cw_${type}_newWithVals(@{[
+  $decl.qq{CW_err = cw_${type}_newWithVals(@{[
       join ',', "&$localname", map $iscomp ? "(($DIMTYPES{$type}[0][0] *)$name->data)[$_]" : "\$$name(n${type}$pcount=>$_)",
         0..@{$DIMTYPES{$type}}-1
     ]})}."; $IF_ERROR_RETURN;\n";
 }
 sub topdl1 {
   my ($self, $iscomp) = @_;
-  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   die "Called topdl1 on OtherPar" if $self->{is_other};
+  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return
     "CW_err = cw_Mat_pdlDims(".($iscomp ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"
     if !$self->{fixeddims};
@@ -97,8 +100,8 @@ sub topdl1 {
 }
 sub topdl2 {
   my ($self, $iscomp) = @_;
-  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   die "Called topdl2 on OtherPar" if $self->{is_other};
+  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return <<EOF if !$self->{fixeddims};
 CW_err = cw_Mat_ptr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
 $IF_ERROR_RETURN;
@@ -130,6 +133,10 @@ sub xs_par {
   my $d = $self->{default} // '';
   $d = 'cw_const_' . $d . '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
   $xs_par . (length $d ? "=$d" : '');
+}
+sub cdecl {
+  my ($self) = @_;
+  ($self->{ctype} =~ /^[A-Z]/ ? $self->{ctype} : PDL::Type->new($self->{ctype})->ctype)." $self->{name}";
 }
 }
 
@@ -204,11 +211,11 @@ EOF
     my $destroy_out = join '', map $_->destroy_code($compmode), grep $_->{is_output}, @pdl_inits;
     my @nonfixed_outputs = grep $_->{is_output}, @pdl_inits;
     if ($compmode) {
-      $hash{Comp} = join '; ', map +($_->{ctype} =~ /^[A-Z]/ ? $_->{ctype} : PDL::Type->new($_->{ctype})->ctype)." $_->{name}", @outputs;
+      $hash{Comp} = join '; ', map $_->cdecl, @outputs;
       $hash{MakeComp} = join '',
         "cw_error CW_err;\n",
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", grep $_->{dimless}, @allpars),
-        (map $_->{is_output} ? "$_->{blank};\n" : "@$_{qw(ctype name)}_LOCAL;\n".$_->frompdl(1,"$_->{name}_LOCAL"), @pdl_inits),
+        (map $_->frompdl(1), @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".($_->{is_output}?"\$COMP($_->{name})":"$_->{name}_LOCAL"), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         "CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map $_->c_input(1), @allpars).");\n",
         $destroy_in,
@@ -219,7 +226,7 @@ EOF
       $hash{Code} .= "$retcapture = \$COMP(res);\n" if $retcapture;
     } else {
       $hash{Code} .= join '',
-        (map "@$_{qw(ctype name)};\n".$_->frompdl(0,$_->{name}), @pdl_inits),
+        (map $_->frompdl(0), @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->{name}", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         "CW_err = $cfunc(".join(',', ($retcapture ? "&$retcapture" : ()), map $_->c_input, @allpars).");\n",
         (map $_->topdl2(0), @nonfixed_outputs),
