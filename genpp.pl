@@ -24,17 +24,19 @@ our %DIMTYPES = (
 sub new {
   my ($class, $type, $name, $default, $pcount, $is_output) = @_;
   my $self = bless {type=>$type, name=>$name, is_output=>$is_output}, $class;
+  $self->{type_pp} = $type_overrides{$type} ? $type_overrides{$type}[0] : $type;
+  $self->{type_c} = $type_overrides{$type} ? $type_overrides{$type}[1] : $type;
   $self->{default} = $default if defined $default and length $default;
-  @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $type eq 'char *';
-  if ($type !~ /^[A-Z]/) {
-    (my $pdltype = $type) =~ s#\s*\*+$##;
-    @$self{qw(dimless pdltype ctype was_ptr)} = (1, $pdltype, $type, $type ne $pdltype);
+  @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'char *';
+  if ($self->{type_pp} !~ /^[A-Z]/) {
+    (my $pdltype = $self->{type_pp}) =~ s#\s*\*+$##;
+    @$self{qw(dimless pdltype was_ptr)} = (1, $pdltype, $type ne $pdltype);
     return $self;
   }
   @$self{qw(was_ptr type)} = (1, $type) if $type =~ s/\s*\*+$//;
   %$self = (%$self,
     pcount => $pcount,
-    ctype => "${type}Wrapper *",
+    type_c => "${type}Wrapper *",
     pdltype => '',
     fixeddims => 0,
     destroy => "cw_${type}_DESTROY",
@@ -65,7 +67,7 @@ sub par {
 sub _par {
   my ($self) = @_;
   return "$self->{name}()" if $self->{dimless};
-  return "@$self{qw(type name)}" if $self->{naive_otherpar};
+  return "@$self{qw(type_c name)}" if $self->{naive_otherpar};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return "$name(l$pcount,c$pcount,r$pcount)" if $type eq 'Mat';
   return "$name(n${type}$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims};
@@ -77,7 +79,7 @@ sub frompdl {
   return "$self->{blank};\n" if $iscomp and $self->{is_output};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   my $localname = $iscomp ? "${name}_LOCAL" : $name;
-  my $decl = "$self->{ctype} $localname;\n";
+  my $decl = "$self->{type_c} $localname;\n";
   return $decl."CW_err = cw_Mat_newWithDims(" .
     ($iscomp
       ? join ',', "&$localname", (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
@@ -136,7 +138,7 @@ sub xs_par {
 }
 sub cdecl {
   my ($self) = @_;
-  ($self->{ctype} =~ /^[A-Z]/ ? $self->{ctype} : PDL::Type->new($self->{ctype})->ctype)." $self->{name}";
+  ($self->{type_c} =~ /^[A-Z]/ ? $self->{type_c} : PDL::Type->new($self->{type_pp})->ctype)." $self->{name}";
 }
 }
 
@@ -145,45 +147,35 @@ sub genpp {
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0);
     $hash{PMFunc} = '' if $ismethod;
+    my $doxy = doxyparse($doc);
     my $pcount = 1;
     my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
-    if (!grep /^[A-Z]/ && !PP::OpenCV->new($_, '', '', 0)->{is_other}, map $_->[0], @params, $ret ne 'void' ? [$type_overrides{$ret} ? $type_overrides{$ret}[0] : $ret] : ()) {
-      $ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
-      my $doxy = doxyparse($doc);
+    push @params, [$ret,'res','',['/O']] if $ret ne 'void';
+    my @allpars;
+    for (@params) {
+      my ($type, $var, $default, $f) = @$_;
+      $default //= '';
+      my %flags = map +($_=>1), @{$f||[]};
+      push @allpars, my $obj = PP::OpenCV->new($type, $var, $default, $pcount++, $flags{'/O'});
+      die "Error: OtherPars '$var' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($obj)} if $obj->{is_other} and $obj->{is_output};
+    }
+    if (!grep $_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}, @allpars) {
       $hash{Doc} = doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
       pp_addpm("*$func = \\&${main::PDLOBJ}::$func;\n") if !$ismethod;
       pp_add_exported($func);
-      my (@xs_params, @cw_params);
-      for (@params) {
-        my ($type, $var, $default) = @$_;
-        $type = $type_overrides{$type}[1] if $type_overrides{$type};
-        my $obj = PP::OpenCV->new($type, $var, $default, 0);
-        push @xs_params, $obj->xs_par;
-        push @cw_params, $var;
-      }
-      unshift @cw_params, '&RETVAL' if $ret ne 'void';
-      pp_addxs(<<EOF . ($ret eq 'void' ? '' : "  OUTPUT:\n    RETVAL\n"));
+      my $ret_type = $ret eq 'void' ? $ret : pop(@allpars)->{type_c};
+      my @cw_params = (($ret ne 'void' ? '&RETVAL' : ()), map $_->{name}, @allpars);
+      pp_addxs(<<EOF . ($ret_type eq 'void' ? '' : "  OUTPUT:\n    RETVAL\n"));
 MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep length,'cw',$class]}_
-\n$ret $cfunc(@{[join ', ', @xs_params]})
+\n$ret_type $cfunc(@{[join ', ', map $_->xs_par, @allpars]})
   PROTOTYPE: DISABLE
   CODE:
     cw_error CW_err = $cfunc(@{[join ', ', @cw_params]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
 EOF
       return;
-    }
-    $ret = $type_overrides{$ret}[0] if $type_overrides{$ret};
-    push @params, [$ret,'res','',['/O']] if $ret ne 'void';
-    my @allpars;
-    for (@params) {
-      my ($type, $var, $default, $f) = @$_;
-      $type = $type_overrides{$type}[0] if $type_overrides{$type};
-      $default //= '';
-      my %flags = map +($_=>1), @{$f||[]};
-      push @allpars, my $obj = PP::OpenCV->new($type, $var, $default, $pcount++, $flags{'/O'});
-      die "Error: OtherPars '$var' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($obj)} if $obj->{is_other} and $obj->{is_output};
     }
     my @defaults = map $_->default_pl, @allpars;
     my (@pars, @otherpars); push @{$_->{is_other} ? \@otherpars : \@pars}, $_ for @allpars;
@@ -204,7 +196,6 @@ sub ${main::PDLOBJ}::$func {
 EOF
       Code => "void *vptmp;\ncw_error CW_err;\n",
     );
-    my $doxy = doxyparse($doc);
     $doxy->{brief}[0] .= " NO BROADCASTING." if $compmode;
     $hash{Doc} = doxy2pdlpod($doxy);
     my $destroy_in = join '', map $_->destroy_code($compmode), grep !$_->{is_output}, @pdl_inits;
