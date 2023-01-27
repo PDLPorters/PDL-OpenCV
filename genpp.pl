@@ -22,8 +22,9 @@ our %DIMTYPES = (
   Size=>[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
 );
 sub new {
-  my ($class, $type, $name, $default, $pcount, $is_output) = @_;
-  my $self = bless {type=>$type, name=>$name, is_output=>$is_output}, $class;
+  my ($class, $pcount, $type, $name, $default, $f) = @_;
+  my %flags = map +($_=>1), @{$f||[]};
+  my $self = bless {type=>$type, name=>$name, is_output=>$flags{'/O'}}, $class;
   $self->{type_pp} = $type_overrides{$type} ? $type_overrides{$type}[0] : $type;
   $self->{type_c} = $type_overrides{$type} ? $type_overrides{$type}[1] : $type;
   $self->{default} = $default if defined $default and length $default;
@@ -48,7 +49,7 @@ sub new {
   } elsif ($type ne 'Mat') {
     @$self{qw(is_other use_comp)} = (1,1);
   }
-  $self->{use_comp} = 1 if $is_output and !$self->{fixeddims};
+  $self->{use_comp} = 1 if $self->{is_output} and !$self->{fixeddims};
   bless $self, $class;
 }
 sub c_input {
@@ -152,14 +153,8 @@ sub genpp {
     my $cfunc = join('_', grep length,'cw',$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
-    my @allpars;
-    for (@params) {
-      my ($type, $var, $default, $f) = @$_;
-      $default //= '';
-      my %flags = map +($_=>1), @{$f||[]};
-      push @allpars, my $obj = PP::OpenCV->new($type, $var, $default, $pcount++, $flags{'/O'});
-      die "Error: OtherPars '$var' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($obj)} if $obj->{is_other} and $obj->{is_output};
-    }
+    my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
+    die "Error: OtherPars '$_->{name}' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($_)} for grep $_->{is_other} && $_->{is_output}, @allpars;
     if (!grep $_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}, @allpars) {
       $hash{Doc} = doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
