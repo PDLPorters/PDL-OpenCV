@@ -1,4 +1,8 @@
 (
+['','batchDistance','@brief naive nearest neighbor finder
+
+see http://en.wikipedia.org/wiki/Nearest_neighbor_search
+@todo document',0,'void',['Mat','src1','',[]],['Mat','src2','',[]],['Mat','dist','',['/O']],['int','dtype','',[]],['Mat','nidx','',['/O']],['int','normType','NORM_L2',[]],['int','K','0',[]],['Mat','mask','Mat()',[]],['int','update','0',[]],['bool','crosscheck','false',[]]],
 ['','minMaxLoc','@brief Finds the global minimum and maximum in an array.
 
 The function cv::minMaxLoc finds the minimum and maximum element values and their positions. The

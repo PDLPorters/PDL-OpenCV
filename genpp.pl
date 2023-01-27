@@ -57,7 +57,7 @@ sub c_input {
     $self->{name}.($compmode?'_LOCAL':'')
     if !$self->{dimless};
   ($self->{type} =~ /\*$/ ? '&' : '').
-    ($compmode ? "(($self->{pdltype}*)($self->{name}->data))[0]" : "\$$self->{name}()")
+    ($compmode ? "(($self->{type_c}*)($self->{name}->data))[0]" : "\$$self->{name}()")
 }
 sub par {
   my ($self) = @_;
