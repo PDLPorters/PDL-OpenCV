@@ -74,7 +74,7 @@ sub _par {
 sub frompdl {
   my ($self, $iscomp, $localname) = @_;
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
-  return undef if $self->{is_other};
+  die "Called frompdl on OtherPar" if $self->{is_other};
   return "CW_err = cw_Mat_newWithDims(" .
     ($iscomp
       ? join ',', "&$localname", (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
@@ -89,7 +89,7 @@ sub frompdl {
 sub topdl1 {
   my ($self, $iscomp) = @_;
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
-  return undef if $self->{is_other};
+  die "Called topdl1 on OtherPar" if $self->{is_other};
   return
     "CW_err = cw_Mat_pdlDims(".($iscomp ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"
     if !$self->{fixeddims};
@@ -98,7 +98,7 @@ sub topdl1 {
 sub topdl2 {
   my ($self, $iscomp) = @_;
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
-  return undef if $self->{is_other};
+  die "Called topdl2 on OtherPar" if $self->{is_other};
   return <<EOF if !$self->{fixeddims};
 CW_err = cw_Mat_ptr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
 $IF_ERROR_RETURN;
