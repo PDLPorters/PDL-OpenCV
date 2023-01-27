@@ -24,7 +24,7 @@ our %DIMTYPES = (
 sub new {
   my ($class, $pcount, $type, $name, $default, $f) = @_;
   my %flags = map +($_=>1), @{$f||[]};
-  my $self = bless {type=>$type, name=>$name, is_output=>$flags{'/O'}}, $class;
+  my $self = bless {type=>$type, name=>$name, is_io=>$flags{'/IO'}, is_output=>$flags{'/O'}}, $class;
   $self->{type_pp} = $type_overrides{$type} ? $type_overrides{$type}[0] : $type;
   $self->{type_c} = $type_overrides{$type} ? $type_overrides{$type}[1] : $type;
   $self->{default} = $default if defined $default and length $default;
@@ -63,7 +63,9 @@ sub c_input {
 sub par {
   my ($self) = @_;
   return $self->_par if $self->{is_other};
-  join ' ', grep length, $self->{pdltype}, ($self->{is_output} ? '[o]' : ()), $self->_par;
+  join ' ', grep length, $self->{pdltype},
+    ($self->{is_output} ? '[o]' : $self->{is_io} ? '[io]' : ()),
+    $self->_par;
 }
 sub _par {
   my ($self) = @_;
