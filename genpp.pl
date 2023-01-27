@@ -10,6 +10,9 @@ our %type_overrides = (
   String => ['char *', 'char *'], # PP, C
   bool => ['byte', 'unsigned char'],
 );
+our %default_overrides = (
+  'Mat()' => ['PDL->zeroes(0,0,0)',],
+);
 our $IF_ERROR_RETURN = "if (CW_err.error) return *(pdl_error *)&CW_err";
 
 {
@@ -127,8 +130,8 @@ sub default_pl {
   $d .= '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
   if ($self->{is_output}) {
     $d = 'PDL->null' if !length $d or ($d eq '0' && $self->{was_ptr});
-  } elsif ($d eq 'Mat()') {
-    $d = 'PDL->zeroes(0,0,0)';
+  } elsif ($default_overrides{$d}) {
+    $d = $default_overrides{$d}[0];
   }
   length $d ? "\$$self->{name} = $d if !defined \$$self->{name};" : ();
 }
@@ -136,6 +139,7 @@ sub xs_par {
   my ($self) = @_;
   my $xs_par = ($self->{type} =~ /^[A-Z]/ && $self->{is_other}) ? $self->par : "@$self{qw(type name)}";
   my $d = $self->{default} // '';
+  $d = $default_overrides{$d}[1] if $default_overrides{$d};
   $d = 'cw_const_' . $d . '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
   $xs_par . (length $d ? "=$d" : '');
 }
