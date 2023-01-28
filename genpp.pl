@@ -164,7 +164,7 @@ sub genpp {
     unshift @params, [$class,'self'] if $ismethod;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
-    die "Error in $func: OtherPars '$_->{name}' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($_)} for grep $_->{is_other} && $_->{is_output}, @allpars;
+    die "Error in $func: OtherPars '$_->{name}' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($_)} for grep $_->{is_other} && $_->{type_pp} =~ /^[A-Z]/ && $_->{is_output}, @allpars;
     if (!grep $_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}, @allpars) {
       $hash{Doc} = doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
@@ -172,7 +172,7 @@ sub genpp {
       pp_add_exported($func);
       my $ret_type = $ret eq 'void' ? $ret : pop(@allpars)->{type_c};
       my @cw_params = (($ret ne 'void' ? '&RETVAL' : ()), map $_->{name}, @allpars);
-      pp_addxs(<<EOF . ($ret_type eq 'void' ? '' : "  OUTPUT:\n    RETVAL\n"));
+      my $xs = <<EOF;
 MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep length,'cw',$class]}_
 \n$ret_type $cfunc(@{[join ', ', map $_->xs_par, @allpars]})
   PROTOTYPE: DISABLE
@@ -180,6 +180,8 @@ MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep leng
     cw_error CW_err = $cfunc(@{[join ', ', @cw_params]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
 EOF
+      $xs .= "  OUTPUT:\n    RETVAL\n" if $ret_type ne 'void';
+      pp_addxs($xs);
       return;
     }
     my @defaults = map $_->default_pl, @allpars;
