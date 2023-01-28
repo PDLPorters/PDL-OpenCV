@@ -13,6 +13,8 @@ our %type_overrides = (
 our %default_overrides = (
   'Mat()' => ['PDL->zeroes(0,0,0)',],
 );
+our %extra_cons_args = (
+);
 our $IF_ERROR_RETURN = "if (CW_err.error) return *(pdl_error *)&CW_err";
 
 {
@@ -247,6 +249,9 @@ EOPM
   my @topfuncs = grep $_->[0] eq '', @flist;
   if (@topfuncs) {
     pp_bless("PDL::OpenCV::$last");
+    pp_addxs(<<EOF); # work around PP bug
+MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ}
+EOF
     genpp(@$_) for @topfuncs;
   } else {
     pp_addpm("=pod\n\nNone.\n\n=cut\n\n");
@@ -260,13 +265,19 @@ EOPM
 \n=for ref
 \nInitialize OpenCV $c object.
 \n=for example
-\n  \$obj = PDL::OpenCV::$c->new;
+\n  \$obj = PDL::OpenCV::$c->new(@{[
+  join ', ', map "\$$_->[1]", @{$extra_cons_args{$c} || []}
+]});
 \n=cut
 EOD
     pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
-\nPDL__OpenCV__$c cw_${c}_new(char *klass)
-  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL, klass);
+\nPDL__OpenCV__$c cw_${c}_new(char *klass@{[
+  map ", @$_", @{$extra_cons_args{$c} || []}
+]})
+  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL, klass@{[
+  map ", $_->[1]", @{$extra_cons_args{$c} || []}
+]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
   OUTPUT:\n    RETVAL
 \nvoid cw_${c}_DESTROY(PDL__OpenCV__$c self)

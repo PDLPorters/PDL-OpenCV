@@ -6,7 +6,7 @@ use PDL::Types;
 use PDL::Core qw/howbig/;
 
 require ''. catfile $Bin, 'genpp.pl';
-our %type_overrides;
+our (%type_overrides, %extra_cons_args);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, Mat=>[]) };
 my %overrides = (
   Tracker => {
@@ -187,7 +187,9 @@ struct ${class}Wrapper {
 	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : "cv::${class}"]} held;
 };
 #endif
-cw_error cw_${class}_new(${class}Wrapper **cw_retval, char *klass);
+cw_error cw_${class}_new(${class}Wrapper **cw_retval, char *klass@{[
+  map ", @$_", @{$extra_cons_args{$class} || []}
+]});
 void cw_${class}_DESTROY(${class}Wrapper *wrapper);
 EOF
   my $cstr = <<EOF;
