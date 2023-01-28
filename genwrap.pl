@@ -47,7 +47,10 @@ cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, cons
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new MatWrapper;
-  (*cw_retval)->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
+  if (planes == 0 && cols == 0 && rows == 0) /* no check type as upgrade */
+    (*cw_retval)->held = cv::Mat();
+  else
+    (*cw_retval)->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
  } catch (const std::exception& e) {
   CW_err = {CW_EUSERERROR,strdup(e.what()),1};
  }

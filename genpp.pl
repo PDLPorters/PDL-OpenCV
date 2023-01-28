@@ -11,7 +11,7 @@ our %type_overrides = (
   bool => ['byte', 'unsigned char'],
 );
 our %default_overrides = (
-  'Mat()' => ['PDL->zeroes(0,0,0)',],
+  'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
 );
 our %extra_cons_args = (
 );
@@ -132,7 +132,7 @@ sub default_pl {
   my $d = $self->{default} // '';
   $d .= '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
   if ($self->{is_output}) {
-    $d = 'PDL->null' if !length $d or ($d eq '0' && $self->{was_ptr});
+    $d = 'PDL->null' if !length $d or $d eq 'Mat()' or ($d eq '0' && $self->{was_ptr});
   } elsif ($default_overrides{$d}) {
     $d = $default_overrides{$d}[0];
   }
