@@ -1,5 +1,6 @@
 TYPEMAP
 
+PDL__OpenCV__LineSegmentDetector T_PTROBJ_SPECIAL
 PDL__OpenCV__Tracker           T_PTROBJ_SPECIAL
 PDL__OpenCV__VideoCapture      T_PTROBJ_SPECIAL
 PDL__OpenCV__VideoWriter       T_PTROBJ_SPECIAL

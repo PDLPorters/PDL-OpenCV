@@ -14,6 +14,7 @@ our %default_overrides = (
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
 );
 our %extra_cons_args = (
+  LineSegmentDetector => [[qw(int lsd_type)]],
 );
 our $IF_ERROR_RETURN = "if (CW_err.error) return *(pdl_error *)&CW_err";
 

@@ -50,6 +50,9 @@ my %force = map +($_=>1), qw(
   cv.VideoWriter.open
   cv.VideoWriter.write
   cv.VideoWriter.fourcc
+  cv.LineSegmentDetector.compareSegments
+  cv.LineSegmentDetector.detect
+  cv.LineSegmentDetector.drawSegments
 );
 
 #use Data::Dumper; print Dumper $json_data;

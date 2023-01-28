@@ -32,10 +32,14 @@ if ($box->at(0) == 0) {
 }
 $box = $tr->init(frame_scale($frame),$box);
 
+my $lsd = PDL::OpenCV::LineSegmentDetector->new(LSD_REFINE_STD);
+
 while ($res) {
   ($box, my $track_res) = $tr->update($frame = frame_scale($frame));
+  my ($lines) = $lsd->detect(cvtColor($frame, COLOR_BGR2GRAY));
   my ($bx, $by, $bw, $bh) = @{ $box->unpdl };
   rectangle($frame, [$bx,$by], [$bx+$bw,$by+$bh], [255,0,0,0], 2, 1, 0);
+  $lsd->drawSegments($frame, $lines);
   imshow("ud", $frame);
   waitKey(1);
   if ($x<98 || $x > 153 && $x<200) {

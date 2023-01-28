@@ -13,7 +13,7 @@ my %overrides = (
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
   },
 );
-my %ptr_only = map +($_=>1), qw(Tracker);
+my %ptr_only = map +($_=>1), qw(Tracker LineSegmentDetector);
 my %constructor_override = (
   Tracker => <<'EOF',
 #if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
@@ -26,6 +26,18 @@ cw_error cw_Tracker_new(TrackerWrapper **cw_retval, char *klass) {
  try {
   *cw_retval = new TrackerWrapper;
   (*cw_retval)->held = cv::TrackerKCF::create();
+ } catch (const std::exception& e) {
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
+ }
+ return CW_err;
+}
+EOF
+  LineSegmentDetector => <<'EOF',
+cw_error cw_LineSegmentDetector_new(LineSegmentDetectorWrapper **cw_retval, char *klass, int lsd_type) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *cw_retval = new LineSegmentDetectorWrapper;
+  (*cw_retval)->held = cv::createLineSegmentDetector(lsd_type);
  } catch (const std::exception& e) {
   CW_err = {CW_EUSERERROR,strdup(e.what()),1};
  }
