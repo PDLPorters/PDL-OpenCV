@@ -244,10 +244,18 @@ use warnings;
 EOPM
   pp_addhdr(qq{#include "opencv_wrapper.h"\n#include "wraplocal.h"\n});
   my @flist = genpp_readfile('funclist.pl');
+  my @topfuncs = grep $_->[0] eq '', @flist;
+  if (@topfuncs) {
+    pp_bless("PDL::OpenCV::$last");
+    genpp(@$_) for @topfuncs;
+  } else {
+    pp_addpm("=pod\n\nNone.\n\n=cut\n\n");
+  }
   for my $c (@$classes) {
     pp_bless("PDL::OpenCV::$c");
     pp_addhdr(qq{typedef ${c}Wrapper *PDL__OpenCV__$c;\n});
     pp_addpm(<<EOD);
+=head1 METHODS for PDL::OpenCV::$c\n\n
 =head2 new
 \n=for ref
 \nInitialize OpenCV $c object.
@@ -265,8 +273,6 @@ MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
 EOF
     genpp(@$_) for grep $_->[0] eq $c, @flist;
   }
-  pp_bless("PDL::OpenCV::$last");
-  genpp(@$_) for grep $_->[0] eq '', @flist;
   genconsts("::$last");
 }
 
