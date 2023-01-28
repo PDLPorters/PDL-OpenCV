@@ -36,6 +36,7 @@ my %force = map +($_=>1), qw(
   cv.batchDistance
   cv.cvtColor
   cv.rectangle
+  cv.getAffineTransform
   cv.logPolar
   cv.normalize
   cv.minMaxLoc

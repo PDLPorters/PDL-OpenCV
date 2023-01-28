@@ -69,6 +69,7 @@ floating-point.
 channels is derived automatically from src and code.
 
 @see @ref imgproc_color_conversions',0,'void',['Mat','src','',[]],['Mat','dst','',['/O']],['int','code','',[]],['int','dstCn','0',[]]],
+['','getAffineTransform','@overload',0,'Mat',['Mat','src','',[]],['Mat','dst','',[]]],
 ['','logPolar','@brief Remaps an image to semilog-polar coordinates space.
 
 @deprecated This function produces same result as cv::warpPolar(src, dst, src.size(), center, maxRadius, flags+WARP_POLAR_LOG);

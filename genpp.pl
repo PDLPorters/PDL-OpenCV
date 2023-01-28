@@ -219,7 +219,7 @@ EOF
       $hash{CompFreeCodeComp} = $destroy_out;
       $hash{RedoDimsCode} = join '', "cw_error CW_err;\n", map $_->topdl1(1), @nonfixed_outputs;
       $hash{Code} .= join '', map $_->topdl2(1), @nonfixed_outputs;
-      $hash{Code} .= "$retcapture = \$COMP(res);\n" if $retcapture;
+      $hash{Code} .= "$retcapture = \$COMP(res);\n" if $retcapture and $ret !~ /^[A-Z]/;
     } else {
       $hash{Code} .= join '',
         (map $_->frompdl(0), @pdl_inits),
