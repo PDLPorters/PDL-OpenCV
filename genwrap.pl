@@ -160,6 +160,7 @@ sub gen_code {
 	} elsif ($ret ne 'void') {
 		$cpp_ret = "*cw_retval = ";
 	}
+	die "Error: '$name' no return type from '$ret'".do {require Data::Dumper; Data::Dumper::Dumper(\@_)} if $ret ne 'void' and !$func_ret;
 	push @input_args, "$func_ret*cw_retval" if $ret ne 'void';
 	if ($ismethod) {
 		push @input_args, "${class}Wrapper *self";
