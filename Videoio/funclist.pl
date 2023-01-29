@@ -14,6 +14,9 @@
     The returned value might be different from what really used by the device or it could be encoded
     using device dependent rules (eg. steps or percentage). Effective behaviour depends from device
     driver and API Backend',1,'double',['int','propId','',[]]],
+['VideoCapture','getBackendName','@brief Returns used backend API name
+
+     @note Stream should be opened.',1,'String'],
 ['VideoCapture','open','@brief  Opens a video file or a capturing device or an IP video stream for video capturing.
 
     @overload

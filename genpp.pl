@@ -174,13 +174,15 @@ sub genpp {
       my @cw_params = (($ret ne 'void' ? '&RETVAL' : ()), map $_->{name}, @allpars);
       my $xs = <<EOF;
 MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep length,'cw',$class]}_
-\n$ret_type $cfunc(@{[join ', ', map $_->xs_par, @allpars]})
+\n@{[$ret_type eq 'char *'?'void':$ret_type]} $cfunc(@{[join ', ', map $_->xs_par, @allpars]})
   PROTOTYPE: DISABLE
-  CODE:
+  @{[$ret_type eq 'char *'?'PP':'']}CODE:
+    @{[$ret_type eq 'char *'?'char *RETVAL;':'']}
     cw_error CW_err = $cfunc(@{[join ', ', @cw_params]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
+    @{[$ret_type eq 'char *'?'XPUSHs(sv_2mortal(newSVpv(RETVAL, 0)));free(RETVAL);':'']}
 EOF
-      $xs .= "  OUTPUT:\n    RETVAL\n" if $ret_type ne 'void';
+      $xs .= "  OUTPUT:\n    RETVAL\n" if $ret_type ne 'void' and $ret_type ne 'char *';
       pp_addxs($xs);
       return;
     }

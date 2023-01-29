@@ -180,12 +180,12 @@ sub gen_code {
 	$str .= " {\n";
 	$str .= " cw_error CW_err = {CW_ENONE, NULL, 0};\n try {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
-	$str .= "  $cpp_ret";
+	$str .= "  $cpp_ret".($ret eq 'char *' ? "strdup(" : "");
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $name)."(" :
 	  "$methodvar->held".($ptr_only?'->':'.')."$name" .
 	  ($ismethod == 1 ? "(" : ";\n");
 	$opt->{argfix}->(\@cvargs) if $opt->{argfix};
-	$str .= join(', ', @cvargs).");\n";
+	$str .= join(', ', @cvargs).")".($ret eq 'char *' ? ".c_str())" : "").";\n";
 	$str .= $after_ret;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
 	$str .= " } catch (const std::exception& e) {\n  CW_err = {CW_EUSERERROR,strdup(e.what()),1};\n }\n return CW_err;\n";

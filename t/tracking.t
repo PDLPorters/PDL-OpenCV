@@ -12,6 +12,7 @@ use File::Temp qw(tempfile);
 my $vfile='t/Megamind.avi';
 my $vc = PDL::OpenCV::VideoCapture->new;
 die if !$vc->open($vfile);
+isnt $vc->getBackendName, undef, 'getBackendName works';
 my ($frame, $res) = $vc->read;
 ok $res, 'read a frame right';
 is_deeply [$frame->dims], [3,720,528], 'right dims' or diag $frame->info;

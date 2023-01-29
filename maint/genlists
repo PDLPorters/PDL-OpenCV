@@ -48,6 +48,7 @@ my %force = map +($_=>1), qw(
   cv.VideoCapture.read
   cv.VideoCapture.open
   cv.VideoCapture.get
+  cv.VideoCapture.getBackendName
   cv.VideoWriter.open
   cv.VideoWriter.write
   cv.VideoWriter.fourcc
