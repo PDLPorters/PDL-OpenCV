@@ -12,6 +12,8 @@ our %type_overrides = (
 );
 our %default_overrides = (
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
+  false => [0,0], # perl, C
+  true => [1,1],
 );
 our %extra_cons_args = (
   LineSegmentDetector => [[qw(int lsd_type)]],
