@@ -133,7 +133,7 @@ sub destroy_code {
 sub default_pl {
   my ($self) = @_;
   my $d = $self->{default} // '';
-  $d .= '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
+  $d =~ s/[A-Z][A-Z0-9_]+/$&()/g if length $d and $d !~ /\(/;
   if ($self->{is_output}) {
     $d = 'PDL->null' if !length $d or $d eq 'Mat()' or ($d eq '0' && $self->{was_ptr});
   } elsif ($default_overrides{$d}) {
@@ -250,6 +250,7 @@ sub genheader {
 \n=cut
 \nuse strict;
 use warnings;
+use PDL::OpenCV; # get constants
 EOPM
   pp_addhdr(qq{#include "opencv_wrapper.h"\n#include "wraplocal.h"\n});
   my @flist = genpp_readfile('funclist.pl');
