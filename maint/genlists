@@ -86,8 +86,8 @@ print "enum: $name\n";
   }
 }
 
-for my $bits (qw(8UC 8SC 16UC 16SC 32SC 32FC 64FC)) {
-  push @{$dest2enums{''}}, (map "CV_$bits$_", 1..4), "CV_$bits|int n";
+for my $bits (qw(8U 8S 16U 16S 32S 32F 64F)) {
+  push @{$dest2enums{''}}, "CV_${bits}", (map "CV_${bits}C$_", 1..4), "CV_${bits}C|int n";
 }
 push @{$dest2enums{''}}, qw(CV_PI CV_2PI CV_LOG2);
 
