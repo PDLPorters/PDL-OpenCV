@@ -3,6 +3,6 @@ use warnings;
 use File::Spec::Functions;
 require ''.catfile(updir, 'genpp.pl');
 
-genheader("Tracking", [qw(Tracker)]);
+genheader("Tracking");
 
 pp_done();

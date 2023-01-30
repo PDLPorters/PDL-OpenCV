@@ -239,9 +239,12 @@ EOF
 }
 
 sub genheader {
-  my ($last, $classes) = @_;
-  my $descrip_label = @$classes ? join(', ', @$classes) : $last;
-  my $synopsis = join '', map "\n \$obj = PDL::OpenCV::$_->new;", @$classes;
+  my ($last) = @_;
+  local $@; my @classdata = !-f 'classes.pl' ? () : do ''. catfile curdir, 'classes.pl'; die if $@;
+  my %class2doc = map +($_->[0]=>$_->[1]), @classdata;
+  my @classes = sort keys %class2doc;
+  my $descrip_label = @classes ? join(', ', @classes) : $last;
+  my $synopsis = join '', map "\n \$obj = PDL::OpenCV::$_->new;", @classes;
   pp_addpm({At=>'Top'},<<"EOPM");
 =head1 NAME
 \nPDL::OpenCV::$last - PDL bindings for OpenCV $descrip_label
@@ -264,11 +267,14 @@ EOF
   } else {
     pp_addpm("=pod\n\nNone.\n\n=cut\n\n");
   }
-  for my $c (@$classes) {
+  for my $c (@classes) {
     pp_bless("PDL::OpenCV::$c");
     pp_addhdr(qq{typedef ${c}Wrapper *PDL__OpenCV__$c;\n});
+    my $doc = $class2doc{$c} // '';
+    $doc =~ s/\@brief\s*//;
     pp_addpm(<<EOD);
 =head1 METHODS for PDL::OpenCV::$c\n\n
+$doc\n\n
 =head2 new
 \n=for ref
 \nInitialize OpenCV $c object.

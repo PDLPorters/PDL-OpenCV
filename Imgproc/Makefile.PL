@@ -1,1 +1,1 @@
-wmf('Imgproc', ['imgproc'], [qw(LineSegmentDetector)]);
+wmf('Imgproc', ['imgproc']);

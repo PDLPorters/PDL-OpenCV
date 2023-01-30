@@ -3,6 +3,6 @@ use warnings;
 use File::Spec::Functions;
 require ''.catfile(updir, 'genpp.pl');
 
-genheader("Videoio", [qw(VideoCapture VideoWriter)]);
+genheader("Videoio");
 
 pp_done();

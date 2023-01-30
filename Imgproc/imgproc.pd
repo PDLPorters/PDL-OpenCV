@@ -3,6 +3,6 @@ use warnings;
 use File::Spec::Functions;
 require ''.catfile(updir, 'genpp.pl');
 
-genheader("Imgproc",[qw(LineSegmentDetector)]);
+genheader("Imgproc");
 
 pp_done();

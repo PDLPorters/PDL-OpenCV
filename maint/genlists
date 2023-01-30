@@ -57,9 +57,12 @@ my %force = map +($_=>1), qw(
   cv.LineSegmentDetector.detect
   cv.LineSegmentDetector.drawSegments
 );
+my %class = map +($_=>1), qw(
+  LineSegmentDetector Tracker VideoCapture VideoWriter
+);
 
 #use Data::Dumper; print Dumper $json_data;
-my (%dest2enums, %dest2func2name2defs);
+my (%dest2enums, %dest2func2name2defs, %dest2classdefs);
 for (@$json_data) {
   my ($file, $d) = @$_;
   my $dest = $file =~ /core/ ? "" : basename($file, ".hpp");
@@ -74,6 +77,11 @@ print "enum: $name\n";
         $pname =~ s#\.#::#g;
         push @{$dest2enums{$dest}}, $pname;
       }
+    } elsif ($name =~ /^class cv\.(.*)/) {
+      my $cname = $1;
+      next if !$class{$cname};
+print "class: $cname\n";
+      push @{$dest2classdefs{$dest}}, [$cname, $t->[5]];
     } elsif ($force{$name}) {
       my ($name, $ret, $flags, $args, $ret_cpp, $doc) = @$t;
       my (undef, @n) = split /\./, $name;
@@ -114,9 +122,9 @@ for my $dest (keys %dest2func2name2defs) {
   }
 }
 
-for my $dest (keys %dest2funcs) {
-  my $d = $dest2funcs{$dest};
-  my $file = $dest ? catfile(ucfirst($dest), 'funclist.pl') : 'funclist.pl';
+sub writefile {
+  my ($dest, $filebase, $d) = @_;
+  my $file = $dest ? catfile(ucfirst($dest), $filebase) : $filebase;
   open my $fh, '>', $file or die "$file: $!";
   local $Data::Dumper::Indent = 0;
   local $Data::Dumper::Sortkeys = 1;
@@ -125,3 +133,8 @@ for my $dest (keys %dest2funcs) {
   print $fh Dumper($_).",\n" for @$d;
   print $fh ");\n";
 }
+
+writefile($_, 'funclist.pl', $dest2funcs{$_}) for keys %dest2funcs;
+
+$dest2classdefs{tracking} = [['Tracker','@brief Object-tracker in images']];
+writefile($_, 'classes.pl', $dest2classdefs{$_}) for keys %dest2classdefs;

@@ -1,1 +1,1 @@
-wmf('Tracking', ['tracking'], [qw(Tracker)]);
+wmf('Tracking', ['tracking']);

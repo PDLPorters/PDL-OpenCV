@@ -305,7 +305,10 @@ sub make_chfiles {
 
 my $filegen = $ARGV[0] || die "No file given";
 my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
-my $typespec = $filegen eq 'opencv_wrapper' ? \%GLOBALTYPES : {map +($_=>[]), @ARGV[2..$#ARGV]};
+my $typespec = $filegen eq 'opencv_wrapper' ? \%GLOBALTYPES : !-f 'classes.pl' ? +{} : do {
+  my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
+  +{map +($_->[0]=>[]), @classlist}
+};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
 my $consts = $filegen eq 'opencv_wrapper' ? [] : -f 'constlist.txt' ? gen_consts() : [];

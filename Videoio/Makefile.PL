@@ -1,1 +1,1 @@
-wmf('Videoio', ['videoio'], [qw(VideoCapture VideoWriter)]);
+wmf('Videoio', ['videoio']);
