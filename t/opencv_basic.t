@@ -16,5 +16,6 @@ is PDL::OpenCV::CV_8UC3(), 16, 'depth constant';
 is COLOR_GRAY2RGB, 8, 'colour-conversion constant exported';
 is PDL::OpenCV::Imgproc::COLOR_GRAY2RGB, 8, 'constant in module space';
 is PDL::OpenCV::Error::StsNullPtr, -27, 'deep namespace constant';
+isa_ok getGaborKernel(pdl([5,5]),1,1,1,1), 'PDL';
 
 done_testing();

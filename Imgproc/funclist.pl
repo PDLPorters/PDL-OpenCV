@@ -70,6 +70,18 @@ channels is derived automatically from src and code.
 
 @see @ref imgproc_color_conversions',0,'void',['Mat','src','',[]],['Mat','dst','',['/O']],['int','code','',[]],['int','dstCn','0',[]]],
 ['','getAffineTransform','@overload',0,'Mat',['Mat','src','',[]],['Mat','dst','',[]]],
+['','getGaborKernel','@brief Returns Gabor filter coefficients.
+
+For more details about gabor filter equations and parameters, see: [Gabor
+Filter](http://en.wikipedia.org/wiki/Gabor_filter).
+
+@param ksize Size of the filter returned.
+@param sigma Standard deviation of the gaussian envelope.
+@param theta Orientation of the normal to the parallel stripes of a Gabor function.
+@param lambd Wavelength of the sinusoidal factor.
+@param gamma Spatial aspect ratio.
+@param psi Phase offset.
+@param ktype Type of filter coefficients. It can be CV_32F or CV_64F .',0,'Mat',['Size','ksize','',[]],['double','sigma','',[]],['double','theta','',[]],['double','lambd','',[]],['double','gamma','',[]],['double','psi','CV_PI*0.5',[]],['int','ktype','CV_64F',[]]],
 ['','logPolar','@brief Remaps an image to semilog-polar coordinates space.
 
 @deprecated This function produces same result as cv::warpPolar(src, dst, src.size(), center, maxRadius, flags+WARP_POLAR_LOG);

@@ -37,6 +37,7 @@ my %force = map +($_=>1), qw(
   cv.cvtColor
   cv.rectangle
   cv.getAffineTransform
+  cv.getGaborKernel
   cv.logPolar
   cv.normalize
   cv.minMaxLoc
