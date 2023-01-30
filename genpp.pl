@@ -216,7 +216,7 @@ EOF
       $hash{Comp} = join '; ', map $_->cdecl, @outputs;
       $hash{MakeComp} = join '',
         "cw_error CW_err;\n",
-        (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", grep $_->{dimless}, @allpars),
+        (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", grep $_->{dimless} || $_->{fixeddims}, @allpars),
         (map $_->frompdl(1), @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".($_->{is_output}?"\$COMP($_->{name})":"$_->{name}_LOCAL"), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         "CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map $_->c_input(1), @allpars).");\n",
