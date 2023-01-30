@@ -137,6 +137,7 @@ pp_addhdr << 'EOH';
 #include "wraplocal.h"
 EOH
 
+pp_bless("PDL::OpenCV");
 genpp(@$_) for genpp_readfile('funclist.pl');
 genconsts('');
 
