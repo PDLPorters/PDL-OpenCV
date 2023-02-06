@@ -129,7 +129,7 @@ sub writefile {
   my ($dest, $filebase, $list) = @_;
   my $file = $dest ? catfile(ucfirst($dest), $filebase) : $filebase;
   my $new = join '', map "$_\n", @$list;
-  my $old = do { local $/; open my $fh, '<', $file or die "$file: $!"; <$fh> };
+  my $old = -f $file ? do { local $/; open my $fh, '<', $file or die "$file: $!"; <$fh> } : '';
   return if $new eq $old;
   open my $fh, '>', $file or die "$file: $!";
   print $fh $new;

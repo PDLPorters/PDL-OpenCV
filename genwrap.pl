@@ -297,10 +297,15 @@ sub gen_consts {
 
 sub make_chfiles {
   my ($filebase, @params) = @_;
-  open my $fh,">","$filebase.h" or die "cannot write header file: $!";
-  open my $fc,">","$filebase.cpp" or die "cannot write C++ file: $!";
   my ($hstr, $cstr) = gen_chfiles(uc($filebase), @params);
-  print $fh $hstr; print $fc $cstr;
+  writefile("$filebase.h", $hstr); writefile("$filebase.cpp", $cstr);
+}
+sub writefile {
+  my ($file, $new) = @_;
+  my $old = -f $file ? do { local $/; open my $fh, '<', $file or die "$file: $!"; <$fh> } : '';
+  return if $new eq $old;
+  open my $fh, ">", $file or die "cannot write $file: $!";
+  print $fh $new;
 }
 
 my $filegen = $ARGV[0] || die "No file given";
