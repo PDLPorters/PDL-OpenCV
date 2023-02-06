@@ -100,12 +100,7 @@ for my $bits (qw(8U 8S 16U 16S 32S 32F 64F)) {
 }
 push @{$dest2enums{''}}, qw(CV_PI CV_2PI CV_LOG2);
 
-for my $dest (keys %dest2enums) {
-  my $d = $dest2enums{$dest};
-  my $file = $dest ? catfile(ucfirst($dest), 'constlist.txt') : 'constlist.txt';
-  open my $fh, '>', $file or die "$file: $!";
-  print $fh map "$_\n", @$d;
-}
+writefile($_, 'constlist.txt', $dest2enums{$_}) for keys %dest2enums;
 
 my %dest2funcs;
 my $no_want = qr/^(vector_|TermCriteria|RNG|RotatedRect|Ptr_CLAHE|Ptr_GeneralizedHough|Ptr_LineSegmentDetector|Ptr_Tracker)/;
@@ -122,19 +117,25 @@ for my $dest (keys %dest2func2name2defs) {
   }
 }
 
-sub writefile {
-  my ($dest, $filebase, $d) = @_;
-  my $file = $dest ? catfile(ucfirst($dest), $filebase) : $filebase;
-  open my $fh, '>', $file or die "$file: $!";
+sub genfile {
+  my ($d) = @_;
   local $Data::Dumper::Indent = 0;
   local $Data::Dumper::Sortkeys = 1;
   local $Data::Dumper::Terse = 1;
-  print $fh "(\n";
-  print $fh Dumper($_).",\n" for @$d;
-  print $fh ");\n";
+  ["(", (map Dumper($_).",", @$d), ");"];
 }
 
-writefile($_, 'funclist.pl', $dest2funcs{$_}) for keys %dest2funcs;
+sub writefile {
+  my ($dest, $filebase, $list) = @_;
+  my $file = $dest ? catfile(ucfirst($dest), $filebase) : $filebase;
+  my $new = join '', map "$_\n", @$list;
+  my $old = do { local $/; open my $fh, '<', $file or die "$file: $!"; <$fh> };
+  return if $new eq $old;
+  open my $fh, '>', $file or die "$file: $!";
+  print $fh $new;
+}
+
+writefile($_, 'funclist.pl', genfile($dest2funcs{$_})) for keys %dest2funcs;
 
 $dest2classdefs{tracking} = [['Tracker','@brief Object-tracker in images']];
-writefile($_, 'classes.pl', $dest2classdefs{$_}) for keys %dest2classdefs;
+writefile($_, 'classes.pl', genfile($dest2classdefs{$_})) for keys %dest2classdefs;
