@@ -154,6 +154,23 @@ sub cdecl {
 }
 }
 
+sub text_trim {
+  my ($text) = @_;
+  $text =~ s/\s+$/\n/gm;
+  $text =~ s/\n{3,}/\n\n/g;
+  $text;
+}
+
+sub make_example {
+  my ($func, $ismethod, $outputs, $allpars) = @_;
+  my @inputs = grep !$_->{is_output}, $ismethod ? @$allpars[1..$#$allpars] : @$allpars;
+  "\n\n=for example\n\n ".
+    (!@$outputs ? '' : "(@{[join ',', map qq{\$$_->{name}}, @$outputs]}) = ").
+    ($ismethod ? '$obj->' : '')."$func".
+    (@inputs ? '('.join(',', map "\$$_->{name}", @inputs).')' : '').
+    ";\n\n";
+}
+
 sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
@@ -166,8 +183,10 @@ sub genpp {
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
     die "Error in $func: OtherPars '$_->{name}' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($_)} for grep $_->{is_other} && $_->{type_pp} =~ /^[A-Z]/ && $_->{is_output}, @allpars;
+    my @outputs = grep $_->{is_output}, @allpars;
     if (!grep $_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}, @allpars) {
-      $hash{Doc} = doxy2pdlpod($doxy);
+      $doxy->{brief}[0] .= make_example($func, $ismethod, \@outputs, \@allpars);
+      $hash{Doc} = text_trim doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
       pp_addpm("*$func = \\&${main::PDLOBJ}::$func;\n") if !$ismethod;
       pp_add_exported($func);
@@ -189,7 +208,6 @@ EOF
     }
     my @defaults = map $_->default_pl, @allpars;
     my (@pars, @otherpars); push @{$_->{is_other} ? \@otherpars : \@pars}, $_ for @allpars;
-    my @outputs = grep $_->{is_output}, @allpars;
     my @pdl_inits = grep !$_->{dimless}, @pars;
     my $compmode = grep $_->{use_comp}, @pdl_inits;
     pop @allpars if my $retcapture = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? 'res' : '$res()');
@@ -208,7 +226,8 @@ EOF
       Code => "void *vptmp;\ncw_error CW_err;\n",
     );
     $doxy->{brief}[0] .= " NO BROADCASTING." if $compmode;
-    $hash{Doc} = doxy2pdlpod($doxy);
+    $doxy->{brief}[0] .= make_example($func, $ismethod, \@outputs, \@allpars);
+    $hash{Doc} = text_trim doxy2pdlpod($doxy);
     my $destroy_in = join '', map $_->destroy_code($compmode), grep !$_->{is_output}, @pdl_inits;
     my $destroy_out = join '', map $_->destroy_code($compmode), grep $_->{is_output}, @pdl_inits;
     my @nonfixed_outputs = grep $_->{is_output}, @pdl_inits;
@@ -244,7 +263,9 @@ sub genheader {
   my %class2doc = map +($_->[0]=>$_->[1]), @classdata;
   my @classes = sort keys %class2doc;
   my $descrip_label = @classes ? join(', ', @classes) : $last;
-  my $synopsis = join '', map "\n \$obj = PDL::OpenCV::$_->new;", @classes;
+  my $synopsis = join '', map "\n \$obj = PDL::OpenCV::$_->new@{[
+    @{$extra_cons_args{$_} || []} ? '('.join(', ', map qq{\$$_->[1]}, @{$extra_cons_args{$_} || []}).')' : ''
+  ]};", @classes;
   pp_addpm({At=>'Top'},<<"EOPM");
 =head1 NAME
 \nPDL::OpenCV::$last - PDL bindings for OpenCV $descrip_label
@@ -279,9 +300,9 @@ $doc\n\n
 \n=for ref
 \nInitialize OpenCV $c object.
 \n=for example
-\n  \$obj = PDL::OpenCV::$c->new(@{[
-  join ', ', map "\$$_->[1]", @{$extra_cons_args{$c} || []}
-]});
+\n  \$obj = PDL::OpenCV::$c->new@{[
+  @{$extra_cons_args{$c} || []} ? '('.join(', ', map qq{\$$_->[1]}, @{$extra_cons_args{$c} || []}).')' : ''
+]};
 \n=cut
 EOD
     pp_addxs(<<EOF);
