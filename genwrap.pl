@@ -8,6 +8,7 @@ use PDL::Core qw/howbig/;
 require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %extra_cons_args);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, Mat=>[]) };
+my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
 my %overrides = (
   Tracker => {
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
@@ -128,7 +129,7 @@ EOF
 sub gen_gettype {
   my @specs = map [
     $_->numval, $_->integer ? ($_->unsigned ? 'U' : 'S') : 'F', 8*howbig($_)
-  ], grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
+  ], @PDLTYPES_SUPPORTED;
   <<EOF;
 int get_pdltype(const int cvtype) {
   switch (CV_MAT_DEPTH(cvtype)) {
@@ -196,49 +197,50 @@ sub gen_code {
 sub gen_wrapper {
   my ($class, @dims) = @_;
   my $ptr_only = $ptr_only{$class};
+  my $wrapper = "${class}Wrapper";
   my $hstr = <<EOF;
-typedef struct ${class}Wrapper ${class}Wrapper;
+typedef struct $wrapper $wrapper;
 #ifdef __cplusplus
-struct ${class}Wrapper {
+struct $wrapper {
 	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : "cv::${class}"]} held;
 };
 #endif
-cw_error cw_${class}_new(${class}Wrapper **cw_retval, char *klass@{[
+cw_error cw_${class}_new($wrapper **cw_retval, char *klass@{[
   map ", @$_", @{$extra_cons_args{$class} || []}
 ]});
-void cw_${class}_DESTROY(${class}Wrapper *wrapper);
+void cw_${class}_DESTROY($wrapper *wrapper);
 EOF
   my $cstr = <<EOF;
-@{[$ptr_only ? '' : "cw_error cw_${class}_new(${class}Wrapper **cw_retval, char *klass) {
+@{[$ptr_only ? '' : "cw_error cw_${class}_new($wrapper **cw_retval, char *klass) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
-  *cw_retval = new ${class}Wrapper;
+  *cw_retval = new $wrapper;
  } catch (const std::exception& e) {
   CW_err = {CW_EUSERERROR,strdup(e.what()),1};
  }
  return CW_err;
 }"]}
-void cw_${class}_DESTROY(${class}Wrapper * wrapper) {
+void cw_${class}_DESTROY($wrapper * wrapper) {
 	delete wrapper;
 }
 EOF
   if (@dims) {
     $hstr .= <<EOF;
-cw_error cw_${class}_newWithVals(${class}Wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]});
-cw_error cw_${class}_getVals(${class}Wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @dims]});
+cw_error cw_${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]});
+cw_error cw_${class}_getVals($wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @dims]});
 EOF
     $cstr .= <<EOF;
-cw_error cw_${class}_newWithVals(${class}Wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]}) {
+cw_error cw_${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]}) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
-  *cw_retval = new ${class}Wrapper;
+  *cw_retval = new $wrapper;
   (*cw_retval)->held = cv::${class}(@{[join ',', map $_->[1], @dims]});
  } catch (const std::exception& e) {
   CW_err = {CW_EUSERERROR,strdup(e.what()),1};
  }
  return CW_err;
 }
-cw_error cw_${class}_getVals(${class}Wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @dims]}) {
+cw_error cw_${class}_getVals($wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @dims]}) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @dims]}
