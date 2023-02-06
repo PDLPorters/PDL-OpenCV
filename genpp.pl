@@ -161,7 +161,7 @@ sub genpp {
     $hash{PMFunc} = '' if $ismethod;
     my $doxy = doxyparse($doc);
     my $pcount = 1;
-    my $cfunc = join('_', grep length,'cw',$class,$func);
+    my $cfunc = join('_', 'cw', my $pfunc = join '_', grep length,$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
@@ -195,12 +195,13 @@ EOF
     pop @allpars if my $retcapture = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? 'res' : '$res()');
     %hash = (%hash,
       Pars => join('; ', map $_->par, @pars), OtherPars => join('; ', map $_->par, @otherpars),
+      PMFunc => ($ismethod ? '' : '*'.$func.' = \&'.$::PDLOBJ.'::'.$pfunc.";\n"),
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
   my (@{[join ',', map "\$$_->{name}", grep !$_->{is_output}, @allpars]}) = \@_;
   @{[!@outputs ? '' : "my (@{[join ',', map qq{\$$_->{name}}, @outputs]});"]}
   @{[ join "\n  ", @defaults ]}
-  ${main::PDLOBJ}::_${func}_int(@{[join ',', map '$'.$_->{name}, @pars, @otherpars]});
+  ${main::PDLOBJ}::_${pfunc}_int(@{[join ',', map '$'.$_->{name}, @pars, @otherpars]});
   @{[!@outputs ? '' : "!wantarray ? \$$outputs[-1]{name} : (@{[join ',', map qq{\$$_->{name}}, @outputs]})"]}
 }
 EOF
@@ -234,7 +235,7 @@ EOF
         $destroy_in, $destroy_out,
         "$IF_ERROR_RETURN;\n";
     }
-    pp_def($func, %hash);
+    pp_def($pfunc, %hash);
 }
 
 sub genheader {
