@@ -15,8 +15,11 @@ my %overrides = (
   },
 );
 my %ptr_only = map +($_=>1), qw(Tracker LineSegmentDetector);
+my $CATCH = q[catch (const std::exception& e) {
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
+ }];
 my %constructor_override = (
-  Tracker => <<'EOF',
+  Tracker => <<EOF,
 #if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
 # define TRACKER_RECT_TYPE cv::Rect
 #else
@@ -27,21 +30,17 @@ cw_error cw_Tracker_new(TrackerWrapper **cw_retval, char *klass) {
  try {
   *cw_retval = new TrackerWrapper;
   (*cw_retval)->held = cv::TrackerKCF::create();
- } catch (const std::exception& e) {
-  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
- }
+ } $CATCH
  return CW_err;
 }
 EOF
-  LineSegmentDetector => <<'EOF',
+  LineSegmentDetector => <<EOF,
 cw_error cw_LineSegmentDetector_new(LineSegmentDetectorWrapper **cw_retval, char *klass, int lsd_type) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new LineSegmentDetectorWrapper;
   (*cw_retval)->held = cv::createLineSegmentDetector(lsd_type);
- } catch (const std::exception& e) {
-  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
- }
+ } $CATCH
  return CW_err;
 }
 EOF
@@ -55,7 +54,7 @@ my $CHEADER = <<'EOF';
 /* use C name mangling */
 extern "C" {
 EOF
-my $CBODY_GLOBAL = <<'EOF';
+my $CBODY_GLOBAL = <<EOF;
 cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
@@ -64,9 +63,7 @@ cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, cons
     (*cw_retval)->held = cv::Mat();
   else
     (*cw_retval)->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
- } catch (const std::exception& e) {
-  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
- }
+ } $CATCH
  return CW_err;
 }
 cw_error cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
@@ -76,18 +73,14 @@ cw_error cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c,
   *l = wrapper->held.channels();
   *c = wrapper->held.cols;
   *r = wrapper->held.rows;
- } catch (const std::exception& e) {
-  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
- }
+ } $CATCH
  return CW_err;
 }
 cw_error cw_Mat_ptr(void **cw_retval, MatWrapper *self) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = self->held.ptr();
- } catch (const std::exception& e) {
-  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
- }
+ } $CATCH
  return CW_err;
 }
 EOF
@@ -189,7 +182,7 @@ sub gen_code {
 	$str .= join(', ', @cvargs).")".($ret eq 'char *' ? ".c_str())" : "").";\n";
 	$str .= $after_ret;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
-	$str .= " } catch (const std::exception& e) {\n  CW_err = {CW_EUSERERROR,strdup(e.what()),1};\n }\n return CW_err;\n";
+	$str .= " } $CATCH\n return CW_err;\n";
 	$str .= "}\n\n";
 	return ($hstr,$str);
 }
@@ -215,9 +208,7 @@ EOF
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
- } catch (const std::exception& e) {
-  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
- }
+ } $CATCH
  return CW_err;
 }"]}
 void cw_${class}_DESTROY($wrapper * wrapper) {
@@ -235,18 +226,14 @@ cw_error cw_${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1
  try {
   *cw_retval = new $wrapper;
   (*cw_retval)->held = cv::${class}(@{[join ',', map $_->[1], @dims]});
- } catch (const std::exception& e) {
-  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
- }
+ } $CATCH
  return CW_err;
 }
 cw_error cw_${class}_getVals($wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @dims]}) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @dims]}
- } catch (const std::exception& e) {
-  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
- }
+ } $CATCH
  return CW_err;
 }
 EOF
