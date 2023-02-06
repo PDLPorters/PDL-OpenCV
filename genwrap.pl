@@ -18,6 +18,7 @@ my %ptr_only = map +($_=>1), qw(Tracker LineSegmentDetector);
 my $CATCH = q[catch (const std::exception& e) {
   CW_err = {CW_EUSERERROR,strdup(e.what()),1};
  }];
+my $wrap_re = qr/^[A-Z]/;
 my %constructor_override = (
   Tracker => <<EOF,
 #if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
@@ -147,7 +148,7 @@ sub gen_code {
 	my $opt = $overrides{$class}{$name} || {};
 	my (@input_args, @cvargs, $methodvar);
 	my ($func_ret, $cpp_ret, $after_ret) = ($ret, '', '');
-	if ($ret =~ /^[A-Z]/) {
+	if ($ret =~ $wrap_re) {
 		$func_ret = "${ret}Wrapper *";
 		$cpp_ret = "cv::$ret cpp_retval = ";
 		$after_ret = "  cw_${ret}_new(cw_retval, NULL); (*cw_retval)->held = cpp_retval;\n";
@@ -162,11 +163,11 @@ sub gen_code {
 	}
 	while (@params) {
 		my ($s, $v) = @{shift @params};
-		my $was_ptr = $s =~ /^[A-Z]/ ? $s =~ s/\s*\*+$// : 0;
+		my $was_ptr = $s =~ $wrap_re ? $s =~ s/\s*\*+$// : 0;
 		$s = $type_overrides{$s}[1] if $type_overrides{$s};
-		my $ctype = $s . ($s =~ /^[A-Z]/ ? "Wrapper *" : '');
+		my $ctype = $s . ($s =~ $wrap_re ? "Wrapper *" : '');
 		push @input_args, "$ctype $v";
-		push @cvargs, $s =~ /^[A-Z]/ ? ($was_ptr ? '&' : '')."$v->held" : $v;
+		push @cvargs, $s =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held" : $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $name;
 	my $str = "cw_error $fname(" . join(", ", @input_args) . ")";

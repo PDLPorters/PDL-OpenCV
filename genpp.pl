@@ -33,7 +33,7 @@ our %DIMTYPES = (
 sub new {
   my ($class, $pcount, $type, $name, $default, $f) = @_;
   my %flags = map +($_=>1), @{$f||[]};
-  my $self = bless {type=>$type, name=>$name, is_io=>$flags{'/IO'}, is_output=>$flags{'/O'}}, $class;
+  my $self = bless {type=>$type, name=>$name, is_io=>$flags{'/IO'}, is_output=>$flags{'/O'}, pcount => $pcount}, $class;
   $self->{type_pp} = $type_overrides{$type} ? $type_overrides{$type}[0] : $type;
   $self->{type_c} = $type_overrides{$type} ? $type_overrides{$type}[1] : $type;
   $self->{default} = $default if defined $default and length $default;
@@ -45,7 +45,6 @@ sub new {
   }
   @$self{qw(was_ptr type)} = (1, $type) if $type =~ s/\s*\*+$//;
   %$self = (%$self,
-    pcount => $pcount,
     type_c => "${type}Wrapper *",
     pdltype => '',
     fixeddims => 0,
@@ -298,6 +297,8 @@ MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
 EOF
     genpp(@$_) for grep $_->[0] eq $c, @flist;
   }
+  pp_export_nothing();
+  pp_add_exported(map $_->[1], grep !$_->[3], @flist);
   genconsts("::$last");
 }
 
