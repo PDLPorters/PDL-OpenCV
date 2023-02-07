@@ -30,6 +30,7 @@ our %DIMTYPES = (
   Scalar=>[[qw(double v0 val[0])], [qw(double v1 val[1])], [qw(double v2 val[2])], [qw(double v3 val[3])]],
   Size=>[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
 );
+our %CTYPE2PDL = map +($_->realctype => $_->ppforcetype), PDL::Types::types();
 sub new {
   my ($class, $pcount, $type, $name, $default, $f) = @_;
   my %flags = map +($_=>1), @{$f||[]};
@@ -40,7 +41,9 @@ sub new {
   $self->{default} = $default if defined $default and length $default;
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'char *';
   if ($self->{is_vector}) {
-    @$self{qw(pdltype type_c blank destroy)} = ($nonvector_type, "${type}Wrapper *",
+    $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};
+    $self->{use_comp} = 1 if $spec and $self->{is_output};
+    @$self{qw(pdltype type_c blank destroy)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, "${type}Wrapper *",
       "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN",
       "cw_${type}_DESTROY",
     );
@@ -60,7 +63,7 @@ sub new {
   );
   if (my $spec = $DIMTYPES{$type}) {
     $self->{fixeddims} = 1;
-    $self->{pdltype} = $spec->[0][0] eq 'ptrdiff_t' ? "indx" : $spec->[0][0];
+    $self->{pdltype} = $CTYPE2PDL{$spec->[0][0]};
   } elsif ($type ne 'Mat') {
     @$self{qw(is_other use_comp)} = (1,1);
   }
@@ -88,9 +91,12 @@ sub _par {
   return "@$self{qw(type_c name)}" if $self->{naive_otherpar};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return "$name(l$pcount,c$pcount,r$pcount)" if $type eq 'Mat';
-  return "$name(n${type}$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims};
+  return "$name(n${type}$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims} and !$self->{is_vector};
   my $i = 0;
-  return "$name(".join(',', map "n${pcount}d".$i++, 1..$self->{is_vector}).")" if $self->{is_vector};
+  return "$name(".join(',',
+    (!$self->{fixeddims} ? () : "n$self->{type_pp}${pcount}=".scalar(@{$DIMTYPES{$self->{type_pp}}})),
+    (map "n${pcount}d".$i++, 1..$self->{is_vector}), ).")"
+    if $self->{is_vector};
   "PDL__OpenCV__$type $name";
 }
 sub frompdl {
@@ -120,7 +126,7 @@ sub topdl1 {
   die "Called topdl1 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return
-    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_getDim(&\$SIZE(n${pcount}d0, ".($iscomp ? "\$COMP($name)" : $name).")); $IF_ERROR_RETURN;\n"
+    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_getDim(&\$SIZE(n${pcount}d0), ".($iscomp ? "\$COMP($name" : $name).")); $IF_ERROR_RETURN;\n"
     if $self->{is_vector};
   return
     "CW_err = cw_Mat_pdlDims(".($iscomp ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"
@@ -132,9 +138,10 @@ sub topdl2 {
   die "Called topdl2 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return <<EOF if $self->{is_vector};
-CW_err = cw_${type}_getPtr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
+CW_err = cw_${type}_get@{[$self->{fixeddims} ? 'Data' : 'Ptr']}(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
 $IF_ERROR_RETURN;
 memmove(\$P($name), vptmp, \$PDL($name)->nbytes);
+@{[$self->{fixeddims} ? 'free(vptmp);' : '']}
 EOF
   return <<EOF if !$self->{fixeddims};
 CW_err = cw_Mat_ptr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
@@ -171,7 +178,7 @@ sub xs_par {
 }
 sub cdecl {
   my ($self) = @_;
-  ($self->{type_c} =~ /^[A-Z]/ ? $self->{type_c} : PDL::Type->new($self->{type_pp})->ctype)." $self->{name}";
+  ($self->{type_c} =~ /Wrapper/ ? $self->{type_c} : PDL::Type->new($self->{type_pp})->ctype)." $self->{name}";
 }
 }
 

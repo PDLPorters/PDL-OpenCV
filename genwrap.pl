@@ -9,7 +9,7 @@ require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %extra_cons_args);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, Mat=>[]) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
-my @VECTORTYPES = qw(int float);
+my %VECTORTYPES = (%PP::OpenCV::DIMTYPES, map +($_=>[]), qw(int float));
 my %overrides = (
   Tracker => {
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
@@ -198,7 +198,10 @@ sub gen_wrapper {
 typedef struct $wrapper $wrapper;
 #ifdef __cplusplus
 struct $wrapper {
-	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : $is_vector ? "std::vector<$class>" : "cv::${class}"]} held;
+	@{[$ptr_only ? "cv::Ptr<cv::${class}>" :
+	  !$is_vector ? "cv::${class}" :
+	  "std::vector<@{[@fields ? qq{cv::$class} : $class]}>"
+	]} held;
 };
 #endif
 cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
@@ -224,12 +227,21 @@ cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? 
 cw_error cw_$vector_str${class}_getDim(ptrdiff_t *count, $wrapper *self);
 cw_error cw_$vector_str${class}_get@{[@fields ? 'Data' : 'Ptr']}(void **data, $wrapper *self);
 EOF
+    my $field_count = 0;
     $cstr .= <<EOF;
-cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, $class *data, ptrdiff_t count) {
+cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? $class : $fields[0][0]]} *data, ptrdiff_t count) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
-  (*cw_retval)->held = std::vector<$class>(data, data + count);
+  std::vector<@{[@fields ? qq{cv::$class} : $class]}> vec = (*cw_retval)->held = std::vector<@{[@fields ? qq{cv::$class} : $class]}>@{[
+    !@fields ? "(data, data + count);" :
+    join "\n  ", "();",
+      "ptrdiff_t i = 0, stride = @{[0+@fields]};",
+      "for (i = 0; i < count; i++) {",
+      "  cv::$class tmp(".join(',', map "data[i*stride + ".$field_count++."]", @fields).");",
+      "  vec.push_back(tmp);",
+      "}",
+  ]}
  } $CATCH
  return CW_err;
 }
@@ -243,7 +255,15 @@ cw_error cw_$vector_str${class}_getDim(ptrdiff_t *count, $wrapper *self) {
 cw_error cw_$vector_str${class}_get@{[@fields ? 'Data' : 'Ptr']}(void **data, $wrapper *self) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
-  *data = self->held.data();
+  @{[do {$field_count = 0; @fields ? "$fields[0][0] *ptmp;" : ""}]}
+  *data = @{[!@fields ? 'self->held.data();' :
+  join "\n  ",
+    "ptmp = ($fields[0][0] *)malloc(sizeof($fields[0][0]) * @{[0+@fields]} * self->held.size());",
+    "ptrdiff_t i = 0, stride = @{[0+@fields]}, count = self->held.size();",
+    "for (i = 0; i < count; i++) {",
+    (map "  ptmp[i*stride + ".$field_count++."] = self->held[i].@{[$_->[2]||$_->[1]]};", @fields),
+    "}",
+  ]}
  } $CATCH
  return CW_err;
 }
@@ -292,8 +312,8 @@ sub gen_chfiles {
     my ($xhstr, $xcstr) = gen_wrapper($_, 0, @{$typespecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
-  for (@$vectorspecs) {
-    my ($xhstr, $xcstr) = gen_wrapper($_, 1);
+  for (sort keys %$vectorspecs) {
+    my ($xhstr, $xcstr) = gen_wrapper($_, 1, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   $hstr .= $extras->[0] || '';
@@ -340,7 +360,7 @@ my $typespec = $filegen eq 'opencv_wrapper' ? \%GLOBALTYPES : !-f 'classes.pl' ?
   my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
   +{map +($_->[0]=>[]), @classlist}
 };
-my $vectorspecs = $filegen eq 'opencv_wrapper' ? \@VECTORTYPES : [];
+my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
 my $consts = $filegen eq 'opencv_wrapper' ? [] : -f 'constlist.txt' ? gen_consts() : [];

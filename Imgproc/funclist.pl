@@ -69,6 +69,19 @@ floating-point.
 channels is derived automatically from src and code.
 
 @see @ref imgproc_color_conversions',0,'void',['Mat','src','',[]],['Mat','dst','',['/O']],['int','code','',[]],['int','dstCn','0',[]]],
+['','ellipse2Poly','@brief Approximates an elliptic arc with a polyline.
+
+The function ellipse2Poly computes the vertices of a polyline that approximates the specified
+elliptic arc. It is used by #ellipse. If `arcStart` is greater than `arcEnd`, they are swapped.
+
+@param center Center of the arc.
+@param axes Half of the size of the ellipse main axes. See #ellipse for details.
+@param angle Rotation angle of the ellipse in degrees. See #ellipse for details.
+@param arcStart Starting angle of the elliptic arc in degrees.
+@param arcEnd Ending angle of the elliptic arc in degrees.
+@param delta Angle between the subsequent polyline vertices. It defines the approximation
+accuracy.
+@param pts Output vector of polyline vertices.',0,'void',['Point','center','',[]],['Size','axes','',[]],['int','angle','',[]],['int','arcStart','',[]],['int','arcEnd','',[]],['int','delta','',[]],['vector_Point','pts','',['/O','/Ref']]],
 ['','getAffineTransform','@overload',0,'Mat',['Mat','src','',[]],['Mat','dst','',[]]],
 ['','getGaborKernel','@brief Returns Gabor filter coefficients.
 
