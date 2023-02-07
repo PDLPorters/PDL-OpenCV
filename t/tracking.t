@@ -9,6 +9,17 @@ use PDL::OpenCV::Tracking;
 use PDL::OpenCV::Videoio;
 use File::Temp qw(tempfile);
 
+{
+  my $imgb = zeroes 3,500,500;
+  for (1..2) {
+    my $cpy = $imgb->copy;
+    my ($pts) = ellipse2Poly([250,250],[200,100],45,60,120+$_,1);
+    rectangle($cpy, $_, $_+1, [255,0,0,0]) for $pts->dog;
+    imshow("ud", $cpy);
+    waitKey(50);
+  }
+}
+
 my $vfile='t/Megamind.avi';
 my $vc = PDL::OpenCV::VideoCapture->new;
 die if !$vc->open($vfile, CAP_ANY, []);
