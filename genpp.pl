@@ -40,8 +40,9 @@ sub new {
   $self->{default} = $default if defined $default and length $default;
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'char *';
   if ($self->{is_vector}) {
-    @$self{qw(pdltype type_c blank)} = ($nonvector_type, "${type}Wrapper *",
-      "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN"
+    @$self{qw(pdltype type_c blank destroy)} = ($nonvector_type, "${type}Wrapper *",
+      "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN",
+      "cw_${type}_DESTROY",
     );
     return $self;
   } elsif ($self->{type_pp} !~ /^[A-Z]/) {
@@ -119,7 +120,7 @@ sub topdl1 {
   die "Called topdl1 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return
-    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_getDim(".($iscomp ? "\$COMP($name)" : $name).", &\$SIZE(n${pcount}d0)); $IF_ERROR_RETURN;\n"
+    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_getDim(&\$SIZE(n${pcount}d0, ".($iscomp ? "\$COMP($name)" : $name).")); $IF_ERROR_RETURN;\n"
     if $self->{is_vector};
   return
     "CW_err = cw_Mat_pdlDims(".($iscomp ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"

@@ -190,7 +190,7 @@ sub gen_code {
 }
 
 sub gen_wrapper {
-  my ($class, $is_vector, @dims) = @_;
+  my ($class, $is_vector, @fields) = @_;
   my $ptr_only = $ptr_only{$class};
   my $vector_str = $is_vector ? 'vector_' : '';
   my $wrapper = "$vector_str${class}Wrapper";
@@ -220,9 +220,9 @@ void cw_$vector_str${class}_DESTROY($wrapper * wrapper) {
 EOF
   if ($is_vector) {
     $hstr .= <<EOF;
-cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, $class *data, ptrdiff_t count);
-cw_error cw_$vector_str${class}_getPtr($wrapper *self, void **data);
-cw_error cw_$vector_str${class}_getDim($wrapper *self, ptrdiff_t *count);
+cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? $class : $fields[0][0]]} *data, ptrdiff_t count);
+cw_error cw_$vector_str${class}_getDim(ptrdiff_t *count, $wrapper *self);
+cw_error cw_$vector_str${class}_get@{[@fields ? 'Data' : 'Ptr']}(void **data, $wrapper *self);
 EOF
     $cstr .= <<EOF;
 cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, $class *data, ptrdiff_t count) {
@@ -233,39 +233,39 @@ cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, $class *data, 
  } $CATCH
  return CW_err;
 }
-cw_error cw_$vector_str${class}_getPtr($wrapper *self, void **data) {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
-  *data = self->held.data();
- } $CATCH
- return CW_err;
-}
-cw_error cw_$vector_str${class}_getDim($wrapper *self, ptrdiff_t *count) {
+cw_error cw_$vector_str${class}_getDim(ptrdiff_t *count, $wrapper *self) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *count = self->held.size();
  } $CATCH
  return CW_err;
 }
-EOF
-  } elsif (@dims) {
-    $hstr .= <<EOF;
-cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]});
-cw_error cw_$vector_str${class}_getVals($wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @dims]});
-EOF
-    $cstr .= <<EOF;
-cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]}) {
+cw_error cw_$vector_str${class}_get@{[@fields ? 'Data' : 'Ptr']}(void **data, $wrapper *self) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
-  *cw_retval = new $wrapper;
-  (*cw_retval)->held = cv::${class}(@{[join ',', map $_->[1], @dims]});
+  *data = self->held.data();
  } $CATCH
  return CW_err;
 }
-cw_error cw_$vector_str${class}_getVals($wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @dims]}) {
+EOF
+  } elsif (@fields) {
+    $hstr .= <<EOF;
+cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @fields]});
+cw_error cw_$vector_str${class}_getVals($wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @fields]});
+EOF
+    $cstr .= <<EOF;
+cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @fields]}) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
-  @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @dims]}
+  *cw_retval = new $wrapper;
+  (*cw_retval)->held = cv::${class}(@{[join ',', map $_->[1], @fields]});
+ } $CATCH
+ return CW_err;
+}
+cw_error cw_$vector_str${class}_getVals($wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @fields]}) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @fields]}
  } $CATCH
  return CW_err;
 }
