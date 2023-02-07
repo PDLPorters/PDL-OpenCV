@@ -216,6 +216,7 @@ EOF
       PMFunc => ($ismethod ? '' : '*'.$func.' = \&'.$::PDLOBJ.'::'.$pfunc.";\n"),
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
+  barf "Usage: ${main::PDLOBJ}::$func(@{[join ',', map "\\\$$_->{name}", @inputs]})\n" if \@_ < @{[0+(grep !defined $_->{default} || !length $_->{default}, @inputs)]};
   my (@{[join ',', map "\$$_->{name}", @inputs]}) = \@_;
   @{[!@outputs ? '' : "my (@{[join ',', map qq{\$$_->{name}}, @outputs]});"]}
   @{[ join "\n  ", @defaults ]}
