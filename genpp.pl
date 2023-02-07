@@ -34,11 +34,17 @@ sub new {
   my ($class, $pcount, $type, $name, $default, $f) = @_;
   my %flags = map +($_=>1), @{$f||[]};
   my $self = bless {type=>$type, name=>$name, is_io=>$flags{'/IO'}, is_output=>$flags{'/O'}, pcount => $pcount}, $class;
-  $self->{type_pp} = $type_overrides{$type} ? $type_overrides{$type}[0] : $type;
-  $self->{type_c} = $type_overrides{$type} ? $type_overrides{$type}[1] : $type;
+  $self->{is_vector} = (my $nonvector_type = $type) =~ s/vector_//g;
+  $self->{type_pp} = $type_overrides{$nonvector_type} ? $type_overrides{$nonvector_type}[0] : $nonvector_type;
+  $self->{type_c} = $type_overrides{$nonvector_type} ? $type_overrides{$nonvector_type}[1] : $nonvector_type;
   $self->{default} = $default if defined $default and length $default;
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'char *';
-  if ($self->{type_pp} !~ /^[A-Z]/) {
+  if ($self->{is_vector}) {
+    @$self{qw(pdltype type_c blank)} = ($nonvector_type, "${type}Wrapper *",
+      "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN"
+    );
+    return $self;
+  } elsif ($self->{type_pp} !~ /^[A-Z]/) {
     (my $pdltype = $self->{type_pp}) =~ s#\s*\*+$##;
     @$self{qw(dimless pdltype was_ptr)} = (1, $pdltype, $type ne $pdltype);
     return $self;
@@ -82,6 +88,8 @@ sub _par {
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return "$name(l$pcount,c$pcount,r$pcount)" if $type eq 'Mat';
   return "$name(n${type}$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims};
+  my $i = 0;
+  return "$name(".join(',', map "n${pcount}d".$i++, 1..$self->{is_vector}).")" if $self->{is_vector};
   "PDL__OpenCV__$type $name";
 }
 sub frompdl {
@@ -91,6 +99,10 @@ sub frompdl {
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   my $localname = $iscomp ? "${name}_LOCAL" : $name;
   my $decl = "$self->{type_c} $localname;\n";
+  return $decl.qq{CW_err = cw_${type}_newWithVals(@{[
+    join ',', "&$localname",
+        $iscomp ? "(($self->{type_c} *)$name->data),$name->dims[0]" : "\$P($name),\$SIZE(n${pcount}d0)"
+      ]})}."; $IF_ERROR_RETURN;\n" if $self->{is_vector};
   return $decl."CW_err = cw_Mat_newWithDims(" .
     ($iscomp
       ? join ',', "&$localname", (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
@@ -107,6 +119,9 @@ sub topdl1 {
   die "Called topdl1 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return
+    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_getDim(".($iscomp ? "\$COMP($name)" : $name).", &\$SIZE(n${pcount}d0)); $IF_ERROR_RETURN;\n"
+    if $self->{is_vector};
+  return
     "CW_err = cw_Mat_pdlDims(".($iscomp ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"
     if !$self->{fixeddims};
   "";
@@ -115,6 +130,11 @@ sub topdl2 {
   my ($self, $iscomp) = @_;
   die "Called topdl2 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  return <<EOF if $self->{is_vector};
+CW_err = cw_${type}_getPtr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
+$IF_ERROR_RETURN;
+memmove(\$P($name), vptmp, \$PDL($name)->nbytes);
+EOF
   return <<EOF if !$self->{fixeddims};
 CW_err = cw_Mat_ptr(&vptmp, @{[$iscomp ? "\$COMP($name)" : $name]});
 $IF_ERROR_RETURN;
@@ -184,7 +204,7 @@ sub genpp {
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
     die "Error in $func: OtherPars '$_->{name}' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($_)} for grep $_->{is_other} && $_->{type_pp} =~ /^[A-Z]/ && $_->{is_output}, @allpars;
     my (@inputs, @outputs); push @{$_->{is_output} ? \@outputs : \@inputs}, $_ for @allpars;
-    if (!grep $_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}, @allpars) {
+    if (!grep $_->{is_vector} || ($_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}), @allpars) {
       $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
       $hash{Doc} = text_trim doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");

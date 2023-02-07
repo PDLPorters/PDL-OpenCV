@@ -9,6 +9,7 @@ require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %extra_cons_args);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, Mat=>[]) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
+my @VECTORTYPES = qw(int float);
 my %overrides = (
   Tracker => {
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
@@ -18,7 +19,7 @@ my %ptr_only = map +($_=>1), qw(Tracker LineSegmentDetector);
 my $CATCH = q[catch (const std::exception& e) {
   CW_err = {CW_EUSERERROR,strdup(e.what()),1};
  }];
-my $wrap_re = qr/^[A-Z]/;
+my $wrap_re = qr/^(?:[A-Z]|vector_)/;
 my %constructor_override = (
   Tracker => <<EOF,
 #if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
@@ -189,40 +190,71 @@ sub gen_code {
 }
 
 sub gen_wrapper {
-  my ($class, @dims) = @_;
+  my ($class, $is_vector, @dims) = @_;
   my $ptr_only = $ptr_only{$class};
-  my $wrapper = "${class}Wrapper";
+  my $vector_str = $is_vector ? 'vector_' : '';
+  my $wrapper = "$vector_str${class}Wrapper";
   my $hstr = <<EOF;
 typedef struct $wrapper $wrapper;
 #ifdef __cplusplus
 struct $wrapper {
-	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : "cv::${class}"]} held;
+	@{[$ptr_only ? "cv::Ptr<cv::${class}>" : $is_vector ? "std::vector<$class>" : "cv::${class}"]} held;
 };
 #endif
-cw_error cw_${class}_new($wrapper **cw_retval, char *klass@{[
+cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
   map ", @$_", @{$extra_cons_args{$class} || []}
 ]});
-void cw_${class}_DESTROY($wrapper *wrapper);
+void cw_$vector_str${class}_DESTROY($wrapper *wrapper);
 EOF
   my $cstr = <<EOF;
-@{[$ptr_only ? '' : "cw_error cw_${class}_new($wrapper **cw_retval, char *klass) {
+@{[$ptr_only ? '' : "cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
  } $CATCH
  return CW_err;
 }"]}
-void cw_${class}_DESTROY($wrapper * wrapper) {
+void cw_$vector_str${class}_DESTROY($wrapper * wrapper) {
 	delete wrapper;
 }
 EOF
-  if (@dims) {
+  if ($is_vector) {
     $hstr .= <<EOF;
-cw_error cw_${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]});
-cw_error cw_${class}_getVals($wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @dims]});
+cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, $class *data, ptrdiff_t count);
+cw_error cw_$vector_str${class}_getPtr($wrapper *self, void **data);
+cw_error cw_$vector_str${class}_getDim($wrapper *self, ptrdiff_t *count);
 EOF
     $cstr .= <<EOF;
-cw_error cw_${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]}) {
+cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, $class *data, ptrdiff_t count) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *cw_retval = new $wrapper;
+  (*cw_retval)->held = std::vector<$class>(data, data + count);
+ } $CATCH
+ return CW_err;
+}
+cw_error cw_$vector_str${class}_getPtr($wrapper *self, void **data) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *data = self->held.data();
+ } $CATCH
+ return CW_err;
+}
+cw_error cw_$vector_str${class}_getDim($wrapper *self, ptrdiff_t *count) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *count = self->held.size();
+ } $CATCH
+ return CW_err;
+}
+EOF
+  } elsif (@dims) {
+    $hstr .= <<EOF;
+cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]});
+cw_error cw_$vector_str${class}_getVals($wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @dims]});
+EOF
+    $cstr .= <<EOF;
+cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @dims]}) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
@@ -230,7 +262,7 @@ cw_error cw_${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1
  } $CATCH
  return CW_err;
 }
-cw_error cw_${class}_getVals($wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @dims]}) {
+cw_error cw_$vector_str${class}_getVals($wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @dims]}) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @dims]}
@@ -252,12 +284,16 @@ sub gen_const {
 }
 
 sub gen_chfiles {
-  my ($macro, $extras, $typespecs, $cvheaders, $funclist, $consts, @params) = @_;
+  my ($macro, $extras, $typespecs, $vectorspecs, $cvheaders, $funclist, $consts, @params) = @_;
   my $hstr = sprintf $HHEADER, $macro;
   my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
   $cstr .= $CHEADER;
   for (sort keys %$typespecs) {
-    my ($xhstr, $xcstr) = gen_wrapper($_, @{$typespecs->{$_}});
+    my ($xhstr, $xcstr) = gen_wrapper($_, 0, @{$typespecs->{$_}});
+    $hstr .= $xhstr; $cstr .= $xcstr;
+  }
+  for (@$vectorspecs) {
+    my ($xhstr, $xcstr) = gen_wrapper($_, 1);
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   $hstr .= $extras->[0] || '';
@@ -304,7 +340,8 @@ my $typespec = $filegen eq 'opencv_wrapper' ? \%GLOBALTYPES : !-f 'classes.pl' ?
   my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
   +{map +($_->[0]=>[]), @classlist}
 };
+my $vectorspecs = $filegen eq 'opencv_wrapper' ? \@VECTORTYPES : [];
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
 my $consts = $filegen eq 'opencv_wrapper' ? [] : -f 'constlist.txt' ? gen_consts() : [];
-make_chfiles($filegen, $extras, $typespec, \@cvheaders, $funclist, $consts);
+make_chfiles($filegen, $extras, $typespec, $vectorspecs, \@cvheaders, $funclist, $consts);

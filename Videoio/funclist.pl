@@ -17,14 +17,16 @@
 ['VideoCapture','getBackendName','@brief Returns used backend API name
 
      @note Stream should be opened.',1,'String'],
-['VideoCapture','open','@brief  Opens a video file or a capturing device or an IP video stream for video capturing.
+['VideoCapture','open','@brief  Opens a camera for video capturing
 
     @overload
 
-    Parameters are same as the constructor VideoCapture(const String& filename, int apiPreference = CAP_ANY)
+    The `params` parameter allows to specify extra parameters encoded as pairs `(paramId_1, paramValue_1, paramId_2, paramValue_2, ...)`.
+    See cv::VideoCaptureProperties
+
     @return `true` if the file has been successfully opened
 
-    The method first calls VideoCapture::release to close the already opened file or camera.',1,'bool',['String','filename','',['/C','/Ref']],['int','apiPreference','CAP_ANY',[]]],
+    The method first calls VideoCapture::release to close the already opened file or camera.',1,'bool',['String','filename','',['/C','/Ref']],['int','apiPreference','',[]],['vector_int','params','',['/C','/Ref']]],
 ['VideoCapture','read','@brief Grabs, decodes and returns the next video frame.
 
     @param [out] image the video frame is returned here. If no frames has been grabbed the image will be empty.
