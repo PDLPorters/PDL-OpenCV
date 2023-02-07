@@ -162,12 +162,12 @@ sub text_trim {
 }
 
 sub make_example {
-  my ($func, $ismethod, $outputs, $allpars) = @_;
-  my @inputs = grep !$_->{is_output}, $ismethod ? @$allpars[1..$#$allpars] : @$allpars;
+  my ($func, $ismethod, $inputs, $outputs) = @_;
+  $inputs = [@$inputs[1..$#$inputs]] if $ismethod;
   "\n\n=for example\n\n ".
     (!@$outputs ? '' : "(@{[join ',', map qq{\$$_->{name}}, @$outputs]}) = ").
     ($ismethod ? '$obj->' : '')."$func".
-    (@inputs ? '('.join(',', map "\$$_->{name}", @inputs).')' : '').
+    (@$inputs ? '('.join(',', map "\$$_->{name}", @$inputs).')' : '').
     ";\n\n";
 }
 
@@ -183,9 +183,9 @@ sub genpp {
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
     die "Error in $func: OtherPars '$_->{name}' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($_)} for grep $_->{is_other} && $_->{type_pp} =~ /^[A-Z]/ && $_->{is_output}, @allpars;
-    my @outputs = grep $_->{is_output}, @allpars;
+    my (@inputs, @outputs); push @{$_->{is_output} ? \@outputs : \@inputs}, $_ for @allpars;
     if (!grep $_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}, @allpars) {
-      $doxy->{brief}[0] .= make_example($func, $ismethod, \@outputs, \@allpars);
+      $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
       $hash{Doc} = text_trim doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
       pp_addpm("*$func = \\&${main::PDLOBJ}::$func;\n") if !$ismethod;
@@ -216,7 +216,7 @@ EOF
       PMFunc => ($ismethod ? '' : '*'.$func.' = \&'.$::PDLOBJ.'::'.$pfunc.";\n"),
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
-  my (@{[join ',', map "\$$_->{name}", grep !$_->{is_output}, @allpars]}) = \@_;
+  my (@{[join ',', map "\$$_->{name}", @inputs]}) = \@_;
   @{[!@outputs ? '' : "my (@{[join ',', map qq{\$$_->{name}}, @outputs]});"]}
   @{[ join "\n  ", @defaults ]}
   ${main::PDLOBJ}::_${pfunc}_int(@{[join ',', map '$'.$_->{name}, @pars, @otherpars]});
@@ -226,7 +226,7 @@ EOF
       Code => "void *vptmp;\ncw_error CW_err;\n",
     );
     $doxy->{brief}[0] .= " NO BROADCASTING." if $compmode;
-    $doxy->{brief}[0] .= make_example($func, $ismethod, \@outputs, \@allpars);
+    $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
     $hash{Doc} = text_trim doxy2pdlpod($doxy);
     my $destroy_in = join '', map $_->destroy_code($compmode), grep !$_->{is_output}, @pdl_inits;
     my $destroy_out = join '', map $_->destroy_code($compmode), grep $_->{is_output}, @pdl_inits;
