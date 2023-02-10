@@ -228,7 +228,7 @@ EOF
     my (@pars, @otherpars); push @{$_->{is_other} ? \@otherpars : \@pars}, $_ for @allpars;
     my @pdl_inits = grep !$_->{dimless}, @pars;
     my $compmode = grep $_->{use_comp}, @pdl_inits;
-    pop @allpars if my $retcapture = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? 'res' : '$res()');
+    (my $ret_obj) = pop @allpars if my $retcapture = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? 'res' : '$res()');
     %hash = (%hash,
       Pars => join('; ', map $_->par, @pars), OtherPars => join('; ', map $_->par, @otherpars),
       GenericTypes=>(grep !$_->{pdltype}, @pars) ? $T : ['D'],
@@ -269,7 +269,7 @@ EOF
       $hash{Code} .= join '',
         (map $_->frompdl(0), @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->{name}", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        "CW_err = $cfunc(".join(',', ($retcapture ? "&$retcapture" : ()), map $_->c_input, @allpars).");\n",
+        "CW_err = $cfunc(".join(',', ($retcapture ? "&".$ret_obj->c_input(0) : ()), map $_->c_input, @allpars).");\n",
         (map $_->topdl2(0), @nonfixed_outputs),
         $destroy_in, $destroy_out,
         "$IF_ERROR_RETURN;\n";
