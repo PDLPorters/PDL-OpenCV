@@ -43,8 +43,7 @@ sub new {
   if ($self->{is_vector}) {
     $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};
     $self->{use_comp} = 1 if $spec and $self->{is_output};
-    @$self{qw(pdltype type_c blank destroy)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, "${type}Wrapper *",
-      "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN",
+    @$self{qw(pdltype type_c destroy)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, "${type}Wrapper *",
       "cw_${type}_DESTROY",
     );
     return $self;
@@ -59,7 +58,6 @@ sub new {
     pdltype => '',
     fixeddims => 0,
     destroy => "cw_${type}_DESTROY",
-    blank => "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN",
   );
   if (my $spec = $DIMTYPES{$type}) {
     $self->{fixeddims} = 1;
@@ -102,8 +100,8 @@ sub _par {
 sub frompdl {
   my ($self, $compmode) = @_;
   die "Called frompdl on OtherPar" if $self->{is_other};
-  return "$self->{blank};\n" if $compmode and $self->{is_output};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  return "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN;\n" if $compmode and $self->{is_output};
   my $localname = $self->c_input($compmode);
   my $decl = "$self->{type_c} $localname;\n";
   return $decl.qq{CW_err = cw_${type}_newWithVals(@{[
