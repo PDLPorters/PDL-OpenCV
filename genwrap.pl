@@ -243,12 +243,10 @@ cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? 
   *cw_retval = new $wrapper;
   std::vector<@{[@fields ? qq{cv::$class} : $class]}> vec = (*cw_retval)->held = std::vector<@{[@fields ? qq{cv::$class} : $class]}>@{[
     !@fields ? "(data, data + count);" :
-    join "\n  ", "();",
+    join "\n  ", "(count);",
       "ptrdiff_t i = 0, stride = @{[0+@fields]};",
-      "for (i = 0; i < count; i++) {",
-      "  cv::$class tmp(".join(',', map "data[i*stride + ".$field_count++."]", @fields).");",
-      "  vec.push_back(tmp);",
-      "}",
+      "for (i = 0; i < count; i++)",
+      "  vec[i] = cv::$class(".join(',', map "data[i*stride + ".$field_count++."]", @fields).");",
   ]}
  } $CATCH
  return CW_err;
