@@ -1,0 +1,8 @@
+use strict;
+use warnings;
+use File::Spec::Functions;
+require ''.catfile(updir, 'genpp.pl');
+
+genheader("Objdetect");
+
+pp_done();

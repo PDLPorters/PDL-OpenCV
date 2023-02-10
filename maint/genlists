@@ -58,9 +58,10 @@ my %force = map +($_=>1), qw(
   cv.LineSegmentDetector.compareSegments
   cv.LineSegmentDetector.detect
   cv.LineSegmentDetector.drawSegments
+  cv.QRCodeDetector.detectAndDecodeCurved
 );
 my %class = map +($_=>1), qw(
-  LineSegmentDetector Tracker VideoCapture VideoWriter
+  LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
 );
 
 if (@ARGV) {
