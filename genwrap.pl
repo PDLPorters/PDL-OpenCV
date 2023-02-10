@@ -224,7 +224,7 @@ EOF
   if ($is_vector) {
     $hstr .= <<EOF;
 cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? $class : $fields[0][0]]} *data, ptrdiff_t count);
-cw_error cw_$vector_str${class}_getDim(ptrdiff_t *count, $wrapper *self);
+cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self);
 cw_error cw_$vector_str${class}_get@{[@fields ? 'Data' : 'Ptr']}(void **data, $wrapper *self);
 EOF
     my $field_count = 0;
@@ -245,7 +245,7 @@ cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? 
  } $CATCH
  return CW_err;
 }
-cw_error cw_$vector_str${class}_getDim(ptrdiff_t *count, $wrapper *self) {
+cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *count = self->held.size();
