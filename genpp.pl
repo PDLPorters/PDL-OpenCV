@@ -104,7 +104,7 @@ sub frompdl {
   die "Called frompdl on OtherPar" if $self->{is_other};
   return "$self->{blank};\n" if $compmode and $self->{is_output};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
-  my $localname = $compmode ? "${name}_LOCAL" : $name;
+  my $localname = $self->c_input($compmode);
   my $decl = "$self->{type_c} $localname;\n";
   return $decl.qq{CW_err = cw_${type}_newWithVals(@{[
     join ',', "&$localname",
@@ -152,10 +152,7 @@ EOF
 }
 sub destroy_code {
   my ($self, $compmode) = @_;
-  "$self->{destroy}(".(
-    !$compmode ? $self->{name} :
-    !$self->{is_output} ? "$self->{name}_LOCAL" : "\$COMP($self->{name})"
-  ).");\n";
+  "$self->{destroy}(".$self->c_input($compmode).");\n";
 }
 sub default_pl {
   my ($self) = @_;
@@ -266,7 +263,7 @@ EOF
         "cw_error CW_err;\n",
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", grep $_->{dimless} || $_->{fixeddims}, @allpars),
         (map $_->frompdl(1), @pdl_inits),
-        (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".($_->{is_output}?"\$COMP($_->{name})":"$_->{name}_LOCAL"), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
+        (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".$_->c_input(1), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         "CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map $_->c_input(1), @allpars).");\n",
         $destroy_in,
         "$IF_ERROR_RETURN;\n";
