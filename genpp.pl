@@ -142,9 +142,8 @@ memmove(\$P($name), vptmp, \$PDL($name)->nbytes);
 @{[$self->{fixeddims} ? 'free(vptmp);' : '']}
 EOF
   return <<EOF if !$self->{fixeddims};
-CW_err = cw_Mat_ptr(&vptmp, @{[$self->c_input($compmode)]});
+CW_err = cw_${type}_copyDataTo(@{[$self->c_input($compmode)]}, \$P($name), \$PDL($name)->nbytes);
 $IF_ERROR_RETURN;
-memmove(\$P($name), vptmp, \$PDL($name)->nbytes);
 EOF
   qq{CW_err = cw_${type}_getVals(}.$self->c_input($compmode).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]}); $IF_ERROR_RETURN;\n};
 }

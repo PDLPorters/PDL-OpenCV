@@ -78,10 +78,12 @@ cw_error cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c,
  } $CATCH
  return CW_err;
 }
-cw_error cw_Mat_ptr(void **cw_retval, MatWrapper *self) {
+cw_error cw_Mat_copyDataTo(MatWrapper *self, void *data, ptrdiff_t bytes) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
+ ptrdiff_t shouldbe = self->held.elemSize() * self->held.cols * self->held.rows;
+ SHOULDBE_CHECK(bytes, shouldbe)
  try {
-  *cw_retval = self->held.ptr();
+  memmove(data, self->held.ptr(), bytes);
  } $CATCH
  return CW_err;
 }
@@ -110,9 +112,15 @@ typedef struct {
 #endif
 EOF
 my $HBODY_GLOBAL = <<'EOF';
+#define SHOULDBE_CHECK(got, expected) \
+ if (got != expected) { \
+  char buf[100]; \
+  snprintf(buf, sizeof(buf), "copyDataTo: wrong number of bytes passed; expected %td, passed %td", expected, got); \
+  return {CW_EUSERERROR,strdup(buf),1}; \
+ }
 cw_error cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
-cw_error cw_Mat_ptr(void **cw_retval, MatWrapper *self);
+cw_error cw_Mat_copyDataTo(MatWrapper *self, void *data, ptrdiff_t bytes);
 EOF
 my $HFOOTER = <<'EOF';
 #ifdef __cplusplus
