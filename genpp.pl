@@ -72,11 +72,11 @@ sub new {
 }
 sub c_input {
   my ($self, $compmode) = @_;
-  return $self->{use_comp}?"\$COMP($self->{name})":
-    $self->{name}.($compmode?'_LOCAL':'')
-    if !$self->{dimless};
-  ($self->{type} =~ /\*$/ ? '&' : '').
+  return ($self->{type} =~ /\*$/ ? '&' : '').
     ($compmode ? "(($self->{type_c}*)($self->{name}->data))[0]" : "\$$self->{name}()")
+    if $self->{dimless};
+  return "\$COMP($self->{name})" if $self->{use_comp};
+  $self->{name}.($compmode?'_LOCAL':'');
 }
 sub par {
   my ($self) = @_;
