@@ -233,7 +233,7 @@ EOF
     $hstr .= <<EOF;
 cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? $class : $fields[0][0]]} *data, ptrdiff_t count);
 cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self);
-cw_error cw_$vector_str${class}_get@{[@fields ? 'Data' : 'Ptr']}(void **data, $wrapper *self);
+cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, void *data, ptrdiff_t bytes);
 EOF
     my $field_count = 0;
     $cstr .= <<EOF;
@@ -260,14 +260,16 @@ cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self) {
  } $CATCH
  return CW_err;
 }
-cw_error cw_$vector_str${class}_get@{[@fields ? 'Data' : 'Ptr']}(void **data, $wrapper *self) {
+cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, void *data, ptrdiff_t bytes) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
+ ptrdiff_t i = 0, stride = @{[(0+@fields) || 1]}, count = self->held.size();
+ ptrdiff_t shouldbe = sizeof(@{[@fields ? $fields[0][0] : $class]}) * stride * count;
+ SHOULDBE_CHECK(bytes, shouldbe)
  try {
-  @{[do {$field_count = 0; @fields ? "$fields[0][0] *ptmp;" : ""}]}
-  *data = @{[!@fields ? 'self->held.data();' :
+  @{[!@fields ? 'memmove(data, self->held.data(), bytes);' :
   join "\n  ",
-    "ptmp = ($fields[0][0] *)malloc(sizeof($fields[0][0]) * @{[0+@fields]} * self->held.size());",
-    "ptrdiff_t i = 0, stride = @{[0+@fields]}, count = self->held.size();",
+    do {$field_count = 0; ()},
+    "$fields[0][0] *ptmp = ($fields[0][0] *)data;",
     "for (i = 0; i < count; i++) {",
     (map "  ptmp[i*stride + ".$field_count++."] = self->held[i].@{[$_->[2]||$_->[1]]};", @fields),
     "}",

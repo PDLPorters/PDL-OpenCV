@@ -135,13 +135,7 @@ sub topdl2 {
   my ($self, $compmode) = @_;
   die "Called topdl2 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
-  return <<EOF if $self->{is_vector};
-CW_err = cw_${type}_get@{[$self->{fixeddims} ? 'Data' : 'Ptr']}(&vptmp, @{[$self->c_input($compmode)]});
-$IF_ERROR_RETURN;
-memmove(\$P($name), vptmp, \$PDL($name)->nbytes);
-@{[$self->{fixeddims} ? 'free(vptmp);' : '']}
-EOF
-  return <<EOF if !$self->{fixeddims};
+  return <<EOF if $self->{is_vector} or !$self->{fixeddims};
 CW_err = cw_${type}_copyDataTo(@{[$self->c_input($compmode)]}, \$P($name), \$PDL($name)->nbytes);
 $IF_ERROR_RETURN;
 EOF
@@ -247,7 +241,7 @@ sub ${main::PDLOBJ}::$func {
   @{[!@outputs ? '' : "!wantarray ? \$$outputs[-1]{name} : (@{[join ',', map qq{\$$_->{name}}, @outputs]})"]}
 }
 EOF
-      Code => "void *vptmp;\ncw_error CW_err;\n",
+      Code => "cw_error CW_err;\n",
     );
     $doxy->{brief}[0] .= " NO BROADCASTING." if $compmode;
     $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
