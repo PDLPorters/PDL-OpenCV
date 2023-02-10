@@ -199,7 +199,7 @@ sub make_example {
 sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
-    my %hash = (GenericTypes=>$T, NoPthread=>1, HandleBad=>0);
+    my %hash = (NoPthread=>1, HandleBad=>0);
     $hash{PMFunc} = '' if $ismethod;
     my $doxy = doxyparse($doc);
     my $pcount = 1;
@@ -238,6 +238,7 @@ EOF
     pop @allpars if my $retcapture = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? 'res' : '$res()');
     %hash = (%hash,
       Pars => join('; ', map $_->par, @pars), OtherPars => join('; ', map $_->par, @otherpars),
+      GenericTypes=>(grep !$_->{pdltype}, @pars) ? $T : ['D'],
       PMFunc => ($ismethod ? '' : '*'.$func.' = \&'.$::PDLOBJ.'::'.$pfunc.";\n"),
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
