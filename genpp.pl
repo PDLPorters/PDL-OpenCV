@@ -10,6 +10,9 @@ our %type_overrides = (
   String => ['char *', 'char *'], # PP, C
   bool => ['byte', 'unsigned char'],
 );
+$type_overrides{$_->[0]} = $type_overrides{$_->[1]} for (# aliases
+  [qw(char bool)],
+);
 our %default_overrides = (
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
   false => [0,0], # perl, C
