@@ -62,7 +62,11 @@ my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter
 );
 
-#use Data::Dumper; print Dumper $json_data;
+if (@ARGV) {
+  die "Usage: $0 [json]" if @ARGV != 1 or $ARGV[0] ne 'json';
+  print Dumper $json_data;
+  exit;
+}
 my (%dest2enums, %dest2func2name2defs, %dest2classdefs);
 for (@$json_data) {
   my ($file, $d) = @$_;
