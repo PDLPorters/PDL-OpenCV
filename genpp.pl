@@ -126,7 +126,7 @@ sub topdl1 {
   die "Called topdl1 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return
-    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_size(&\$SIZE(n${pcount}d0), ".($iscomp ? "\$COMP($name" : $name).")); $IF_ERROR_RETURN;\n"
+    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_size(&\$SIZE(n${pcount}d0), ".($iscomp ? "\$COMP($name)" : $name)."); $IF_ERROR_RETURN;\n"
     if $self->{is_vector};
   return
     "CW_err = cw_Mat_pdlDims(".($iscomp ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"
