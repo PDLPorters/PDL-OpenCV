@@ -12,6 +12,7 @@ our %type_overrides = (
 );
 $type_overrides{$_->[0]} = $type_overrides{$_->[1]} for (# aliases
   [qw(char bool)],
+  [qw(string String)],
 );
 our %default_overrides = (
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
@@ -169,7 +170,7 @@ sub xs_par {
 }
 sub cdecl {
   my ($self) = @_;
-  ($self->{type_c} =~ /Wrapper/ ? $self->{type_c} : PDL::Type->new($self->{type_pp})->ctype)." $self->{name}";
+  ($self->{use_comp} ? $self->{type_c} : PDL::Type->new($self->{type_pp})->ctype)." $self->{name}";
 }
 }
 
