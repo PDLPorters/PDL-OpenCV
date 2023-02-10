@@ -126,10 +126,10 @@ sub topdl1 {
   die "Called topdl1 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return
-    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_size(&\$SIZE(n${pcount}d0), ".($compmode ? "\$COMP($name)" : $name)."); $IF_ERROR_RETURN;\n"
+    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_size(&\$SIZE(n${pcount}d0), ".$self->c_input($compmode)."); $IF_ERROR_RETURN;\n"
     if $self->{is_vector};
   return
-    "CW_err = cw_Mat_pdlDims(".($compmode ? "\$COMP($name)" : $name).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"
+    "CW_err = cw_Mat_pdlDims(".$self->c_input($compmode).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"
     if !$self->{fixeddims};
   "";
 }
@@ -138,17 +138,17 @@ sub topdl2 {
   die "Called topdl2 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return <<EOF if $self->{is_vector};
-CW_err = cw_${type}_get@{[$self->{fixeddims} ? 'Data' : 'Ptr']}(&vptmp, @{[$compmode ? "\$COMP($name)" : $name]});
+CW_err = cw_${type}_get@{[$self->{fixeddims} ? 'Data' : 'Ptr']}(&vptmp, @{[$self->c_input($compmode)]});
 $IF_ERROR_RETURN;
 memmove(\$P($name), vptmp, \$PDL($name)->nbytes);
 @{[$self->{fixeddims} ? 'free(vptmp);' : '']}
 EOF
   return <<EOF if !$self->{fixeddims};
-CW_err = cw_Mat_ptr(&vptmp, @{[$compmode ? "\$COMP($name)" : $name]});
+CW_err = cw_Mat_ptr(&vptmp, @{[$self->c_input($compmode)]});
 $IF_ERROR_RETURN;
 memmove(\$P($name), vptmp, \$PDL($name)->nbytes);
 EOF
-  qq{CW_err = cw_${type}_getVals(}.($compmode ? "\$COMP($name)" : $name).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]}); $IF_ERROR_RETURN;\n};
+  qq{CW_err = cw_${type}_getVals(}.$self->c_input($compmode).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]}); $IF_ERROR_RETURN;\n};
 }
 sub destroy_code {
   my ($self, $compmode) = @_;
