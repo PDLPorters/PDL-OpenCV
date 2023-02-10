@@ -194,7 +194,6 @@ sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,@params) = @_;
     die "No class given for method='$ismethod'" if !$class and $ismethod;
     my %hash = (NoPthread=>1, HandleBad=>0);
-    $hash{PMFunc} = '' if $ismethod;
     my $doxy = doxyparse($doc);
     my $pcount = 1;
     my $cfunc = join('_', 'cw', my $pfunc = join '_', grep length,$class,$func);
@@ -233,7 +232,7 @@ EOF
     %hash = (%hash,
       Pars => join('; ', map $_->par, @pars), OtherPars => join('; ', map $_->par, @otherpars),
       GenericTypes=>(grep !$_->{pdltype}, @pars) ? $T : ['D'],
-      PMFunc => ($ismethod ? '' : '*'.$func.' = \&'.$::PDLOBJ.'::'.$pfunc.";\n"),
+      PMFunc => ($ismethod ? '' : '*'.$func.' = \&'.$::PDLOBJ.'::'.$func.";\n"),
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
   barf "Usage: ${main::PDLOBJ}::$func(@{[join ',', map "\\\$$_->{name}", @inputs]})\n" if \@_ < @{[0+(grep !defined $_->{default} || !length $_->{default}, @inputs)]};
