@@ -4,6 +4,7 @@ PDL__OpenCV__LineSegmentDetector T_PTROBJ_SPECIAL
 PDL__OpenCV__Tracker           T_PTROBJ_SPECIAL
 PDL__OpenCV__VideoCapture      T_PTROBJ_SPECIAL
 PDL__OpenCV__VideoWriter       T_PTROBJ_SPECIAL
+StringWrapper* T_OPENCV_STRING
 
 INPUT
 T_PTROBJ_SPECIAL
@@ -14,7 +15,23 @@ T_PTROBJ_SPECIAL
   else
     croak(\"$var is not of type ${(my $ntt=$type)=~s/__/::/g;\$ntt}\")
 
+T_OPENCV_STRING
+  {
+  cw_error CW_err = cw_String_new(&$var, NULL, SvOK($arg) ? SvPV_nolen($arg) : NULL);
+  PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  }
+
 OUTPUT
 T_PTROBJ_SPECIAL
   sv_setref_pv($arg, \"${(my $ntt=$type)=~s/__/::/g;\$ntt}\",
                (void*)$var);
+
+T_OPENCV_STRING
+  {
+  const char *cptr;
+  cw_error CW_err = cw_String_c_str(&cptr, $var);
+  if (CW_err.error) cw_String_DESTROY($var);
+  PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  sv_setpv((SV*)$arg, cptr);
+  cw_String_DESTROY($var);
+  }

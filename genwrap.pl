@@ -7,7 +7,7 @@ use PDL::Core qw/howbig/;
 
 require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %extra_cons_args);
-my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, Mat=>[]) };
+my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, Mat=>[], String=>[]) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
 my %VECTORTYPES = (%PP::OpenCV::DIMTYPES, map +($_=>[]), qw(int float));
 my %overrides = (
@@ -19,7 +19,7 @@ my %ptr_only = map +($_=>1), qw(Tracker LineSegmentDetector);
 my $CATCH = q[catch (const std::exception& e) {
   CW_err = {CW_EUSERERROR,strdup(e.what()),1};
  }];
-my $wrap_re = qr/^(?:[A-Z]|vector_)/;
+my $wrap_re = qr/^(?:(?!String)[A-Z]|vector_)/;
 my %constructor_override = (
   Tracker => <<EOF,
 #if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
@@ -42,6 +42,16 @@ cw_error cw_LineSegmentDetector_new(LineSegmentDetectorWrapper **cw_retval, char
  try {
   *cw_retval = new LineSegmentDetectorWrapper;
   (*cw_retval)->held = cv::createLineSegmentDetector(lsd_type);
+ } $CATCH
+ return CW_err;
+}
+EOF
+  String => <<EOF,
+cw_error cw_String_new(StringWrapper **cw_retval, char *klass, const char* str) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *cw_retval = new StringWrapper;
+  (*cw_retval)->held = str ? cv::String(str) : cv::String();
  } $CATCH
  return CW_err;
 }
@@ -87,6 +97,13 @@ cw_error cw_Mat_copyDataTo(MatWrapper *self, void *data, ptrdiff_t bytes) {
  } $CATCH
  return CW_err;
 }
+cw_error cw_String_c_str(const char **ptr, StringWrapper *self) {
+ cw_error CW_err = {CW_ENONE, NULL, 0};
+ try {
+  *ptr = self->held.c_str();
+ } $CATCH
+ return CW_err;
+}
 EOF
 my $CFOOTER = "}\n";
 my $HHEADER = <<'EOF';
@@ -121,6 +138,7 @@ my $HBODY_GLOBAL = <<'EOF';
 cw_error cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
 cw_error cw_Mat_copyDataTo(MatWrapper *self, void *data, ptrdiff_t bytes);
+cw_error cw_String_c_str(const char **ptr, StringWrapper *self);
 EOF
 my $HFOOTER = <<'EOF';
 #ifdef __cplusplus
@@ -157,10 +175,14 @@ sub gen_code {
 	my $opt = $overrides{$class}{$name} || {};
 	my (@input_args, @cvargs, $methodvar);
 	my ($func_ret, $cpp_ret, $after_ret) = ($ret, '', '');
-	if ($ret =~ $wrap_re) {
+	if ($ret eq 'StringWrapper*') {
+		$func_ret = "StringWrapper *";
+		$cpp_ret = "cv::String cpp_retval = ";
+		$after_ret = "  CW_err = cw_String_new(cw_retval, NULL, cpp_retval.c_str()); if (CW_err.error) return CW_err;\n";
+	} elsif ($ret =~ $wrap_re) {
 		$func_ret = "${ret}Wrapper *";
 		$cpp_ret = "cv::$ret cpp_retval = ";
-		$after_ret = "  cw_${ret}_new(cw_retval, NULL); (*cw_retval)->held = cpp_retval;\n";
+		$after_ret = "  CW_err = cw_${ret}_new(cw_retval, NULL); if (CW_err.error) return CW_err; (*cw_retval)->held = cpp_retval;\n";
 	} elsif ($ret ne 'void') {
 		$cpp_ret = "*cw_retval = ";
 	}
@@ -176,7 +198,7 @@ sub gen_code {
 		$s = $type_overrides{$s}[1] if $type_overrides{$s};
 		my $ctype = $s . ($s =~ $wrap_re ? "Wrapper *" : '');
 		push @input_args, "$ctype $v";
-		push @cvargs, $s =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held" : $v;
+		push @cvargs, $s eq 'StringWrapper*' ? "$v->held" : $s =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held" : $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $name;
 	my $str = "cw_error $fname(" . join(", ", @input_args) . ")";
@@ -184,12 +206,12 @@ sub gen_code {
 	$str .= " {\n";
 	$str .= " cw_error CW_err = {CW_ENONE, NULL, 0};\n try {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
-	$str .= "  $cpp_ret".($ret eq 'char *' ? "strdup(" : "");
+	$str .= "  $cpp_ret";
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $name)."(" :
 	  "$methodvar->held".($ptr_only?'->':'.')."$name" .
 	  ($ismethod == 1 ? "(" : ";\n");
 	$opt->{argfix}->(\@cvargs) if $opt->{argfix};
-	$str .= join(', ', @cvargs).")".($ret eq 'char *' ? ".c_str())" : "").";\n";
+	$str .= join(', ', @cvargs).");\n";
 	$str .= $after_ret;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
 	$str .= " } $CATCH\n return CW_err;\n";

@@ -7,7 +7,7 @@ require ''. catfile dirname(__FILE__), 'doxyparse.pl';
 
 my $T = [qw(A B S U L F D)];
 our %type_overrides = (
-  String => ['char *', 'char *'], # PP, C
+  String => ['StringWrapper*', 'StringWrapper*'], # PP, C
   bool => ['byte', 'unsigned char'],
 );
 $type_overrides{$_->[0]} = $type_overrides{$_->[1]} for (# aliases
@@ -21,6 +21,7 @@ our %default_overrides = (
 );
 our %extra_cons_args = (
   LineSegmentDetector => [[qw(int lsd_type)]],
+  String => [['const char*', 'str']],
 );
 our $IF_ERROR_RETURN = "if (CW_err.error) return *(pdl_error *)&CW_err";
 
@@ -38,12 +39,12 @@ our %CTYPE2PDL = map +($_->realctype => $_->ppforcetype), PDL::Types::types();
 sub new {
   my ($class, $pcount, $type, $name, $default, $f) = @_;
   my %flags = map +($_=>1), @{$f||[]};
-  my $self = bless {type=>$type, name=>$name, is_io=>$flags{'/IO'}, is_output=>$flags{'/O'}, pcount => $pcount}, $class;
+  my $self = bless {type=>$type, name=>$name, is_io=>$flags{'/IO'}, is_output=>$flags{'/O'}, pcount => $pcount, pdltype => ''}, $class;
   $self->{is_vector} = (my $nonvector_type = $type) =~ s/vector_//g;
   $self->{type_pp} = $type_overrides{$nonvector_type} ? $type_overrides{$nonvector_type}[0] : $nonvector_type;
   $self->{type_c} = $type_overrides{$nonvector_type} ? $type_overrides{$nonvector_type}[1] : $nonvector_type;
   $self->{default} = $default if defined $default and length $default;
-  @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'char *';
+  @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'StringWrapper*';
   if ($self->{is_vector}) {
     $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};
     $self->{use_comp} = 1 if $spec and $self->{is_output};
@@ -59,7 +60,6 @@ sub new {
   @$self{qw(was_ptr type)} = (1, $type) if $type =~ s/\s*\*+$//;
   %$self = (%$self,
     type_c => "${type}Wrapper *",
-    pdltype => '',
     fixeddims => 0,
     destroy => "cw_${type}_DESTROY",
   );
@@ -82,7 +82,6 @@ sub c_input {
 }
 sub par {
   my ($self) = @_;
-  return $self->_par if $self->{is_other};
   join ' ', grep length, $self->{pdltype},
     ($self->{is_output} ? '[o]' : $self->{is_io} ? '[io]' : ()),
     $self->_par;
@@ -154,7 +153,7 @@ sub default_pl {
   my $d = $self->{default} // '';
   $d =~ s/[A-Z][A-Z0-9_]+/$&()/g if length $d and $d !~ /\(/;
   if ($self->{is_output}) {
-    $d = 'PDL->null' if !length $d or $d eq 'Mat()' or ($d eq '0' && $self->{was_ptr});
+    $d = 'PDL->null' if !$self->{naive_otherpar} and (!length $d or $d eq 'Mat()' or ($d eq '0' && $self->{was_ptr}));
   } elsif ($default_overrides{$d}) {
     $d = $default_overrides{$d}[0];
   }
@@ -201,7 +200,6 @@ sub genpp {
     unshift @params, [$class,'self'] if $ismethod;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
-    die "Error in $func: OtherPars '$_->{name}' is output: ".do {require Data::Dumper; Data::Dumper::Dumper($_)} for grep $_->{is_other} && $_->{type_pp} =~ /^[A-Z]/ && $_->{is_output}, @allpars;
     my (@inputs, @outputs); push @{$_->{is_output} ? \@outputs : \@inputs}, $_ for @allpars;
     if (!grep $_->{is_vector} || ($_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}), @allpars) {
       $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
@@ -213,15 +211,13 @@ sub genpp {
       my @cw_params = (($ret ne 'void' ? '&RETVAL' : ()), map $_->{name}, @allpars);
       my $xs = <<EOF;
 MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ} PREFIX=@{[join '_', grep length,'cw',$class]}_
-\n@{[$ret_type eq 'char *'?'void':$ret_type]} $cfunc(@{[join ', ', map $_->xs_par, @allpars]})
+\n$ret_type $cfunc(@{[join ', ', map $_->xs_par, @allpars]})
   PROTOTYPE: DISABLE
-  @{[$ret_type eq 'char *'?'PP':'']}CODE:
-    @{[$ret_type eq 'char *'?'char *RETVAL;':'']}
+  CODE:
     cw_error CW_err = $cfunc(@{[join ', ', @cw_params]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
-    @{[$ret_type eq 'char *'?'XPUSHs(sv_2mortal(newSVpv(RETVAL, 0)));free(RETVAL);':'']}
 EOF
-      $xs .= "  OUTPUT:\n    RETVAL\n" if $ret_type ne 'void' and $ret_type ne 'char *';
+      $xs .= "  OUTPUT:\n    RETVAL\n" if $ret_type ne 'void';
       pp_addxs($xs);
       return;
     }
