@@ -218,7 +218,7 @@ cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
 void cw_$vector_str${class}_DESTROY($wrapper *wrapper);
 EOF
   my $cstr = <<EOF;
-@{[$ptr_only ? '' : "cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass) {
+@{[$constructor_override{$class} ? '' : "cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
