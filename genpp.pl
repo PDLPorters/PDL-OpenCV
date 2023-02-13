@@ -249,7 +249,7 @@ EOF
     my $destroy_out = join '', map $_->destroy_code($compmode), grep $_->{is_output}, @pdl_inits;
     my @nonfixed_outputs = grep $_->{is_output}, @pdl_inits;
     if ($compmode) {
-      $hash{Comp} = join '; ', map $_->cdecl, @outputs;
+      $hash{Comp} = join '; ', map $_->cdecl, grep !$_->{is_other}, @outputs;
       $hash{MakeComp} = join '',
         "cw_error CW_err;\n",
         (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", grep $_->{dimless} || $_->{fixeddims}, @allpars),
@@ -261,7 +261,7 @@ EOF
       $hash{CompFreeCodeComp} = $destroy_out;
       $hash{RedoDimsCode} = join '', "cw_error CW_err;\n", map $_->topdl1(1), @nonfixed_outputs;
       $hash{Code} .= join '', map $_->topdl2(1), @nonfixed_outputs;
-      $hash{Code} .= "$retcapture = \$COMP(res);\n" if $retcapture and $ret !~ /^[A-Z]/;
+      $hash{Code} .= "$retcapture = \$COMP(res);\n" if $ret_obj and !$ret_obj->{use_comp} and $ret !~ /^[A-Z]/;
     } else {
       $hash{Code} .= join '',
         (map $_->frompdl(0), @pdl_inits),
