@@ -6,6 +6,7 @@ use PDL::LiteF;
 use PDL::NiceSlice;
 use PDL::OpenCV;
 use PDL::OpenCV::Imgproc;
+use PDL::OpenCV::Imgcodecs;
 
 my $data = (xvals(5,8,3)+10*yvals(5,8,3)+zvals(1,1,3))->mv(2,0);
 my $slice = float $data(0);
@@ -16,6 +17,7 @@ is PDL::OpenCV::CV_8UC3(), 16, 'depth constant';
 is COLOR_GRAY2RGB, 8, 'colour-conversion constant exported';
 is PDL::OpenCV::Imgproc::COLOR_GRAY2RGB, 8, 'constant in module space';
 is PDL::OpenCV::Error::StsNullPtr, -27, 'deep namespace constant';
-isa_ok getGaborKernel(pdl([5,5]),1,1,1,1), 'PDL';
+isa_ok getGaborKernel(pdl([5,5]),1,1,1,1), 'PDL', 'getGaborKernel';
+isa_ok my $pic = imread('t/qrcodestraight.png'), 'PDL', 'imread';
 
 done_testing();
