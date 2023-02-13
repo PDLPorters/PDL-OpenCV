@@ -81,9 +81,11 @@ sub c_input {
   $self->{name}.($compmode?'_LOCAL':'');
 }
 sub par {
-  my ($self) = @_;
+  my ($self, $phys) = @_;
+  my $flags = $self->{is_output} ? 'o' : $self->{is_io} ? 'io' : '';
+  $flags = join ',', grep length, $flags, $phys ? 'phys' : ();
   join ' ', grep length, $self->{pdltype},
-    ($self->{is_output} ? '[o]' : $self->{is_io} ? '[io]' : ()),
+    ($flags ? "[$flags]" : ()),
     $self->_par;
 }
 sub _par {
@@ -227,7 +229,7 @@ EOF
     my $compmode = grep $_->{use_comp}, @pdl_inits;
     (my $ret_obj) = pop @allpars if my $retcapture = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? 'res' : '$res()');
     %hash = (%hash,
-      Pars => join('; ', map $_->par, @pars), OtherPars => join('; ', map $_->par, @otherpars),
+      Pars => join('; ', map $_->par(1), @pars), OtherPars => join('; ', map $_->par, @otherpars),
       GenericTypes=>(grep !$_->{pdltype}, @pars) ? $T : ['D'],
       PMFunc => ($ismethod ? '' : '*'.$func.' = \&'.$::PDLOBJ.'::'.$func.";\n"),
       PMCode => <<EOF,
@@ -252,7 +254,7 @@ EOF
       $hash{Comp} = join '; ', map $_->cdecl, grep !$_->{is_other}, @outputs;
       $hash{MakeComp} = join '',
         "cw_error CW_err;\n",
-        (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", grep $_->{dimless} || $_->{fixeddims}, @allpars),
+        (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", @pars),
         (map $_->frompdl(1), @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".$_->c_input(1), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
         "CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map $_->c_input(1), @allpars).");\n",
