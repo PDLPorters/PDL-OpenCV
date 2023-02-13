@@ -8,7 +8,7 @@ our (%cpp_opts, @cw_objs);
 sub wmf {
   my ($last, $hdrs) = @_;
   my $pkg = "PDL::OpenCV::$last";
-  my $package = [lc($last).".pd",$last,$pkg];
+  my $package = ["module.pd",$last,$pkg];
   my %hash = pdlpp_stdargs($package);
   $hash{VERSION_FROM} = catfile(updir, 'opencv.pd');
   $hash{INC} .= ' -I'.updir;
