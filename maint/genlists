@@ -135,6 +135,28 @@ sub genfile {
 sub writefile {
   my ($dest, $filebase, $list) = @_;
   my $file = $dest ? catfile(ucfirst($dest), $filebase) : $filebase;
+  my $dir = ucfirst $dest;
+  if ($dest and !-d $dir) {
+    my %n2f = (
+    'Makefile.PL' => "wmf('$dir', ['$dest']);\n",
+    'module.pd' => <<EOF,
+use strict;
+use warnings;
+use File::Spec::Functions;
+require ''.catfile(updir, 'genpp.pl');
+
+genheader("$dir");
+
+pp_done();
+EOF
+    );
+    mkdir $dir or die "$dir: $!";
+    for (keys %n2f) {
+      my $file = catfile($dir, $_);
+      open my $fh, , '>', $file or die "$file: $!";
+      print $fh $n2f{$_};
+    }
+  }
   my $new = join '', map "$_\n", @$list;
   my $old = -f $file ? do { local $/; open my $fh, '<', $file or die "$file: $!"; <$fh> } : '';
   return if $new eq $old;
