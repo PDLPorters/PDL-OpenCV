@@ -48,8 +48,7 @@ sub new {
   if ($self->{is_vector}) {
     $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};
     $self->{use_comp} = 1 if $spec and $self->{is_output};
-    @$self{qw(pdltype type_c destroy)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, "${type}Wrapper *",
-      "cw_${type}_DESTROY",
+    @$self{qw(pdltype type_c)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, "${type}Wrapper *",
     );
     return $self;
   } elsif ($self->{type_pp} !~ /^[A-Z]/) {
@@ -61,7 +60,6 @@ sub new {
   %$self = (%$self,
     type_c => "${type}Wrapper *",
     fixeddims => 0,
-    destroy => "cw_${type}_DESTROY",
   );
   if (my $spec = $DIMTYPES{$type}) {
     $self->{fixeddims} = 1;
@@ -148,7 +146,7 @@ EOF
 }
 sub destroy_code {
   my ($self, $compmode) = @_;
-  "$self->{destroy}(".$self->c_input($compmode).");\n";
+  "cw_$self->{type}_DESTROY(".$self->c_input($compmode).");\n";
 }
 sub default_pl {
   my ($self) = @_;
