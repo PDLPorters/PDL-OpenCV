@@ -70,8 +70,10 @@ my $CBODY_GLOBAL = <<EOF;
 cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
+  char isempty = (planes == 0 && cols == 0 && rows == 0);
+  if (!isempty && !data) throw std::invalid_argument("NULL data passed to cw_Mat_newWithDims");
   *cw_retval = new MatWrapper;
-  if (planes == 0 && cols == 0 && rows == 0) /* no check type as upgrade */
+  if (isempty) /* no check type as upgrade */
     (*cw_retval)->held = cv::Mat();
   else
     (*cw_retval)->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
