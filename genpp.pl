@@ -94,10 +94,10 @@ sub _par {
   return "@$self{qw(type_c name)}" if $self->{naive_otherpar};
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return "$name(l$pcount,c$pcount,r$pcount)" if $type eq 'Mat';
-  return "$name(n${type}$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims} and !$self->{is_vector};
+  return "$name(n$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims} and !$self->{is_vector};
   my $i = 0;
   return "$name(".join(',',
-    (!$self->{fixeddims} ? () : "n$self->{type_pp}${pcount}=".scalar(@{$DIMTYPES{$self->{type_pp}}})),
+    (!$self->{fixeddims} ? () : "n$pcount=".scalar(@{$DIMTYPES{$self->{type_pp}}})),
     (map "n${pcount}d".$i++, 1..$self->{is_vector}), ).")"
     if $self->{is_vector};
   "PDL__OpenCV__$type $name";
@@ -120,7 +120,7 @@ sub frompdl {
     ) .
     "); $IF_ERROR_RETURN;\n" if !$self->{fixeddims};
   $decl.qq{CW_err = cw_${type}_newWithVals(@{[
-      join ',', "&$localname", map $compmode ? "(($DIMTYPES{$type}[0][0] *)$name->data)[$_]" : "\$$name(n${type}$pcount=>$_)",
+      join ',', "&$localname", map $compmode ? "(($DIMTYPES{$type}[0][0] *)$name->data)[$_]" : "\$$name(n$pcount=>$_)",
         0..@{$DIMTYPES{$type}}-1
     ]})}."; $IF_ERROR_RETURN;\n";
 }
@@ -144,7 +144,7 @@ sub topdl2 {
 CW_err = cw_${type}_copyDataTo(@{[$self->c_input($compmode)]}, \$P($name), \$PDL($name)->nbytes);
 $IF_ERROR_RETURN;
 EOF
-  qq{CW_err = cw_${type}_getVals(}.$self->c_input($compmode).qq{,@{[join ',', map "&\$$name(n${type}$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]}); $IF_ERROR_RETURN;\n};
+  qq{CW_err = cw_${type}_getVals(}.$self->c_input($compmode).qq{,@{[join ',', map "&\$$name(n$pcount=>$_)", 0..@{$DIMTYPES{$type}}-1]}); $IF_ERROR_RETURN;\n};
 }
 sub destroy_code {
   my ($self, $compmode) = @_;
