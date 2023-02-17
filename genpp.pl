@@ -41,8 +41,8 @@ sub new {
   my %flags = map +($_=>1), @{$f||[]};
   my $self = bless {type=>$type, name=>$name, is_io=>$flags{'/IO'}, is_output=>$flags{'/O'}, pcount => $pcount, pdltype => ''}, $class;
   $self->{is_vector} = (my $nonvector_type = $type) =~ s/vector_//g;
-  $self->{type_pp} = $type_overrides{$nonvector_type} ? $type_overrides{$nonvector_type}[0] : $nonvector_type;
-  $self->{type_c} = $type_overrides{$nonvector_type} ? $type_overrides{$nonvector_type}[1] : $nonvector_type;
+  $self->{type_pp} = ($type_overrides{$nonvector_type} || [$nonvector_type])->[0];
+  $self->{type_c} = ($type_overrides{$nonvector_type} || [0,$nonvector_type])->[1];
   $self->{default} = $default if defined $default and length $default;
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'StringWrapper*';
   if ($self->{is_vector}) {
