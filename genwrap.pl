@@ -268,12 +268,12 @@ $decls{nWV} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
-  std::vector<@{[@fields ? qq{cv::$class} : $class]}> vec = (*cw_retval)->held = std::vector<@{[@fields ? qq{cv::$class} : $class]}>@{[
+  (*cw_retval)->held = std::vector<@{[@fields ? qq{cv::$class} : $class]}>@{[
     !@fields ? "(data, data + count);" :
     join "\n  ", "(count);",
       "ptrdiff_t i = 0, stride = @{[0+@fields]};",
       "for (i = 0; i < count; i++)",
-      "  vec[i] = cv::$class(".join(',', map "data[i*stride + ".$field_count++."]", @fields).");",
+      "  (*cw_retval)->held[i] = cv::$class(".join(',', map "data[i*stride + ".$field_count++."]", @fields).");",
   ]}
  } $CATCH
  return CW_err;
