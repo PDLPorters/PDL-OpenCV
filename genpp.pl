@@ -106,7 +106,7 @@ sub frompdl {
   my ($name, $type, $pcount) = @$self{qw(name type pcount)};
   return "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN;\n" if $compmode and $self->{is_output};
   my $localname = $self->c_input($compmode);
-  my $decl = "$self->{type_c} $localname;\n";
+  my $decl = ($compmode && ($self->{use_comp} || $self->{is_other})) ? '' : "$self->{type_c} $localname;\n";
   return $decl.qq{CW_err = cw_${type}_newWithVals(@{[
     join ',', "&$localname",
         $compmode ? "(($self->{type_c} *)$name->data),$name->dims[0]" : "\$P($name),\$SIZE(n${pcount}d0)"
