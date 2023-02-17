@@ -3,6 +3,23 @@
 
 see http://en.wikipedia.org/wiki/Nearest_neighbor_search
 @todo document',0,'void',['Mat','src1','',[]],['Mat','src2','',[]],['Mat','dist','',['/O']],['int','dtype','',[]],['Mat','nidx','',['/O']],['int','normType','NORM_L2',[]],['int','K','0',[]],['Mat','mask','Mat()',[]],['int','update','0',[]],['bool','crosscheck','false',[]]],
+['','hconcat','@overload
+ @code{.cpp}
+    std::vector<cv::Mat> matrices = { cv::Mat(4, 1, CV_8UC1, cv::Scalar(1)),
+                                      cv::Mat(4, 1, CV_8UC1, cv::Scalar(2)),
+                                      cv::Mat(4, 1, CV_8UC1, cv::Scalar(3)),};
+
+    cv::Mat out;
+    cv::hconcat( matrices, out );
+    //out:
+    //[1, 2, 3;
+    // 1, 2, 3;
+    // 1, 2, 3;
+    // 1, 2, 3]
+ @endcode
+ @param src input array or vector of matrices. all of the matrices must have the same number of rows and the same depth.
+ @param dst output array. It has the same number of rows and depth as the src, and the sum of cols of the src.
+same depth.',0,'void',['vector_Mat','src','',[]],['Mat','dst','',['/O']]],
 ['','minMaxLoc','@brief Finds the global minimum and maximum in an array.
 
 The function cv::minMaxLoc finds the minimum and maximum element values and their positions. The

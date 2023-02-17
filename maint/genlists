@@ -39,6 +39,7 @@ my %force = map +($_=>1), qw(
   cv.ellipse2Poly
   cv.getAffineTransform
   cv.getGaborKernel
+  cv.hconcat
   cv.logPolar
   cv.normalize
   cv.minMaxLoc
@@ -110,7 +111,7 @@ push @{$dest2enums{''}}, qw(CV_PI CV_2PI CV_LOG2);
 writefile($_, 'constlist.txt', $dest2enums{$_}) for keys %dest2enums;
 
 my %dest2funcs;
-my $no_want = qr/^(vector_(Mat|vector)|TermCriteria|RNG|RotatedRect|Ptr_CLAHE|Ptr_GeneralizedHough|Ptr_LineSegmentDetector|Ptr_Tracker)/;
+my $no_want = qr/^(vector_vector|TermCriteria|RNG|RotatedRect|Ptr_CLAHE|Ptr_GeneralizedHough|Ptr_LineSegmentDetector|Ptr_Tracker)/;
 for my $dest (keys %dest2func2name2defs) {
   for my $name (sort keys %{$dest2func2name2defs{$dest}}) {
     my @defs = @{ $dest2func2name2defs{$dest}{$name} };

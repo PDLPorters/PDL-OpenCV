@@ -6,6 +6,7 @@ PDL__OpenCV__VideoCapture      T_PTROBJ_SPECIAL
 PDL__OpenCV__VideoWriter       T_PTROBJ_SPECIAL
 PDL__OpenCV__QRCodeDetector T_PTROBJ_SPECIAL
 StringWrapper* T_OPENCV_STRING
+vector_MatWrapper* T_OPENCV_VECTOR
 
 INPUT
 T_PTROBJ_SPECIAL
@@ -20,6 +21,41 @@ T_OPENCV_STRING
   {
   cw_error CW_err = cw_String_new(&$var, NULL, SvOK($arg) ? SvPV_nolen($arg) : NULL);
   PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  }
+
+T_OPENCV_VECTOR
+  {
+  if (!SvROK($arg)) PDL_CORE_(pdl_barf)(\"$var not a reference\");
+  if(SvTYPE(SvRV($arg)) != SVt_PVAV) PDL_CORE_(pdl_barf)(\"$var not an array-ref\");
+  AV *av = (AV *)SvRV($arg);
+  PDL_Indx count = av_len(av) + 1, i = 0;
+  ${(my $novec=$type)=~s/^vector_//; \$novec} wrappers[count];
+  for (i = 0; i < count; i++) {
+    SV **sp = av_fetch(av, i, 0);
+    if (!sp) {
+      for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
+      PDL_CORE_(pdl_barf)(\"$var index %td not a valid SV\", i);
+    }
+    pdl *p = PDL_CORE_(SvPDLV)(*sp);
+    if (!p) {
+      for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
+      PDL_CORE_(pdl_barf)(\"$var index %td not a valid ndarray\", i);
+    }
+    pdl_error PDL_err = PDL_CORE_(make_physical)(p);
+    if (PDL_err.error) {
+      for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
+      PDL_CORE_(barf_if_error)(PDL_err);
+    }
+    cw_error CW_err = cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_newWithDims(&wrappers[i], p->ndims > 0 ? p->dims[0] : 1, p->ndims > 1 ? p->dims[1] : 1, p->ndims > 2 ? p->dims[2] : 1, p->datatype, p->data);
+    if (CW_err.error)
+      for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
+    PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  }
+  cw_error CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_newWithVals(&$var, wrappers, count);
+  if (CW_err.error)
+    for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
+  PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
   }
 
 OUTPUT

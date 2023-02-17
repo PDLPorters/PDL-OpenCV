@@ -19,5 +19,7 @@ is PDL::OpenCV::Imgproc::COLOR_GRAY2RGB, 8, 'constant in module space';
 is PDL::OpenCV::Error::StsNullPtr, -27, 'deep namespace constant';
 isa_ok getGaborKernel(pdl([5,5]),1,1,1,1), 'PDL', 'getGaborKernel';
 isa_ok my $pic = imread('t/qrcodestraight.png'), 'PDL', 'imread';
+my $pic2 = $pic->glue(1,$pic);
+is hconcat([$pic, $pic2])->dim(1), $pic->dim(1)*3, 'hconcat array-ref worked';
 
 done_testing();

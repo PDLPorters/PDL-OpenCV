@@ -9,7 +9,7 @@ require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %extra_cons_args);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, Mat=>[], String=>[]) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
-my %VECTORTYPES = (%PP::OpenCV::DIMTYPES, map +($_=>[]), qw(int float));
+my %VECTORTYPES = (%PP::OpenCV::DIMTYPES, map +($_=>[]), qw(int float Mat));
 my %overrides = (
   Tracker => {
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
@@ -238,7 +238,7 @@ typedef struct $wrapper $wrapper;
 struct $wrapper {
 	@{[$ptr_only ? "cv::Ptr<cv::${class}>" :
 	  !$is_vector ? "cv::${class}" :
-	  "std::vector<@{[@fields ? qq{cv::$class} : $class]}>"
+	  "std::vector<@{[@fields || $class eq 'Mat' ? qq{cv::$class} : $class]}>"
 	]} held;
 };
 #endif
@@ -257,9 +257,9 @@ $tdecls{dest} {
 EOF
   if ($is_vector) {
     my %decls = (
-      nWV => "cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[@fields ? $fields[0][0] : $class]} *data, ptrdiff_t count)",
+      nWV => qq{cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[@fields ? $fields[0][0] : $class eq 'Mat' ? "${class}Wrapper*" : $class]} *data, ptrdiff_t count)},
       size => "cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self)",
-      cDT => "cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, void *data, ptrdiff_t bytes)",
+      cDT => "cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, void *data@{[$class eq 'Mat' ? '' : ', ptrdiff_t bytes']})",
     );
     $hstr .= join '', map "$_;\n", @decls{sort keys %decls};
     my $field_count = 0;
@@ -268,12 +268,12 @@ $decls{nWV} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
-  (*cw_retval)->held = std::vector<@{[@fields ? qq{cv::$class} : $class]}>@{[
-    !@fields ? "(data, data + count);" :
+  (*cw_retval)->held = std::vector<@{[@fields || $class eq 'Mat' ? qq{cv::$class} : $class]}>@{[
+    !@fields && $class ne 'Mat' ? "(data, data + count);" :
     join "\n  ", "(count);",
       "ptrdiff_t i = 0, stride = @{[0+@fields]};",
       "for (i = 0; i < count; i++)",
-      "  (*cw_retval)->held[i] = cv::$class(".join(',', map "data[i*stride + ".$field_count++."]", @fields).");",
+      "  (*cw_retval)->held[i] = ".($class eq 'Mat' ? 'data[i]->held' : "cv::$class(".join(',', map "data[i*stride + ".$field_count++."]", @fields).")").";",
   ]}
  } $CATCH
  return CW_err;
@@ -288,10 +288,16 @@ $decls{size} {
 $decls{cDT} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  ptrdiff_t i = 0, stride = @{[(0+@fields) || 1]}, count = self->held.size();
- ptrdiff_t shouldbe = sizeof(@{[@fields ? $fields[0][0] : $class]}) * stride * count;
+ ptrdiff_t shouldbe = @{[$class eq 'Mat' ? "0; ${class}Wrapper **d = (${class}Wrapper **)data;" :
+ "sizeof(@{[@fields ? $fields[0][0] : $class]}) * stride * count;
  SHOULDBE_CHECK(bytes, shouldbe)
+ "]}
  try {
-  @{[!@fields ? 'memmove(data, self->held.data(), bytes);' :
+  @{[!@fields && $class ne 'Mat' ? 'memmove(data, self->held.data(), bytes);' :
+  $class eq 'Mat' ? qq{for (i = 0; i < count; i++) {
+    d[i] = new ${class}Wrapper;
+    d[i]->held = self->held[i];
+  }}:
   join "\n  ",
     do {$field_count = 0; ()},
     "$fields[0][0] *ptmp = ($fields[0][0] *)data;",
