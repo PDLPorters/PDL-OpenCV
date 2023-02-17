@@ -224,7 +224,13 @@ sub gen_wrapper {
   my $ptr_only = $ptr_only{$class};
   my $vector_str = $is_vector ? 'vector_' : '';
   my $wrapper = "$vector_str${class}Wrapper";
-  my $hstr = <<EOF;
+  my %tdecls = (
+    new => qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
+      map ", @$_", @{$extra_cons_args{$class} || []}
+    ]})},
+    dest => qq{void cw_$vector_str${class}_DESTROY($wrapper *wrapper)},
+  );
+  my $hstr = <<EOF . join '', map "$_;\n", @tdecls{sort keys %tdecls};
 typedef struct $wrapper $wrapper;
 #ifdef __cplusplus
 struct $wrapper {
@@ -234,32 +240,29 @@ struct $wrapper {
 	]} held;
 };
 #endif
-cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
-  map ", @$_", @{$extra_cons_args{$class} || []}
-]});
-void cw_$vector_str${class}_DESTROY($wrapper *wrapper);
 EOF
   my $cstr = <<EOF;
-@{[$constructor_override{$class} ? '' : "cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass) {
+@{[$constructor_override{$class} ? '' : "$tdecls{new} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
  } $CATCH
  return CW_err;
 }"]}
-void cw_$vector_str${class}_DESTROY($wrapper * wrapper) {
+$tdecls{dest} {
 	delete wrapper;
 }
 EOF
   if ($is_vector) {
-    $hstr .= <<EOF;
-cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? $class : $fields[0][0]]} *data, ptrdiff_t count);
-cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self);
-cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, void *data, ptrdiff_t bytes);
-EOF
+    my %decls = (
+      nWV => "cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[@fields ? $fields[0][0] : $class]} *data, ptrdiff_t count)",
+      size => "cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self)",
+      cDT => "cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, void *data, ptrdiff_t bytes)",
+    );
+    $hstr .= join '', map "$_;\n", @decls{sort keys %decls};
     my $field_count = 0;
     $cstr .= <<EOF;
-cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? $class : $fields[0][0]]} *data, ptrdiff_t count) {
+$decls{nWV} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
@@ -273,14 +276,14 @@ cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[!@fields ? 
  } $CATCH
  return CW_err;
 }
-cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self) {
+$decls{size} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *count = self->held.size();
  } $CATCH
  return CW_err;
 }
-cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, void *data, ptrdiff_t bytes) {
+$decls{cDT} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  ptrdiff_t i = 0, stride = @{[(0+@fields) || 1]}, count = self->held.size();
  ptrdiff_t shouldbe = sizeof(@{[@fields ? $fields[0][0] : $class]}) * stride * count;
@@ -299,12 +302,13 @@ cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, void *data, ptrdiff_t
 }
 EOF
   } elsif (@fields) {
-    $hstr .= <<EOF;
-cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @fields]});
-cw_error cw_$vector_str${class}_getVals($wrapper * wrapper,@{[join ',', map "$_->[0] *$_->[1]", @fields]});
-EOF
+    my %decls = (
+      nWV => qq{cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @fields]})},
+      gV => qq{cw_error cw_$vector_str${class}_getVals($wrapper *self,@{[join ',', map "$_->[0] *$_->[1]", @fields]})},
+    );
+    $hstr .= join '', map "$_;\n", @decls{sort keys %decls};
     $cstr .= <<EOF;
-cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @fields]}) {
+$decls{nWV} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
@@ -312,7 +316,7 @@ cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', m
  } $CATCH
  return CW_err;
 }
-cw_error cw_$vector_str${class}_getVals($wrapper *self, @{[join ',', map "$_->[0] *$_->[1]", @fields]}) {
+$decls{gV} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @fields]}
