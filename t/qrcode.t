@@ -11,7 +11,7 @@ use PDL::OpenCV::Imgcodecs;
 
 my $qrd = PDL::OpenCV::QRCodeDetector->new;
 isa_ok $qrd, 'PDL::OpenCV::QRCodeDetector';
-my $vfile = 't/qrcodestraight.png';
+my $vfile = 't/qrcode.png';
 my $pic = imread($vfile);
 #imshow("win", $pic); waitKey(0);
 my ($points,$straight_qrcode,$res) = $qrd->detectAndDecodeCurved($pic);
