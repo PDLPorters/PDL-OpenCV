@@ -47,7 +47,7 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
       '$(OBJECT)'=>'opencv_wrapper.h wraplocal.h',
       'opencv_wrapper$(OBJ_EXT)'=>'opencv_wrapper.h',
       'wraplocal.h OpenCV.pm'=>'funclist.pl genpp.pl constlist.txt', # .pm because that deps on .pd
-      'OpenCV.c'=>'typemap',
+      'OpenCV.pm OpenCV.c'=>'typemap',
       '$(FIRST_MAKEFILE)'=>'submodmf.pl',
     },
 );
