@@ -16,6 +16,7 @@ $type_overrides{$_->[0]} = $type_overrides{$_->[1]} for (# aliases
 );
 our %default_overrides = (
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
+  'Point()' => ['PDL->zeroes(sbyte,2)',],
   false => [0,0], # perl, C
   true => [1,1],
 );

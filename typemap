@@ -77,3 +77,34 @@ T_OPENCV_STRING
   sv_setpv((SV*)$arg, cptr);
   cw_String_DESTROY($var);
   }
+
+T_OPENCV_VECTOR
+  {
+  PDL_Indx sz, i;
+  cw_vector_Mat_size(&sz, $var);
+  ${(my $novec=$type)=~s/^vector_//; \$novec} wrap2[sz];
+  cw_error CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_copyDataTo($var, wrap2);
+  if (CW_err.error)
+    cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_DESTROY($var);
+  PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  AV *av = newAV(); av_extend(av, sz);
+  for (i = 0; i < sz; i++) {
+    PDL_Indx d1, d2, d3; pdl_datatypes dt;
+    cw_Mat_pdlDims(wrap2[i], &dt, &d1, &d2, &d3);
+    pdl* px = PDL_CORE_(pdlnew)();
+    if (!px) PDL_CORE_(pdl_barf)(\"Failed to create pdl\");
+    SV* pxsv = newSV(0);
+    if (!pxsv) PDL_CORE_(pdl_barf)(\"Failed to create SV\");
+    PDL_CORE_(SetSV_PDL)(pxsv, px);
+    PDL_Indx pdims[] = { d1, d2, d3 };
+    PDL_CORE_(barf_if_error)(PDL->setdims(px,pdims,3));
+    px->datatype = dt;
+    PDL_CORE_(barf_if_error)(PDL_CORE_(make_physical)(px));
+    CW_err = cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_copyDataTo(wrap2[i], px->data, px->nbytes);
+    cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrap2[i]);
+    PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+    if (!av_store(av, i, pxsv)) PDL_CORE_(pdl_barf)(\"Failed to push SV\");
+  }
+  cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_DESTROY($var);
+  sv_setsv($arg, newRV_noinc((SV*)av));
+  }

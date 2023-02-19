@@ -48,9 +48,12 @@ my $lsd = PDL::OpenCV::LineSegmentDetector->new(LSD_REFINE_STD);
 
 while ($res) {
   ($box, my $track_res) = $tr->update($frame = frame_scale($frame));
-  my ($lines) = $lsd->detect(cvtColor($frame, COLOR_BGR2GRAY));
+  my ($lines) = $lsd->detect(my $gray = cvtColor($frame, COLOR_BGR2GRAY));
+  my ($binary) = threshold($gray, 127, 255, 0);
+  my ($contours) = findContours($binary,RETR_TREE,CHAIN_APPROX_SIMPLE,[0,0]);
   my ($bx, $by, $bw, $bh) = @{ $box->unpdl };
   rectangle($frame, [$bx,$by], [$bx+$bw,$by+$bh], [255,0,0,0], 2, 1, 0);
+  drawContours($frame,$contours,-1,[0,255,0,0]);
   $lsd->drawSegments($frame, $lines);
   imshow("ud", $frame);
   waitKey(1);

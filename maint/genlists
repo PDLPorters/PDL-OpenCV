@@ -39,6 +39,8 @@ my %force = map +($_=>1), qw(
   cv.ellipse2Poly
   cv.getAffineTransform
   cv.getGaborKernel
+  cv.drawContours
+  cv.findContours
   cv.threshold
   cv.hconcat
   cv.logPolar

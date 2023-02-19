@@ -69,6 +69,33 @@ floating-point.
 channels is derived automatically from src and code.
 
 @see @ref imgproc_color_conversions',0,'void',['Mat','src','',[]],['Mat','dst','',['/O']],['int','code','',[]],['int','dstCn','0',[]]],
+['','drawContours','@brief Draws contours outlines or filled contours.
+
+The function draws contour outlines in the image if \\f$\\texttt{thickness} \\ge 0\\f$ or fills the area
+bounded by the contours if \\f$\\texttt{thickness}<0\\f$ . The example below shows how to retrieve
+connected components from the binary image and label them: :
+@include snippets/imgproc_drawContours.cpp
+
+@param image Destination image.
+@param contours All the input contours. Each contour is stored as a point vector.
+@param contourIdx Parameter indicating a contour to draw. If it is negative, all the contours are drawn.
+@param color Color of the contours.
+@param thickness Thickness of lines the contours are drawn with. If it is negative (for example,
+thickness=#FILLED ), the contour interiors are drawn.
+@param lineType Line connectivity. See #LineTypes
+@param hierarchy Optional information about hierarchy. It is only needed if you want to draw only
+some of the contours (see maxLevel ).
+@param maxLevel Maximal level for drawn contours. If it is 0, only the specified contour is drawn.
+If it is 1, the function draws the contour(s) and all the nested contours. If it is 2, the function
+draws the contours, all the nested contours, all the nested-to-nested contours, and so on. This
+parameter is only taken into account when there is hierarchy available.
+@param offset Optional contour shift parameter. Shift all the drawn contours by the specified
+\\f$\\texttt{offset}=(dx,dy)\\f$ .
+@note When thickness=#FILLED, the function is designed to handle connected components with holes correctly
+even when no hierarchy data is provided. This is done by analyzing all the outlines together
+using even-odd rule. This may give incorrect results if you have a joint collection of separately retrieved
+contours. In order to solve this problem, you need to call #drawContours separately for each sub-group
+of contours, or iterate over the collection using contourIdx parameter.',0,'void',['Mat','image','',['/IO']],['vector_Mat','contours','',[]],['int','contourIdx','',[]],['Scalar','color','',['/C','/Ref']],['int','thickness','1',[]],['int','lineType','LINE_8',[]],['Mat','hierarchy','Mat()',[]],['int','maxLevel','INT_MAX',[]],['Point','offset','Point()',[]]],
 ['','ellipse2Poly','@brief Approximates an elliptic arc with a polyline.
 
 The function ellipse2Poly computes the vertices of a polyline that approximates the specified
@@ -82,6 +109,31 @@ elliptic arc. It is used by #ellipse. If `arcStart` is greater than `arcEnd`, th
 @param delta Angle between the subsequent polyline vertices. It defines the approximation
 accuracy.
 @param pts Output vector of polyline vertices.',0,'void',['Point','center','',[]],['Size','axes','',[]],['int','angle','',[]],['int','arcStart','',[]],['int','arcEnd','',[]],['int','delta','',[]],['vector_Point','pts','',['/O','/Ref']]],
+['','findContours','@brief Finds contours in a binary image.
+
+The function retrieves contours from the binary image using the algorithm @cite Suzuki85 . The contours
+are a useful tool for shape analysis and object detection and recognition. See squares.cpp in the
+OpenCV sample directory.
+@note Since opencv 3.2 source image is not modified by this function.
+
+@param image Source, an 8-bit single-channel image. Non-zero pixels are treated as 1\'s. Zero
+pixels remain 0\'s, so the image is treated as binary . You can use #compare, #inRange, #threshold ,
+#adaptiveThreshold, #Canny, and others to create a binary image out of a grayscale or color one.
+If mode equals to #RETR_CCOMP or #RETR_FLOODFILL, the input can also be a 32-bit integer image of labels (CV_32SC1).
+@param contours Detected contours. Each contour is stored as a vector of points (e.g.
+std::vector<std::vector<cv::Point> >).
+@param hierarchy Optional output vector (e.g. std::vector<cv::Vec4i>), containing information about the image topology. It has
+as many elements as the number of contours. For each i-th contour contours[i], the elements
+hierarchy[i][0] , hierarchy[i][1] , hierarchy[i][2] , and hierarchy[i][3] are set to 0-based indices
+in contours of the next and previous contours at the same hierarchical level, the first child
+contour and the parent contour, respectively. If for the contour i there are no next, previous,
+parent, or nested contours, the corresponding elements of hierarchy[i] will be negative.
+@note In Python, hierarchy is nested inside a top level array. Use hierarchy[0][i] to access hierarchical elements of i-th contour.
+@param mode Contour retrieval mode, see #RetrievalModes
+@param method Contour approximation method, see #ContourApproximationModes
+@param offset Optional offset by which every contour point is shifted. This is useful if the
+contours are extracted from the image ROI and then they should be analyzed in the whole image
+context.',0,'void',['Mat','image','',[]],['vector_Mat','contours','',['/O']],['Mat','hierarchy','',['/O']],['int','mode','',[]],['int','method','',[]],['Point','offset','Point()',[]]],
 ['','getAffineTransform','@overload',0,'Mat',['Mat','src','',[]],['Mat','dst','',[]]],
 ['','getGaborKernel','@brief Returns Gabor filter coefficients.
 
