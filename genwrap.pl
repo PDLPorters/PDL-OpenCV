@@ -7,10 +7,10 @@ use PDL::Core qw/howbig/;
 
 require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %type_alias, %extra_cons_args);
-my %STAYWRAPPED = map +($_=>1), qw(Mat);
-my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), qw(String), keys %STAYWRAPPED) };
+my %STAYWRAPPED = map +($_=>[]), qw(Mat String);
+my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
-my %VECTORTYPES = (%PP::OpenCV::DIMTYPES, map +($_=>[]), qw(int float), keys %STAYWRAPPED);
+my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float));
 my %overrides = (
   Tracker => {
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
@@ -230,7 +230,7 @@ sub gen_wrapper {
   my $wrapper = "$vector_str${class}Wrapper";
   my %tdecls = (
     new => qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
-      map ", @$_", @{$extra_cons_args{$class} || []}
+      map ", @$_", @{$is_vector ? [] : $extra_cons_args{$class} || []}
     ]})},
     dest => qq{void cw_$vector_str${class}_DESTROY($wrapper *wrapper)},
   );
