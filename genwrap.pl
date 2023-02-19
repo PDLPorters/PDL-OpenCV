@@ -6,7 +6,7 @@ use PDL::Types;
 use PDL::Core qw/howbig/;
 
 require ''. catfile $Bin, 'genpp.pl';
-our (%type_overrides, %extra_cons_args);
+our (%type_overrides, %type_alias, %extra_cons_args);
 my %STAYWRAPPED = map +($_=>1), qw(Mat);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), qw(String), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
@@ -199,6 +199,7 @@ sub gen_code {
 		my ($s, $v) = @{shift @params};
 		my $was_ptr = $s =~ $wrap_re ? $s =~ s/\s*\*+$// : 0;
 		$s = $type_overrides{$s}[1] if $type_overrides{$s};
+		$s = $1.$type_alias{$2} if $s =~ /^(vector_)(.*)/ and $type_alias{$2};
 		my $ctype = $s . ($s =~ $wrap_re ? "Wrapper *" : '');
 		push @input_args, "$ctype $v";
 		push @cvargs, $s eq 'StringWrapper*' ? "$v->held" : $s =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held" : $v;
@@ -245,7 +246,7 @@ struct $wrapper {
 #endif
 EOF
   my $cstr = <<EOF;
-@{[$constructor_override{$class} ? '' : "$tdecls{new} {
+@{[$constructor_override{$class} && !$is_vector ? '' : "$tdecls{new} {
  cw_error CW_err = {CW_ENONE, NULL, 0};
  try {
   *cw_retval = new $wrapper;
@@ -334,7 +335,7 @@ $decls{gV} {
 }
 EOF
   }
-  $cstr .= $constructor_override{$class} || '';
+  $cstr .= $constructor_override{$class} || '' if !$is_vector;
   ($hstr, $cstr);
 }
 

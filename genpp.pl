@@ -10,10 +10,11 @@ our %type_overrides = (
   String => ['StringWrapper*', 'StringWrapper*'], # PP, C
   bool => ['byte', 'unsigned char'],
 );
-$type_overrides{$_->[0]} = $type_overrides{$_->[1]} for (# aliases
-  [qw(char bool)],
-  [qw(string String)],
+our %type_alias = (
+  char => 'bool',
+  string => 'String',
 );
+$type_overrides{$_} = $type_overrides{$type_alias{$_}} for keys %type_alias;
 our %default_overrides = (
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
   'Point()' => ['PDL->zeroes(sbyte,2)',],
