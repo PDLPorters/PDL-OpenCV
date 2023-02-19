@@ -146,4 +146,27 @@ are pt1 and pt2.
 mean that the function has to draw a filled rectangle.
 @param lineType Type of the line. See #LineTypes
 @param shift Number of fractional bits in the point coordinates.',0,'void',['Mat','img','',['/IO']],['Point','pt1','',[]],['Point','pt2','',[]],['Scalar','color','',['/C','/Ref']],['int','thickness','1',[]],['int','lineType','LINE_8',[]],['int','shift','0',[]]],
+['','threshold','@brief Applies a fixed-level threshold to each array element.
+
+The function applies fixed-level thresholding to a multiple-channel array. The function is typically
+used to get a bi-level (binary) image out of a grayscale image ( #compare could be also used for
+this purpose) or for removing a noise, that is, filtering out pixels with too small or too large
+values. There are several types of thresholding supported by the function. They are determined by
+type parameter.
+
+Also, the special values #THRESH_OTSU or #THRESH_TRIANGLE may be combined with one of the
+above values. In these cases, the function determines the optimal threshold value using the Otsu\'s
+or Triangle algorithm and uses it instead of the specified thresh.
+
+@note Currently, the Otsu\'s and Triangle methods are implemented only for 8-bit single-channel images.
+
+@param src input array (multiple-channel, 8-bit or 32-bit floating point).
+@param dst output array of the same size  and type and the same number of channels as src.
+@param thresh threshold value.
+@param maxval maximum value to use with the #THRESH_BINARY and #THRESH_BINARY_INV thresholding
+types.
+@param type thresholding type (see #ThresholdTypes).
+@return the computed threshold value if Otsu\'s or Triangle methods used.
+
+@sa  adaptiveThreshold, findContours, compare, min, max',0,'double',['Mat','src','',[]],['Mat','dst','',['/O']],['double','thresh','',[]],['double','maxval','',[]],['int','type','',[]]],
 );
