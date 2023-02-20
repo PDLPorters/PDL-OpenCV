@@ -16,6 +16,7 @@ our %type_alias = (
 );
 $type_overrides{$_} = $type_overrides{$type_alias{$_}} for keys %type_alias;
 our %default_overrides = (
+  'vector_Mat()' => ['undef',],
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
   'Point()' => ['PDL->zeroes(sbyte,2)',],
   false => [0,0], # perl, C
@@ -157,7 +158,8 @@ sub default_pl {
   $d =~ s/[A-Z][A-Z0-9_]+/$&()/g if length $d and $d !~ /\(/;
   if ($self->{is_output}) {
     $d = 'PDL->null' if !$self->{naive_otherpar} and (!length $d or $d eq 'Mat()' or ($d eq '0' && $self->{was_ptr}));
-  } elsif ($default_overrides{$d}) {
+  }
+  if ($default_overrides{$d}) {
     $d = $default_overrides{$d}[0];
   }
   length $d ? "\$$self->{name} = $d if !defined \$$self->{name};" : ();

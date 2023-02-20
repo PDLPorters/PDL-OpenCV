@@ -15,7 +15,7 @@ my $vfile = 't/qrcode.png';
 my $pic = imread($vfile);
 #imshow("win", $pic); waitKey(0);
 my ($points,$straight_qrcode,$res) = $qrd->detectAndDecodeCurved($pic);
-isa_ok $points, 'PDL', 'detectAndDecodeCurved';
+isa_ok $points, 'PDL', 'decode ok';
 #diag $_ for $points,$straight_qrcode;
 #diag "code: ", $res;
 
