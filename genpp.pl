@@ -44,14 +44,15 @@ sub new {
   my %flags = map +($_=>1), @{$f||[]};
   my $self = bless {type=>$type, name=>$name, is_io=>$flags{'/IO'}, is_output=>$flags{'/O'}, pcount => $pcount, pdltype => ''}, $class;
   $self->{is_vector} = (my $nonvector_type = $type) =~ s/vector_//g;
+  $nonvector_type = $type_alias{$nonvector_type} || $nonvector_type;
   $self->{type_pp} = ($type_overrides{$nonvector_type} || [$nonvector_type])->[0];
   $self->{type_c} = ($type_overrides{$nonvector_type} || [0,$nonvector_type])->[1];
   $self->{default} = $default if defined $default and length $default;
-  @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'StringWrapper*';
+  @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'StringWrapper*' and !$self->{is_vector};
   if ($self->{is_vector}) {
     $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};
     $self->{use_comp} = 1 if $spec and $self->{is_output};
-    @$self{qw(pdltype type_c)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, "${type}Wrapper *",
+    @$self{qw(pdltype type_c)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, ('vector_'x$self->{is_vector})."${nonvector_type}Wrapper *",
     );
     @$self{qw(is_other naive_otherpar use_comp pdltype)} = (1,1,1,'') if $self->{type_pp} eq 'Mat';
     return $self;
