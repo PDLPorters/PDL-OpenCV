@@ -54,7 +54,7 @@ sub new {
     $self->{use_comp} = 1 if $spec and $self->{is_output};
     @$self{qw(pdltype type_c)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, ('vector_'x$self->{is_vector})."${nonvector_type}Wrapper *",
     );
-    @$self{qw(is_other naive_otherpar use_comp pdltype)} = (1,1,1,'') if $self->{type_pp} eq 'Mat';
+    @$self{qw(is_other naive_otherpar use_comp pdltype)} = (1,1,1,'') if $self->{type_pp} eq 'Mat' or $self->{type_pp} eq 'StringWrapper*';
     return $self;
   } elsif ($self->{type_pp} !~ /^[A-Z]/) {
     (my $pdltype = $self->{type_pp}) =~ s#\s*\*+$##;
