@@ -10,7 +10,7 @@ our (%type_overrides, %type_alias, %extra_cons_args);
 my %STAYWRAPPED = map +($_=>[]), qw(Mat String);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
-my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float));
+my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double));
 my %overrides = (
   Tracker => {
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
