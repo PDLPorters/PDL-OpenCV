@@ -109,6 +109,20 @@ elliptic arc. It is used by #ellipse. If `arcStart` is greater than `arcEnd`, th
 @param delta Angle between the subsequent polyline vertices. It defines the approximation
 accuracy.
 @param pts Output vector of polyline vertices.',0,'void',['Point','center','',[]],['Size','axes','',[]],['int','angle','',[]],['int','arcStart','',[]],['int','arcEnd','',[]],['int','delta','',[]],['vector_Point','pts','',['/O','/Ref']]],
+['','equalizeHist','@brief Equalizes the histogram of a grayscale image.
+
+The function equalizes the histogram of the input image using the following algorithm:
+
+- Calculate the histogram \\f$H\\f$ for src .
+- Normalize the histogram so that the sum of histogram bins is 255.
+- Compute the integral of the histogram:
+\\f[H\'_i =  \\sum _{0  \\le j < i} H(j)\\f]
+- Transform the image using \\f$H\'\\f$ as a look-up table: \\f$\\texttt{dst}(x,y) = H\'(\\texttt{src}(x,y))\\f$
+
+The algorithm normalizes the brightness and increases the contrast of the image.
+
+@param src Source 8-bit single channel image.
+@param dst Destination image of the same size and type as src .',0,'void',['Mat','src','',[]],['Mat','dst','',['/O']]],
 ['','findContours','@brief Finds contours in a binary image.
 
 The function retrieves contours from the binary image using the algorithm @cite Suzuki85 . The contours

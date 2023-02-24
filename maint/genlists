@@ -44,6 +44,7 @@ my %force = map +($_=>1), qw(
   cv.threshold
   cv.hconcat
   cv.logPolar
+  cv.equalizeHist
   cv.normalize
   cv.minMaxLoc
   cv.imread
