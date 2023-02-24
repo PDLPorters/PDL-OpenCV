@@ -51,7 +51,7 @@ sub new {
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'StringWrapper*' and !$self->{is_vector};
   if ($self->{is_vector}) {
     $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};
-    $self->{use_comp} = 1 if $spec and $self->{is_output};
+    $self->{use_comp} = 1 if $self->{is_output};
     @$self{qw(pdltype type_c)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, ('vector_'x$self->{is_vector})."${nonvector_type}Wrapper *",
     );
     @$self{qw(is_other naive_otherpar use_comp pdltype)} = (1,1,1,'') if $self->{type_pp} eq 'Mat' or $self->{type_pp} eq 'StringWrapper*';
