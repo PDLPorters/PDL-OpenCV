@@ -17,9 +17,6 @@ my %overrides = (
   },
 );
 my %ptr_only = map +($_=>1), qw(Tracker LineSegmentDetector);
-my $CATCH = q[catch (const std::exception& e) {
-  CW_err = {CW_EUSERERROR,strdup(e.what()),1};
- }];
 my $wrap_re = qr/^(?:(?!String)[A-Z]|vector_)/;
 my %constructor_override = (
   Tracker => <<EOF,
@@ -29,32 +26,21 @@ my %constructor_override = (
 # define TRACKER_RECT_TYPE cv::Rect2d
 #endif
 cw_error cw_Tracker_new(TrackerWrapper **cw_retval, char *klass) {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
-  *cw_retval = new TrackerWrapper;
-  (*cw_retval)->held = cv::TrackerKCF::create();
- } $CATCH
- return CW_err;
+ TRY_WRAP((*cw_retval = new TrackerWrapper)->held = cv::TrackerKCF::create();)
 }
 EOF
   LineSegmentDetector => <<EOF,
 cw_error cw_LineSegmentDetector_new(LineSegmentDetectorWrapper **cw_retval, char *klass, int lsd_type) {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
-  *cw_retval = new LineSegmentDetectorWrapper;
-  (*cw_retval)->held = cv::createLineSegmentDetector(lsd_type);
- } $CATCH
- return CW_err;
+ TRY_WRAP(
+  (*cw_retval = new LineSegmentDetectorWrapper)->held = cv::createLineSegmentDetector(lsd_type);
+ )
 }
 EOF
   String => <<EOF,
 cw_error cw_String_new(StringWrapper **cw_retval, char *klass, const char* str) {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
-  *cw_retval = new StringWrapper;
-  (*cw_retval)->held = str ? cv::String(str) : cv::String();
- } $CATCH
- return CW_err;
+ TRY_WRAP(
+  (*cw_retval = new StringWrapper)->held = str ? cv::String(str) : cv::String();
+ )
 }
 EOF
 );
@@ -69,43 +55,28 @@ extern "C" {
 EOF
 my $CBODY_GLOBAL = <<EOF;
 cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
+ TRY_WRAP(
   char isempty = (planes == 0 && cols == 0 && rows == 0);
   if (!isempty && !data) throw std::invalid_argument("NULL data passed to cw_Mat_newWithDims");
-  *cw_retval = new MatWrapper;
-  if (isempty) /* no check type as upgrade */
-    (*cw_retval)->held = cv::Mat();
-  else
-    (*cw_retval)->held = cv::Mat(rows, cols, get_ocvtype(type,planes), data);
- } $CATCH
- return CW_err;
+  (*cw_retval = new MatWrapper)->held = isempty ? cv::Mat() : /* no check type as upgrade */
+   cv::Mat(rows, cols, get_ocvtype(type,planes), data);
+ )
 }
 cw_error cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r) {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
+ TRY_WRAP(
   *t = get_pdltype(wrapper->held.type());
   *l = wrapper->held.channels();
   *c = wrapper->held.cols;
   *r = wrapper->held.rows;
- } $CATCH
- return CW_err;
+ )
 }
 cw_error cw_Mat_copyDataTo(MatWrapper *self, void *data, ptrdiff_t bytes) {
- cw_error CW_err = {CW_ENONE, NULL, 0};
  ptrdiff_t shouldbe = self->held.elemSize() * self->held.cols * self->held.rows;
  SHOULDBE_CHECK(bytes, shouldbe)
- try {
-  memmove(data, self->held.ptr(), bytes);
- } $CATCH
- return CW_err;
+ TRY_WRAP( memmove(data, self->held.ptr(), bytes); )
 }
 cw_error cw_String_c_str(const char **ptr, StringWrapper *self) {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
-  *ptr = self->held.c_str();
- } $CATCH
- return CW_err;
+ TRY_WRAP( *ptr = self->held.c_str(); )
 }
 EOF
 my $CFOOTER = "}\n";
@@ -132,6 +103,14 @@ typedef struct {
 #endif
 EOF
 my $HBODY_GLOBAL = <<'EOF';
+#define TRY_WRAP(...) \
+ cw_error CW_err = {CW_ENONE, NULL, 0}; \
+ try { \
+  __VA_ARGS__ \
+ } catch (const std::exception& e) { \
+  CW_err = {CW_EUSERERROR,strdup(e.what()),1}; \
+ } \
+ return CW_err;
 #define SHOULDBE_CHECK(got, expected) \
  if (got != expected) { \
   char buf[100]; \
@@ -210,7 +189,7 @@ sub gen_code {
 	my $str = "cw_error $fname(" . join(", ", @input_args) . ")";
 	my $hstr = $str.";\n";
 	$str .= " {\n";
-	$str .= " cw_error CW_err = {CW_ENONE, NULL, 0};\n try {\n";
+	$str .= " TRY_WRAP(\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  $cpp_ret";
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $in_name)."(" :
@@ -220,7 +199,7 @@ sub gen_code {
 	$str .= join(', ', @cvargs).");\n";
 	$str .= $after_ret;
 	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
-	$str .= " } $CATCH\n return CW_err;\n";
+	$str .= " )\n";
 	$str .= "}\n\n";
 	return ($hstr,$str);
 }
@@ -249,11 +228,7 @@ struct $wrapper {
 EOF
   my $cstr = <<EOF;
 @{[$constructor_override{$class} && !$is_vector ? '' : "$tdecls{new} {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
-  *cw_retval = new $wrapper;
- } $CATCH
- return CW_err;
+ TRY_WRAP( *cw_retval = new $wrapper; )
 }"]}
 $tdecls{dest} {
 	delete wrapper;
@@ -269,8 +244,7 @@ EOF
     my $field_count = 0;
     $cstr .= <<EOF;
 $decls{nWV} {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
+ TRY_WRAP(
   *cw_retval = new $wrapper;
   (*cw_retval)->held = std::vector<@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}>@{[
     !@fields && !$STAYWRAPPED{$class} ? "(data, data + count);" :
@@ -279,24 +253,18 @@ $decls{nWV} {
       "for (i = 0; i < count; i++)",
       "  (*cw_retval)->held[i] = ".($STAYWRAPPED{$class} ? 'data[i]->held' : "cv::$class(".join(',', map "data[i*stride + ".$field_count++."]", @fields).")").";",
   ]}
- } $CATCH
- return CW_err;
+ )
 }
 $decls{size} {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
-  *count = self->held.size();
- } $CATCH
- return CW_err;
+ TRY_WRAP( *count = self->held.size(); )
 }
 $decls{cDT} {
- cw_error CW_err = {CW_ENONE, NULL, 0};
  ptrdiff_t i = 0, stride = @{[(0+@fields) || 1]}, count = self->held.size();
  ptrdiff_t shouldbe = @{[$STAYWRAPPED{$class} ? "0; ${class}Wrapper **d = (${class}Wrapper **)data;" :
  "sizeof(@{[@fields ? $fields[0][0] : $class]}) * stride * count;
  SHOULDBE_CHECK(bytes, shouldbe)
  "]}
- try {
+ TRY_WRAP(
   @{[!@fields && !$STAYWRAPPED{$class} ? 'memmove(data, self->held.data(), bytes);' :
   $STAYWRAPPED{$class} ? qq{for (i = 0; i < count; i++) {
     d[i] = new ${class}Wrapper;
@@ -309,8 +277,7 @@ $decls{cDT} {
     (map "  ptmp[i*stride + ".$field_count++."] = self->held[i].@{[$_->[2]||$_->[1]]};", @fields),
     "}",
   ]}
- } $CATCH
- return CW_err;
+ )
 }
 EOF
   } elsif (@fields) {
@@ -321,19 +288,14 @@ EOF
     $hstr .= join '', map "$_;\n", @decls{sort keys %decls};
     $cstr .= <<EOF;
 $decls{nWV} {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
-  *cw_retval = new $wrapper;
-  (*cw_retval)->held = cv::${class}(@{[join ',', map $_->[1], @fields]});
- } $CATCH
- return CW_err;
+ TRY_WRAP(
+  (*cw_retval = new $wrapper)->held = cv::${class}(@{[join ',', map $_->[1], @fields]});
+ )
 }
 $decls{gV} {
- cw_error CW_err = {CW_ENONE, NULL, 0};
- try {
+ TRY_WRAP(
   @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @fields]}
- } $CATCH
- return CW_err;
+ )
 }
 EOF
   }
