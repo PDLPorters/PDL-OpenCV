@@ -49,6 +49,8 @@ sub new {
   $self->{type_c} = ($type_overrides{$nonvector_type} || [0,$nonvector_type])->[1];
   $self->{default} = $default if defined $default and length $default;
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'StringWrapper*' and !$self->{is_vector};
+  $self->{was_ptr} = 1 if (my $type_nostar = $type) =~ s/\s*\*+$//;
+  $self->{type_nostar} = $type_nostar;
   if ($self->{is_vector}) {
     $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};
     $self->{use_comp} = 1 if $self->{is_output};
@@ -61,8 +63,6 @@ sub new {
     @$self{qw(dimless)} = (1);
     return $self;
   }
-  $self->{was_ptr} = 1 if (my $type_nostar = $type) =~ s/\s*\*+$//;
-  @$self{qw(type)} = ($type) if $type =~ s/\s*\*+$//;
   %$self = (%$self,
     type_c => "${type_nostar}Wrapper *",
   );
@@ -95,8 +95,8 @@ sub _par {
   my ($self) = @_;
   return "$self->{name}()" if $self->{dimless};
   return "@$self{qw(type_c name)}" if $self->{naive_otherpar};
-  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
-  return "$name(l$pcount,c$pcount,r$pcount)" if $type eq 'Mat';
+  my ($name, $type, $pcount) = @$self{qw(name type_nostar pcount)};
+  return "$name(l$pcount,c$pcount,r$pcount)" if $self->{type} eq 'Mat';
   return "$name(n$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims} and !$self->{is_vector};
   my $i = 0;
   return "$name(".join(',',
@@ -108,7 +108,7 @@ sub _par {
 sub frompdl {
   my ($self, $compmode) = @_;
   die "Called frompdl on OtherPar" if $self->{is_other};
-  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  my ($name, $type, $pcount) = @$self{qw(name type_nostar pcount)};
   return "CW_err = cw_${type}_new(&\$COMP($name), NULL); $IF_ERROR_RETURN;\n" if $compmode and $self->{is_output};
   my $localname = $self->c_input($compmode);
   my $decl = ($compmode && ($self->{use_comp} || $self->{is_other})) ? '' : "$self->{type_c} $localname;\n";
@@ -130,7 +130,7 @@ sub frompdl {
 sub topdl1 {
   my ($self, $compmode) = @_;
   die "Called topdl1 on OtherPar" if $self->{is_other};
-  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  my ($name, $type, $pcount) = @$self{qw(name type_nostar pcount)};
   return
     "PDL_Indx ${name}_count;\nCW_err = cw_${type}_size(&\$SIZE(n${pcount}d0), ".$self->c_input($compmode)."); $IF_ERROR_RETURN;\n"
     if $self->{is_vector};
@@ -142,7 +142,7 @@ sub topdl1 {
 sub topdl2 {
   my ($self, $compmode) = @_;
   die "Called topdl2 on OtherPar" if $self->{is_other};
-  my ($name, $type, $pcount) = @$self{qw(name type pcount)};
+  my ($name, $type, $pcount) = @$self{qw(name type_nostar pcount)};
   return <<EOF if $self->{is_vector} or !$self->{fixeddims};
 CW_err = cw_${type}_copyDataTo(@{[$self->c_input($compmode)]}, \$P($name), \$PDL($name)->nbytes);
 $IF_ERROR_RETURN;
@@ -151,7 +151,7 @@ EOF
 }
 sub destroy_code {
   my ($self, $compmode) = @_;
-  "cw_$self->{type}_DESTROY(".$self->c_input($compmode).");\n";
+  "cw_$self->{type_nostar}_DESTROY(".$self->c_input($compmode).");\n";
 }
 sub default_pl {
   my ($self) = @_;
