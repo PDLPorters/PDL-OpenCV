@@ -39,10 +39,11 @@ our %DIMTYPES = (
   Size=>[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
 );
 our %CTYPE2PDL = map +($_->realctype => $_->ppforcetype), PDL::Types::types();
+our %FLAG2KEY = ('/IO' => 'is_io', '/O' => 'is_output');
 sub new {
   my ($class, $pcount, $type, $name, $default, $f) = @_;
-  my %flags = map +($_=>1), @{$f||[]};
-  my $self = bless {type=>$type, name=>$name, is_io=>$flags{'/IO'}, is_output=>$flags{'/O'}, pcount => $pcount, pdltype => ''}, $class;
+  my %flags = map +($_=>1), grep $_, map $FLAG2KEY{$_}, @{$f||[]};
+  my $self = bless {type=>$type, name=>$name, %flags, pcount => $pcount, pdltype => ''}, $class;
   $self->{is_vector} = (my $nonvector_type = $type) =~ s/vector_//g;
   $nonvector_type = $type_alias{$nonvector_type} || $nonvector_type;
   $self->{type_pp} = ($type_overrides{$nonvector_type} || [$nonvector_type])->[0];
