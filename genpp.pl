@@ -207,11 +207,12 @@ sub genpp {
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
     my (@inputs, @outputs); push @{$_->{is_output} ? \@outputs : \@inputs}, $_ for @allpars;
+    $hash{PMFunc} = $ismethod ? '' : "*$func = \\&${main::PDLOBJ}::$func;\n";
     if (!grep $_->{is_vector} || ($_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}), @allpars) {
       $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
       $hash{Doc} = text_trim doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
-      pp_addpm("*$func = \\&${main::PDLOBJ}::$func;\n") if !$ismethod;
+      pp_addpm($hash{PMFunc}) if !$ismethod;
       pp_add_exported($func);
       my $ret_type = $ret eq 'void' ? $ret : pop(@allpars)->{type_c};
       my @cw_params = (($ret ne 'void' ? '&RETVAL' : ()), map $_->{name}, @allpars);
@@ -235,7 +236,6 @@ EOF
     %hash = (%hash,
       Pars => join('; ', map $_->par(1), @pars), OtherPars => join('; ', map $_->par, @otherpars),
       GenericTypes=>(grep !$_->{pdltype}, @pars) ? $T : ['D'],
-      PMFunc => ($ismethod ? '' : '*'.$func.' = \&'.$::PDLOBJ.'::'.$func.";\n"),
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
   barf "Usage: ${main::PDLOBJ}::$func(@{[join ',', map "\\\$$_->{name}", @inputs]})\n" if \@_ < @{[0+(grep !defined $_->{default} || !length $_->{default}, @inputs)]};
