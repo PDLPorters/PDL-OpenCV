@@ -21,5 +21,6 @@ isa_ok getGaborKernel(pdl([5,5]),1,1,1,1), 'PDL', 'getGaborKernel';
 isa_ok my $pic = imread('t/qrcode.png'), 'PDL', 'imread';
 my $pic2 = $pic->glue(1,$pic);
 is hconcat([$pic, $pic2])->dim(1), $pic->dim(1)*3, 'hconcat array-ref worked';
+is +(sumElems($data))[0]->sumover, 4560, 'sumElems';
 
 done_testing();

@@ -94,4 +94,10 @@ normalization.
 number of channels as src and the depth =CV_MAT_DEPTH(dtype).
 @param mask optional operation mask.
 @sa norm, Mat::convertTo, SparseMat::convertTo',0,'void',['Mat','src','',[]],['Mat','dst','',['/IO']],['double','alpha','1',[]],['double','beta','0',[]],['int','norm_type','NORM_L2',[]],['int','dtype','-1',[]],['Mat','mask','Mat()',[]]],
+['',['sum','sumElems'],'@brief Calculates the sum of array elements.
+
+The function cv::sum calculates and returns the sum of array elements,
+independently for each channel.
+@param src input array that must have from 1 to 4 channels.
+@sa  countNonZero, mean, meanStdDev, norm, minMaxLoc, reduce',0,'Scalar',['Mat','src','',[]]],
 );

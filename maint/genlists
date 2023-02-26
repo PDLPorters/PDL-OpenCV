@@ -34,6 +34,7 @@ chdir $old_dir or die "chdir: $!";
 
 my %force = map +($_=>1), qw(
   cv.batchDistance
+  cv.sum
   cv.cvtColor
   cv.rectangle
   cv.ellipse2Poly
@@ -100,6 +101,13 @@ print "class: $cname\n";
       unshift @n, '' if @n == 1;
       my $ismethod = 0+!!$n[0];
       $ismethod = 0 if grep $_ eq '/S', @$flags;
+      my @aliases = grep /^=/, @$flags;
+      die ">1 aliases for $name: @aliases" if @aliases > 1;
+      if (@aliases) {
+        die "alias for $name no '=': $aliases[0]" unless $aliases[0] =~ s/^=//;
+        $n[1] = [$n[1], $aliases[0]];
+        $name .= "/$aliases[0]";
+      }
       push @n, $doc, $ismethod, $ret, @$args;
       push @{$dest2func2name2defs{$dest}{$name}}, \@n;
       print "$name\n";

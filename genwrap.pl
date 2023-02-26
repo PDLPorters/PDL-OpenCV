@@ -172,10 +172,12 @@ EOF
 
 sub gen_code {
 	my ($class, $name, $doc, $ismethod, $ret, @params) = @_;
+	$name = [$name, $name] if !ref $name;
+	my ($in_name, $out_name) = @$name;
 	my $ptr_only = $ptr_only{$class};
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
-	my $opt = $overrides{$class}{$name} || {};
+	my $opt = $overrides{$class}{$in_name} || {};
 	my (@input_args, @cvargs, $methodvar);
 	my ($func_ret, $cpp_ret, $after_ret) = ($ret, '', '');
 	if ($ret eq 'StringWrapper*') {
@@ -189,7 +191,7 @@ sub gen_code {
 	} elsif ($ret ne 'void') {
 		$cpp_ret = "*cw_retval = ";
 	}
-	die "Error: '$name' no return type from '$ret'".do {require Data::Dumper; Data::Dumper::Dumper(\@_)} if $ret ne 'void' and !$func_ret;
+	die "Error: '$out_name' no return type from '$ret'".do {require Data::Dumper; Data::Dumper::Dumper(\@_)} if $ret ne 'void' and !$func_ret;
 	push @input_args, "$func_ret*cw_retval" if $ret ne 'void';
 	if ($ismethod) {
 		push @input_args, "${class}Wrapper *self";
@@ -204,15 +206,15 @@ sub gen_code {
 		push @input_args, "$ctype $v";
 		push @cvargs, $s eq 'StringWrapper*' ? "$v->held" : $s =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held" : $v;
 	}
-	my $fname = join '_', grep length, 'cw', $class, $name;
+	my $fname = join '_', grep length, 'cw', $class, $out_name;
 	my $str = "cw_error $fname(" . join(", ", @input_args) . ")";
 	my $hstr = $str.";\n";
 	$str .= " {\n";
 	$str .= " cw_error CW_err = {CW_ENONE, NULL, 0};\n try {\n";
 	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  $cpp_ret";
-	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $name)."(" :
-	  "$methodvar->held".($ptr_only?'->':'.')."$name" .
+	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $in_name)."(" :
+	  "$methodvar->held".($ptr_only?'->':'.')."$in_name" .
 	  ($ismethod == 1 ? "(" : ";\n");
 	$opt->{argfix}->(\@cvargs) if $opt->{argfix};
 	$str .= join(', ', @cvargs).");\n";

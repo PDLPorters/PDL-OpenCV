@@ -202,6 +202,7 @@ sub genpp {
     my %hash = (NoPthread=>1, HandleBad=>0);
     my $doxy = doxyparse($doc);
     my $pcount = 1;
+    $func = $func->[1] if ref $func;
     my $cfunc = join('_', 'cw', my $pfunc = join '_', grep length,$class,$func);
     unshift @params, [$class,'self'] if $ismethod;
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
@@ -212,7 +213,7 @@ sub genpp {
       $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
       $hash{Doc} = text_trim doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
-      pp_addpm($hash{PMFunc}), pp_add_exported($func) if !$ismethod;
+      pp_addpm($hash{PMFunc}) if !$ismethod;
       my $ret_type = $ret eq 'void' ? $ret : pop(@allpars)->{type_c};
       my @cw_params = (($ret ne 'void' ? '&RETVAL' : ()), map $_->{name}, @allpars);
       my $xs = <<EOF;
@@ -237,7 +238,7 @@ EOF
       GenericTypes=>(grep !$_->{pdltype}, @pars) ? $T : ['D'],
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
-  barf "Usage: ${main::PDLOBJ}::$func(@{[join ',', map "\\\$$_->{name}", @inputs]})\n" if \@_ < @{[0+(grep !defined $_->{default} || !length $_->{default}, @inputs)]};
+  barf "Usage: ${main::PDLOBJ}::$func(@{[join ',', map "\\\$$_->{name}", @inputs]})\\n" if \@_ < @{[0+(grep !defined $_->{default} || !length $_->{default}, @inputs)]};
   my (@{[join ',', map "\$$_->{name}", @inputs]}) = \@_;
   @{[!@outputs ? '' : "my (@{[join ',', map qq{\$$_->{name}}, @outputs]});"]}
   @{[ join "\n  ", @defaults ]}
@@ -342,7 +343,7 @@ EOF
     genpp(@$_) for grep $_->[0] eq $c, @flist;
   }
   pp_export_nothing();
-  pp_add_exported(map $_->[1], grep !$_->[3], @flist);
+  pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], grep !$_->[3], @flist);
   genconsts("::$last");
 }
 
