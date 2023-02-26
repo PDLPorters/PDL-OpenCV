@@ -57,16 +57,16 @@ sub new {
     @$self{qw(is_other naive_otherpar use_comp pdltype)} = (1,1,1,'') if $self->{type_pp} eq 'Mat' or $self->{type_pp} eq 'StringWrapper*';
     return $self;
   } elsif ($self->{type_pp} !~ /^[A-Z]/) {
-    (my $pdltype = $self->{type_pp}) =~ s#\s*\*+$##;
-    @$self{qw(dimless pdltype was_ptr)} = (1, $pdltype, $type ne $pdltype);
+    $self->{was_ptr} = 1 if ($self->{pdltype} = $self->{type_pp}) =~ s#\s*\*+$##;
+    @$self{qw(dimless)} = (1);
     return $self;
   }
-  @$self{qw(was_ptr type)} = (1, $type) if $type =~ s/\s*\*+$//;
+  $self->{was_ptr} = 1 if (my $type_nostar = $type) =~ s/\s*\*+$//;
+  @$self{qw(type)} = ($type) if $type =~ s/\s*\*+$//;
   %$self = (%$self,
-    type_c => "${type}Wrapper *",
-    fixeddims => 0,
+    type_c => "${type_nostar}Wrapper *",
   );
-  if (my $spec = $DIMTYPES{$type}) {
+  if (my $spec = $DIMTYPES{$type_nostar}) {
     $self->{fixeddims} = 1;
     $self->{pdltype} = $CTYPE2PDL{$spec->[0][0]};
   } elsif ($type ne 'Mat') {
@@ -77,7 +77,7 @@ sub new {
 }
 sub c_input {
   my ($self, $compmode) = @_;
-  return ($self->{type} =~ /\*$/ ? '&' : '').
+  return ($self->{was_ptr} ? '&' : '').
     ($compmode ? "(($self->{type_c}*)($self->{name}->data))[0]" : "\$$self->{name}()")
     if $self->{dimless};
   return "\$COMP($self->{name})" if $self->{use_comp};
