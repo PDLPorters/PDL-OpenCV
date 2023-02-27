@@ -262,14 +262,11 @@ $decls{cDT} {
  ptrdiff_t i = 0, stride = @{[(0+@fields) || 1]}, count = self->held.size();
  ptrdiff_t shouldbe = @{[$STAYWRAPPED{$class} ? "0; ${class}Wrapper **d = (${class}Wrapper **)data;" :
  "sizeof(@{[@fields ? $fields[0][0] : $class]}) * stride * count;
- SHOULDBE_CHECK(bytes, shouldbe)
- "]}
+ SHOULDBE_CHECK(bytes, shouldbe)"]}
  TRY_WRAP(
   @{[!@fields && !$STAYWRAPPED{$class} ? 'memmove(data, self->held.data(), bytes);' :
-  $STAYWRAPPED{$class} ? qq{for (i = 0; i < count; i++) {
-    d[i] = new ${class}Wrapper;
-    d[i]->held = self->held[i];
-  }}:
+  $STAYWRAPPED{$class} ? qq{for (i = 0; i < count; i++)
+    (d[i] = new ${class}Wrapper)->held = self->held[i];}:
   join "\n  ",
     do {$field_count = 0; ()},
     "$fields[0][0] *ptmp = ($fields[0][0] *)data;",
