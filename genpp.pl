@@ -35,12 +35,12 @@ our $IF_ERROR_RETURN = "if (CW_err.error) return *(pdl_error *)&CW_err";
 {
 package PP::OpenCV;
 our %DIMTYPES = (
-  Point2f=>[[qw(float x)], [qw(float y)]],
-  Point2d=>[[qw(double x)], [qw(double y)]],
-  Point=>[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)]],
-  Rect=>[[qw(ptrdiff_t x)], [qw(ptrdiff_t y)], [qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
-  Scalar=>[[qw(double v0 val[0])], [qw(double v1 val[1])], [qw(double v2 val[2])], [qw(double v3 val[3])]],
-  Size=>[[qw(ptrdiff_t width)], [qw(ptrdiff_t height)]],
+  Point2f=>[map ['float', $_], qw(x y)],
+  Point2d=>[map ['double', $_], qw(x y)],
+  Point=>[map ['ptrdiff_t', $_], qw(x y)],
+  Rect=>[map ['ptrdiff_t', $_], qw(x y width height)],
+  Scalar=>[map ['double', "v$_", "val[$_]"], 0..3],
+  Size=>[map ['ptrdiff_t', $_], qw(width height)],
 );
 our %CTYPE2PDL = map +($_->realctype => $_->ppforcetype), PDL::Types::types();
 our %FLAG2KEY = ('/IO' => 'is_io', '/O' => 'is_output');
