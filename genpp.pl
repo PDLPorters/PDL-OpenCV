@@ -26,6 +26,7 @@ our %extra_cons_args = (
   LineSegmentDetector => [[qw(int lsd_type)]],
   String => [['const char*', 'str']],
 );
+our %STAYWRAPPED = map +($_=>[]), qw(Mat String);
 our $IF_ERROR_RETURN = "if (CW_err.error) return *(pdl_error *)&CW_err";
 
 {
@@ -57,7 +58,7 @@ sub new {
     $self->{use_comp} = 1 if $self->{is_output};
     @$self{qw(pdltype type_c)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, ('vector_'x$self->{is_vector})."${nonvector_type}Wrapper *",
     );
-    @$self{qw(is_other naive_otherpar use_comp pdltype)} = (1,1,1,'') if $self->{type_pp} eq 'Mat' or $self->{type_pp} eq 'StringWrapper*';
+    @$self{qw(is_other naive_otherpar use_comp pdltype)} = (1,1,1,'') if $STAYWRAPPED{$nonvector_type};
     return $self;
   } elsif ($self->{type_pp} !~ /^[A-Z]/) {
     ($self->{pdltype} = $self->{type_pp}) =~ s#\s*\*+$##;

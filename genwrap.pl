@@ -6,8 +6,7 @@ use PDL::Types;
 use PDL::Core qw/howbig/;
 
 require ''. catfile $Bin, 'genpp.pl';
-our (%type_overrides, %type_alias, %extra_cons_args);
-my %STAYWRAPPED = map +($_=>[]), qw(Mat String);
+our (%type_overrides, %type_alias, %extra_cons_args, %STAYWRAPPED);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double));
