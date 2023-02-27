@@ -209,11 +209,18 @@ sub text_trim {
 sub make_example {
   my ($func, $ismethod, $inputs, $outputs) = @_;
   $inputs = [@$inputs[1..$#$inputs]] if $ismethod;
-  "\n\n=for example\n\n ".
-    (!@$outputs ? '' : "(@{[join ',', map qq{\$$_->{name}}, @$outputs]}) = ").
-    ($ismethod ? '$obj->' : '')."$func".
-    (@$inputs ? '('.join(',', map "\$$_->{name}", @$inputs).')' : '').
-    ";\n\n";
+  my $out = "\n\n=for example\n\n";
+  for my $suppress_default (1,0) {
+    my $this_in = $inputs;
+    $this_in = [grep !length($_->{default}//''), @$this_in] if $suppress_default;
+    next if $suppress_default and @$this_in == @$inputs;
+    $out .= ' '.
+      (!@$outputs ? '' : "(@{[join ',', map qq{\$$_->{name}}, @$outputs]}) = ").
+      ($ismethod ? '$obj->' : '')."$func".
+      (@$this_in ? '('.join(',', map "\$$_->{name}", @$this_in).')' : '').
+      ";".($suppress_default ? ' # with defaults' : '')."\n";
+  }
+  $out."\n";
 }
 
 sub genpp {
