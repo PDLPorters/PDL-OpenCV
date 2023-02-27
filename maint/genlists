@@ -136,7 +136,9 @@ for my $dest (keys %dest2func2name2defs) {
     push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
     @defs = grep $_->[2] ne '@overload', @defs;
     push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
-    @defs = sort { @$b <=> @$a } @defs; # descending order of number of args
+    my @schw = map [scalar @$_, do {my $tot = 0; $tot += length $_->[0] for @$_[5..$#$_]; $tot}, $_], @defs;
+    @schw = sort { $b->[0] <=> $a->[0] || $b->[1] <=> $a->[1] } @schw; # descending order of number of args, then length of arg-types
+    @defs = map $_->[2], @schw;
     push(@{$dest2funcs{$dest}}, $defs[0]);
   }
 }
