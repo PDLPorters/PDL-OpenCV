@@ -51,7 +51,7 @@ sub new {
   $self->{type_c} = ($type_overrides{$nonvector_type} || [0,$nonvector_type])->[1];
   $self->{default} = $default if defined $default and length $default;
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'StringWrapper*' and !$self->{is_vector};
-  $self->{was_ptr} = 1 if (my $type_nostar = $type) =~ s/\s*\*+$//;
+  $self->{was_ptr} = 1 if (my $type_nostar = $type) =~ s/\s*\*+$// or $type =~ /^Ptr_/;
   $self->{type_nostar} = $type_nostar;
   if ($self->{is_vector}) {
     $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};
@@ -77,10 +77,15 @@ sub new {
   $self->{use_comp} = 1 if $self->{is_output} and !$self->{fixeddims};
   bless $self, $class;
 }
+sub dataptr {
+  my ($self, $compmode) = @_;
+  '('.(!$compmode ? "\$P($self->{name})" :
+    "(@{[$self->{fixeddims} ? $DIMTYPES{$self->{type_nostar}}[0][0] : $self->{type_c}]}@{[$self->{was_ptr}?'':'*']})$self->{name}->data"
+  ).')';
+}
 sub c_input {
   my ($self, $compmode) = @_;
-  return ($self->{was_ptr} ? '&' : '').
-    ($compmode ? "(($self->{type_c}*)($self->{name}->data))[0]" : "\$$self->{name}()")
+  return ($self->{was_ptr} ? '&' : '').$self->dataptr($compmode).'[0]'
     if $self->{dimless};
   return "\$COMP($self->{name})" if $self->{use_comp};
   $self->{name}.($compmode?'_LOCAL':'');
@@ -115,17 +120,17 @@ sub frompdl {
   my $localname = $self->c_input($compmode);
   my $decl = ($compmode && ($self->{use_comp} || $self->{is_other})) ? '' : "$self->{type_c} $localname;\n";
   return $decl.qq{CW_err = cw_${type}_newWithVals(@{[
-    join ',', "&$localname",
-        $compmode ? "(($self->{type_c} *)$name->data),$name->dims[0]" : "\$P($name),\$SIZE(n${pcount}d0)"
+    join ',', "&$localname", $self->dataptr($compmode),
+        $compmode ? "$name->dims[0]" : "\$SIZE(n${pcount}d0)"
       ]})}."; $IF_ERROR_RETURN;\n" if $self->{is_vector};
   return $decl."CW_err = cw_Mat_newWithDims(" .
     ($compmode
-      ? join ',', "&$localname", (map "$name->dims[$_]", 0..2), "$name->datatype,$name->data"
-      : "&$localname,\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype,\$P($name)"
-    ) .
+      ? join ',', "&$localname", (map "$name->dims[$_]", 0..2), "$name->datatype"
+      : "&$localname,\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype"
+    ) . ','.$self->dataptr($compmode) .
     "); $IF_ERROR_RETURN;\n" if !$self->{fixeddims};
   $decl.qq{CW_err = cw_${type}_newWithVals(@{[
-      join ',', "&$localname", map $compmode ? "(($DIMTYPES{$type}[0][0] *)$name->data)[$_]" : "\$$name(n$pcount=>$_)",
+      join ',', "&$localname", map $self->dataptr($compmode)."[$_]",
         0..@{$DIMTYPES{$type}}-1
     ]})}."; $IF_ERROR_RETURN;\n";
 }
