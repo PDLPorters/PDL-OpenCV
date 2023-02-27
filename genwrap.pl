@@ -234,10 +234,11 @@ $tdecls{dest} {
 }
 EOF
   if ($is_vector) {
+    my $underlying_type = @fields ? $fields[0][0] : $STAYWRAPPED{$class} ? "${class}Wrapper*" : $class;
     my %decls = (
-      nWV => qq{cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[@fields ? $fields[0][0] : $STAYWRAPPED{$class} ? "${class}Wrapper*" : $class]} *data, ptrdiff_t count)},
+      nWV => qq{cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, $underlying_type *data, ptrdiff_t count)},
       size => "cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self)",
-      cDT => "cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, void *data@{[$STAYWRAPPED{$class} ? '' : ', ptrdiff_t bytes']})",
+      cDT => "cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, $underlying_type *data@{[$STAYWRAPPED{$class} ? '' : ', ptrdiff_t bytes']})",
     );
     $hstr .= join '', map "$_;\n", @decls{sort keys %decls};
     my $field_count = 0;
@@ -259,18 +260,17 @@ $decls{size} {
 }
 $decls{cDT} {
  ptrdiff_t i = 0, stride = @{[(0+@fields) || 1]}, count = self->held.size();
- ptrdiff_t shouldbe = @{[$STAYWRAPPED{$class} ? "0; ${class}Wrapper **d = (${class}Wrapper **)data;" :
- "sizeof(@{[@fields ? $fields[0][0] : $class]}) * stride * count;
+ @{[$STAYWRAPPED{$class} ? "" :
+ "ptrdiff_t shouldbe = sizeof($underlying_type) * stride * count;
  SHOULDBE_CHECK(bytes, shouldbe)"]}
  TRY_WRAP(
   @{[!@fields && !$STAYWRAPPED{$class} ? 'memmove(data, self->held.data(), bytes);' :
   $STAYWRAPPED{$class} ? qq{for (i = 0; i < count; i++)
-    (d[i] = new ${class}Wrapper)->held = self->held[i];}:
+    (data[i] = new ${class}Wrapper)->held = self->held[i];}:
   join "\n  ",
     do {$field_count = 0; ()},
-    "$fields[0][0] *ptmp = ($fields[0][0] *)data;",
     "for (i = 0; i < count; i++) {",
-    (map "  ptmp[i*stride + ".$field_count++."] = self->held[i].@{[$_->[2]||$_->[1]]};", @fields),
+    (map "  data[i*stride + ".$field_count++."] = self->held[i].@{[$_->[2]||$_->[1]]};", @fields),
     "}",
   ]}
  )
