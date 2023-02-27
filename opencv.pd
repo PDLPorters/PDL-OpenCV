@@ -75,6 +75,16 @@ L<PDL::OpenCV::Imgproc/cvtColor> if your application requires otherwise.
 PDL data for use with OpenCV must be dimensioned C<(channels,x,y)>
 where C<channels> might be 1 if grayscale. This module will not use
 heuristics to guess what you meant if you only supply 2-dimensional data.
+This can lead to surprising results: e.g. with
+L<PDL::OpenCV::ImgProc/EMD>, the two histogram inputs must be 3D, with
+a C<channels> of 1. From the relevant test:
+
+  my $a = pdl float, q[[1 1] [1 2] [0 3] [0 4] [1 5]];
+  my $b = pdl float, q[[0 1] [1 2] [0 3] [1 4]];
+  my ($flow,$res) = EMD($a->dummy(0),$b->dummy(0),DIST_L2);
+
+If you get an exception C<Unrecognized or unsupported array type>,
+that is the cause.
 
 Be careful when scaling byte-valued inputs to maximise dynamic range:
 

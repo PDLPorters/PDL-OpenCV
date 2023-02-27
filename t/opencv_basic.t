@@ -23,4 +23,11 @@ my $pic2 = $pic->glue(1,$pic);
 is hconcat([$pic, $pic2])->dim(1), $pic->dim(1)*3, 'hconcat array-ref worked';
 is +(sumElems($data))[0]->sumover, 4560, 'sumElems';
 
+{
+my $a = pdl float, q[[1 1] [1 2] [0 3] [0 4] [1 5]];
+my $b = pdl float, q[[0 1] [1 2] [0 3] [1 4]];
+my ($flow,$res) = EMD($a->dummy(0),$b->dummy(0),DIST_L2);
+isa_ok $flow, 'PDL', 'EMD';
+}
+
 done_testing();

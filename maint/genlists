@@ -35,6 +35,7 @@ chdir $old_dir or die "chdir: $!";
 my %force = map +($_=>1), qw(
   cv.batchDistance
   cv.sum
+  cv.wrapperEMD
   cv.cvtColor
   cv.rectangle
   cv.ellipse2Poly

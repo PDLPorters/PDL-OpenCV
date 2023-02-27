@@ -9,6 +9,7 @@ my $T = [qw(A B S U L F D)];
 our %type_overrides = (
   String => ['StringWrapper*', 'StringWrapper*'], # PP, C
   bool => ['byte', 'unsigned char'],
+  Ptr_float => ['float *', 'float *'],
 );
 our %type_alias = (
   char => 'bool',
@@ -19,6 +20,7 @@ our %default_overrides = (
   'vector_Mat()' => ['undef',],
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
   'Point()' => ['PDL->zeroes(sbyte,2)',],
+  'Ptr<float>()' => ['empty(float)','0'],
   false => [0,0], # perl, C
   true => [1,1],
 );
@@ -77,6 +79,11 @@ sub new {
   $self->{use_comp} = 1 if $self->{is_output} and !$self->{fixeddims};
   bless $self, $class;
 }
+sub isempty {
+  my ($self, $compmode) = @_;
+  '!'.($compmode ? "$self->{name}->dims[0]" :
+    "\$SIZE(@{[$self->{dimless} || $self->{fixeddims} ? 'n' : 'l']}$self->{pcount})");
+}
 sub dataptr {
   my ($self, $compmode) = @_;
   '('.(!$compmode ? "\$P($self->{name})" :
@@ -85,6 +92,8 @@ sub dataptr {
 }
 sub c_input {
   my ($self, $compmode) = @_;
+  return $self->isempty($compmode)." ? NULL : ".$self->dataptr($compmode)
+    if $self->{was_ptr} and $self->wantempty;
   return ($self->{was_ptr} ? '&' : '').$self->dataptr($compmode).'[0]'
     if $self->{dimless};
   return "\$COMP($self->{name})" if $self->{use_comp};
@@ -100,11 +109,12 @@ sub par {
 }
 sub _par {
   my ($self) = @_;
-  return "$self->{name}()" if $self->{dimless};
-  return "@$self{qw(type_c name)}" if $self->{naive_otherpar};
   my ($name, $type, $pcount) = @$self{qw(name type_nostar pcount)};
+  return qq{$name(@{[$self->wantempty ? "n$pcount" : ""]})} if $self->{dimless};
+  return "@$self{qw(type_c name)}" if $self->{naive_otherpar};
   return "$name(l$pcount,c$pcount,r$pcount)" if $self->{type} eq 'Mat';
-  return "$name(n$pcount=".scalar(@{$DIMTYPES{$type}}).")" if $self->{fixeddims} and !$self->{is_vector};
+  return qq{$name(n$pcount}.($self->wantempty ? '' : '='.scalar(@{$DIMTYPES{$type}})).")"
+    if $self->{fixeddims} and !$self->{is_vector};
   my $i = 0;
   return "$name(".join(',',
     (!$self->{fixeddims} ? () : "n$pcount=".scalar(@{$DIMTYPES{$self->{type_pp}}})),
@@ -123,10 +133,12 @@ sub frompdl {
     join ',', "&$localname", $self->dataptr($compmode),
         $compmode ? "$name->dims[0]" : "\$SIZE(n${pcount}d0)"
       ]})}."; $IF_ERROR_RETURN;\n" if $self->{is_vector};
-  return $decl."CW_err = cw_Mat_newWithDims(" .
+  return $decl."CW_err = ".(!$self->wantempty ? '' : $self->isempty($compmode).
+    " ? cw_Mat_new(&$localname, NULL) : "
+    )."cw_Mat_newWithDims(&$localname," .
     ($compmode
-      ? join ',', "&$localname", (map "$name->dims[$_]", 0..2), "$name->datatype"
-      : "&$localname,\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype"
+      ? join ',', (map "$name->dims[$_]", 0..2), "$name->datatype"
+      : "\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype"
     ) . ','.$self->dataptr($compmode) .
     "); $IF_ERROR_RETURN;\n" if !$self->{fixeddims};
   $decl.qq{CW_err = cw_${type}_newWithVals(@{[
@@ -139,7 +151,7 @@ sub topdl1 {
   die "Called topdl1 on OtherPar" if $self->{is_other};
   my ($name, $type, $pcount) = @$self{qw(name type_nostar pcount)};
   return
-    "PDL_Indx ${name}_count;\nCW_err = cw_${type}_size(&\$SIZE(n${pcount}d0), ".$self->c_input($compmode)."); $IF_ERROR_RETURN;\n"
+    "CW_err = cw_${type}_size(&\$SIZE(n${pcount}d0), ".$self->c_input($compmode)."); $IF_ERROR_RETURN;\n"
     if $self->{is_vector};
   return
     "CW_err = cw_Mat_pdlDims(".$self->c_input($compmode).", &\$PDL($name)->datatype, &\$SIZE(l$pcount), &\$SIZE(c$pcount), &\$SIZE(r$pcount)); $IF_ERROR_RETURN;\n"
@@ -184,6 +196,7 @@ sub cdecl {
   my ($self) = @_;
   ($self->{use_comp} ? $self->{type_c} : PDL::Type->new($self->{type_pp})->ctype)." $self->{name}";
 }
+sub wantempty { ($_[0]->default_pl // return 0) =~ /empty\(|zeroes\(.*,0/ }
 }
 
 sub text_trim {
