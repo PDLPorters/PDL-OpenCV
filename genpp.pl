@@ -60,7 +60,7 @@ sub new {
     @$self{qw(is_other naive_otherpar use_comp pdltype)} = (1,1,1,'') if $self->{type_pp} eq 'Mat' or $self->{type_pp} eq 'StringWrapper*';
     return $self;
   } elsif ($self->{type_pp} !~ /^[A-Z]/) {
-    $self->{was_ptr} = 1 if ($self->{pdltype} = $self->{type_pp}) =~ s#\s*\*+$##;
+    ($self->{pdltype} = $self->{type_pp}) =~ s#\s*\*+$##;
     @$self{qw(dimless)} = (1);
     return $self;
   }
