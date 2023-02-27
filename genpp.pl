@@ -233,6 +233,9 @@ EOF
     my (@pars, @otherpars); push @{$_->{is_other} ? \@otherpars : \@pars}, $_ for @allpars;
     my @pdl_inits = grep !$_->{dimless}, @pars;
     my $compmode = grep $_->{use_comp}, @pdl_inits;
+    my $destroy_in = join '', map $_->destroy_code($compmode), grep !$_->{is_output}, @pdl_inits;
+    my $destroy_out = join '', map $_->destroy_code($compmode), grep $_->{is_output}, @pdl_inits;
+    my @nonfixed_outputs = grep $_->{is_output}, @pdl_inits;
     (my $ret_obj) = pop @allpars if my $retcapture = $ret eq 'void' ? '' : ($ret =~ /^[A-Z]/ ? 'res' : '$res()');
     %hash = (%hash,
       Pars => join('; ', map $_->par(1), @pars), OtherPars => join('; ', map $_->par, @otherpars),
@@ -247,36 +250,26 @@ sub ${main::PDLOBJ}::$func {
   @{[!@outputs ? '' : "!wantarray ? \$$outputs[-1]{name} : (@{[join ',', map qq{\$$_->{name}}, @outputs]})"]}
 }
 EOF
-      Code => "cw_error CW_err;\n",
+      ($compmode ? 'MakeComp' : 'Code') => join('',
+        "cw_error CW_err;\n",
+        !$compmode ? () : (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", @pars),
+        (map $_->frompdl($compmode), @pdl_inits),
+        (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".$_->c_input($compmode), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
+        "CW_err = $cfunc(".join(',', ($retcapture ? "&".($compmode ? '$COMP(res)' : $ret_obj->c_input) : ()), map $_->c_input($compmode), @allpars).");\n",
+        !$compmode ? (map $_->topdl2(0), @nonfixed_outputs) : (),
+        $destroy_in, !$compmode ? ($destroy_out) : (),
+        "$IF_ERROR_RETURN;\n",
+      ),
     );
     $doxy->{brief}[0] .= " NO BROADCASTING." if $compmode;
     $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
     $hash{Doc} = text_trim doxy2pdlpod($doxy);
-    my $destroy_in = join '', map $_->destroy_code($compmode), grep !$_->{is_output}, @pdl_inits;
-    my $destroy_out = join '', map $_->destroy_code($compmode), grep $_->{is_output}, @pdl_inits;
-    my @nonfixed_outputs = grep $_->{is_output}, @pdl_inits;
     if ($compmode) {
       $hash{Comp} = join '; ', map $_->cdecl, grep !$_->{is_other}, @outputs;
-      $hash{MakeComp} = join '',
-        "cw_error CW_err;\n",
-        (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", @pars),
-        (map $_->frompdl(1), @pdl_inits),
-        (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".$_->c_input(1), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        "CW_err = $cfunc(".join(',', ($retcapture ? '&$COMP(res)' : ()), map $_->c_input(1), @allpars).");\n",
-        $destroy_in,
-        "$IF_ERROR_RETURN;\n";
       $hash{CompFreeCodeComp} = $destroy_out;
       $hash{RedoDimsCode} = join '', "cw_error CW_err;\n", map $_->topdl1(1), @nonfixed_outputs;
-      $hash{Code} .= join '', map $_->topdl2(1), @nonfixed_outputs;
+      $hash{Code} = join '', "cw_error CW_err;\n", map $_->topdl2(1), @nonfixed_outputs;
       $hash{Code} .= "$retcapture = \$COMP(res);\n" if $ret_obj and !$ret_obj->{use_comp} and $ret !~ /^[A-Z]/;
-    } else {
-      $hash{Code} .= join '',
-        (map $_->frompdl(0), @pdl_inits),
-        (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!$_->{name}", @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        "CW_err = $cfunc(".join(',', ($retcapture ? "&".$ret_obj->c_input(0) : ()), map $_->c_input, @allpars).");\n",
-        (map $_->topdl2(0), @nonfixed_outputs),
-        $destroy_in, $destroy_out,
-        "$IF_ERROR_RETURN;\n";
     }
     pp_def($pfunc, %hash);
 }
