@@ -206,7 +206,8 @@ sub gen_code {
 sub gen_wrapper {
   my ($class, $is_vector, @fields) = @_;
   my $ptr_only = $ptr_only{$class};
-  my $vector_str = $is_vector ? 'vector_' : '';
+  my $vector_str = 'vector_' x $is_vector;
+  my $vector2_str = $is_vector > 1 ? 'vector_' x ($is_vector-1) : '';
   my $wrapper = "$vector_str${class}Wrapper";
   my %tdecls = (
     new => qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
@@ -220,7 +221,7 @@ typedef struct $wrapper $wrapper;
 struct $wrapper {
 	@{[$ptr_only ? "cv::Ptr<cv::${class}>" :
 	  !$is_vector ? "cv::${class}" :
-	  "std::vector<@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}>"
+	  ("std::vector<"x$is_vector)."@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}".(">"x$is_vector)
 	]} held;
 };
 #endif
@@ -234,11 +235,11 @@ $tdecls{dest} {
 }
 EOF
   if ($is_vector) {
-    my $underlying_type = @fields ? $fields[0][0] : $STAYWRAPPED{$class} ? "${class}Wrapper*" : $class;
+    my $underlying_type = $is_vector > 1 ? "$vector2_str${class}Wrapper*" : @fields ? $fields[0][0] : $STAYWRAPPED{$class} ? "${class}Wrapper*" : $class;
     my %decls = (
       nWV => qq{cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, $underlying_type *data, ptrdiff_t count)},
       size => "cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self)",
-      cDT => "cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, $underlying_type *data@{[$STAYWRAPPED{$class} ? '' : ', ptrdiff_t bytes']})",
+      cDT => "cw_error cw_$vector_str${class}_copyDataTo($wrapper *self, $underlying_type *data@{[$is_vector > 1 || $STAYWRAPPED{$class} ? '' : ', ptrdiff_t bytes']})",
     );
     $hstr .= join '', map "$_;\n", @decls{sort keys %decls};
     my $field_count = 0;
@@ -246,12 +247,12 @@ EOF
 $decls{nWV} {
  TRY_WRAP(
   *cw_retval = new $wrapper;
-  (*cw_retval)->held = std::vector<@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}>@{[
-    !@fields && !$STAYWRAPPED{$class} ? "(data, data + count);" :
+  (*cw_retval)->held = @{["std::vector<"x$is_vector]}@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}@{[">"x$is_vector]}@{[
+    $is_vector <= 1 && !@fields && !$STAYWRAPPED{$class} ? "(data, data + count);" :
     join "\n  ", "(count);",
-      "ptrdiff_t i = 0, stride = @{[0+@fields]};",
+      "ptrdiff_t i = 0, stride = @{[$is_vector > 1 ? 1 : 0+@fields]};",
       "for (i = 0; i < count; i++)",
-      "  (*cw_retval)->held[i] = ".($STAYWRAPPED{$class} ? 'data[i]->held' : "cv::$class(".join(',', map "data[i*stride + ".$field_count++."]", @fields).")").";",
+      "  (*cw_retval)->held[i] = ".($is_vector > 1 || $STAYWRAPPED{$class} ? 'data[i]->held' : "cv::$class(".join(',', map "data[i*stride + ".$field_count++."]", @fields).")").";",
   ]}
  )
 }
@@ -259,14 +260,14 @@ $decls{size} {
  TRY_WRAP( *count = self->held.size(); )
 }
 $decls{cDT} {
- ptrdiff_t i = 0, stride = @{[(0+@fields) || 1]}, count = self->held.size();
- @{[$STAYWRAPPED{$class} ? "" :
+ ptrdiff_t i = 0, stride = @{[$is_vector > 1 ? 1 : (0+@fields) || 1]}, count = self->held.size();
+ @{[$is_vector > 1 || $STAYWRAPPED{$class} ? "" :
  "ptrdiff_t shouldbe = sizeof($underlying_type) * stride * count;
  SHOULDBE_CHECK(bytes, shouldbe)"]}
  TRY_WRAP(
-  @{[!@fields && !$STAYWRAPPED{$class} ? 'memmove(data, self->held.data(), bytes);' :
-  $STAYWRAPPED{$class} ? qq{for (i = 0; i < count; i++)
-    (data[i] = new ${class}Wrapper)->held = self->held[i];}:
+  @{[$is_vector <= 1 && !@fields && !$STAYWRAPPED{$class} ? 'memmove(data, self->held.data(), bytes);' :
+  $STAYWRAPPED{$class} || $is_vector > 1 ? qq{for (i = 0; i < count; i++)
+    (data[i] = new $vector2_str${class}Wrapper)->held = self->held[i];}:
   join "\n  ",
     do {$field_count = 0; ()},
     "for (i = 0; i < count; i++) {",
@@ -318,6 +319,8 @@ sub gen_chfiles {
   }
   for (sort keys %$vectorspecs) {
     my ($xhstr, $xcstr) = gen_wrapper($_, 1, @{$vectorspecs->{$_}});
+    $hstr .= $xhstr; $cstr .= $xcstr;
+    ($xhstr, $xcstr) = gen_wrapper($_, 2, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   $hstr .= $extras->[0] || '';
