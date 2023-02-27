@@ -7,6 +7,7 @@ use PDL::OpenCV::Highgui;
 use PDL::OpenCV::Imgproc;
 use PDL::OpenCV::Tracking;
 use PDL::OpenCV::Videoio;
+use PDL::OpenCV::Objdetect;
 use File::Temp qw(tempfile);
 
 {
@@ -19,6 +20,11 @@ use File::Temp qw(tempfile);
     waitKey(50);
   }
 }
+
+my $cc = PDL::OpenCV::CascadeClassifier->new;
+my $CC_DIR = '';
+my ($loaded) = $cc->load($CC_DIR.'/haarcascades/haarcascade_frontalface_alt.xml') if $CC_DIR;
+die "Failed to load" if $CC_DIR and !$loaded;
 
 my $vfile='t/Megamind.avi';
 my $vc = PDL::OpenCV::VideoCapture->new;
@@ -55,6 +61,13 @@ while ($res) {
   rectangle($frame, [$bx,$by], [$bx+$bw,$by+$bh], [255,0,0,0], 2, 1, 0);
   drawContours($frame,$contours,-1,[0,255,0,0]);
   $lsd->drawSegments($frame, $lines);
+  if ($CC_DIR) {
+    my ($objects) = $cc->detectMultiScale(equalizeHist($gray));
+    for ($objects->dog) {
+      my ($bx, $by, $bw, $bh) = @{ $_->unpdl };
+      rectangle($frame, [$bx,$by], [$bx+$bw,$by+$bh], [0,255,255,0], 2, 1, 0);
+    }
+  }
   imshow("ud", $frame);
   waitKey(1);
   if ($x<98 || $x > 153 && $x<200) {

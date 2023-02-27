@@ -5,6 +5,7 @@ PDL__OpenCV__Tracker           T_PTROBJ_SPECIAL
 PDL__OpenCV__VideoCapture      T_PTROBJ_SPECIAL
 PDL__OpenCV__VideoWriter       T_PTROBJ_SPECIAL
 PDL__OpenCV__QRCodeDetector T_PTROBJ_SPECIAL
+PDL__OpenCV__CascadeClassifier T_PTROBJ_SPECIAL
 StringWrapper* T_OPENCV_STRING
 vector_MatWrapper* T_OPENCV_VECTOR
 vector_StringWrapper* T_OPENCV_VECTOR

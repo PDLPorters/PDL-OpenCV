@@ -21,6 +21,7 @@ our %default_overrides = (
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
   'Point()' => ['empty(sbyte)',],
   'Ptr<float>()' => ['empty(float)','0'],
+  'Size()' => ['empty(sbyte)',],
   false => [0,0], # perl, C
   true => [1,1],
 );

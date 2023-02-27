@@ -66,9 +66,12 @@ my %force = map +($_=>1), qw(
   cv.LineSegmentDetector.detect
   cv.LineSegmentDetector.drawSegments
   cv.QRCodeDetector.detectAndDecodeMulti
+  cv.CascadeClassifier.load
+  cv.CascadeClassifier.detectMultiScale
 );
 my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
+  CascadeClassifier
 );
 
 if (@ARGV) {
