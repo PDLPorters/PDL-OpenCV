@@ -19,7 +19,7 @@ $type_overrides{$_} = $type_overrides{$type_alias{$_}} for keys %type_alias;
 our %default_overrides = (
   'vector_Mat()' => ['undef',],
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
-  'Point()' => ['PDL->zeroes(sbyte,2)',],
+  'Point()' => ['empty(sbyte)',],
   'Ptr<float>()' => ['empty(float)','0'],
   false => [0,0], # perl, C
   true => [1,1],
@@ -141,7 +141,9 @@ sub frompdl {
       : "\$SIZE(l$pcount),\$SIZE(c$pcount),\$SIZE(r$pcount),\$PDL($name)->datatype"
     ) . ','.$self->dataptr($compmode) .
     "); $IF_ERROR_RETURN;\n" if !$self->{fixeddims};
-  $decl.qq{CW_err = cw_${type}_newWithVals(@{[
+  $decl."CW_err = ".(!$self->wantempty ? '' : $self->isempty($compmode).
+    " ? cw_${type}_new(&$localname, NULL) : "
+    ).qq{cw_${type}_newWithVals(@{[
       join ',', "&$localname", map $self->dataptr($compmode)."[$_]",
         0..@{$DIMTYPES{$type}}-1
     ]})}."; $IF_ERROR_RETURN;\n";
