@@ -45,6 +45,7 @@ my %force = map +($_=>1), qw(
   cv.findContours
   cv.threshold
   cv.hconcat
+  cv.mixChannels
   cv.logPolar
   cv.equalizeHist
   cv.normalize

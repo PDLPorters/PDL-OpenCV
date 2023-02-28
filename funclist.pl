@@ -37,6 +37,18 @@ mixChannels , or split .
 @param maxLoc pointer to the returned maximum location (in 2D case); NULL is used if not required.
 @param mask optional mask used to select a sub-array.
 @sa max, min, compare, inRange, extractImageCOI, mixChannels, split, Mat::reshape',0,'void',['Mat','src','',[]],['double*','minVal','',['/O']],['double*','maxVal','0',['/O']],['Point*','minLoc','0',['/O']],['Point*','maxLoc','0',['/O']],['Mat','mask','Mat()',[]]],
+['','mixChannels','@overload
+@param src input array or vector of matrices; all of the matrices must have the same size and the
+same depth.
+@param dst output array or vector of matrices; all the matrices **must be allocated**; their size and
+depth must be the same as in src[0].
+@param fromTo array of index pairs specifying which channels are copied and where; fromTo[k\\*2] is
+a 0-based index of the input channel in src, fromTo[k\\*2+1] is an index of the output channel in
+dst; the continuous channel numbering is used: the first input image channels are indexed from 0 to
+src[0].channels()-1, the second input image channels are indexed from src[0].channels() to
+src[0].channels() + src[1].channels()-1, and so on, the same scheme is used for the output image
+channels; as a special case, when fromTo[k\\*2] is negative, the corresponding output channel is
+filled with zero .',0,'void',['vector_Mat','src','',[]],['vector_Mat','dst','',['/IO']],['vector_int','fromTo','',['/C','/Ref']]],
 ['','normalize','@brief Normalizes the norm or value range of an array.
 
 The function cv::normalize normalizes scale and shift the input array elements so that

@@ -107,7 +107,7 @@ sub c_input {
 }
 sub par {
   my ($self, $phys) = @_;
-  my $flags = $self->{is_output} ? 'o' : $self->{is_io} ? 'io' : '';
+  my $flags = ($self->{is_output} || ($self->{is_other} && $self->{is_io})) ? 'o' : $self->{is_io} ? 'io' : '';
   $flags = join ',', grep length, $flags, $phys ? 'phys' : ();
   join ' ', grep length, $self->{pdltype},
     ($flags ? "[$flags]" : ()),
