@@ -120,8 +120,8 @@ sub _par {
     if $self->{fixeddims} and !$self->{is_vector};
   my $i = 0;
   return "$name(".join(',',
-    (!$self->{fixeddims} ? () : "n$pcount=".scalar(@{$DIMTYPES{$self->{type_pp}}})),
-    (map "n${pcount}d".$i++, 1..$self->{is_vector}), ).")"
+    (!$self->{fixeddims} ? () : "n$pcount".($self->wantempty ? '' : '='.scalar(@{$DIMTYPES{$self->{type_pp}}}))),
+    (map "n${pcount}d".$i++, 1..$self->{is_vector})).")"
     if $self->{is_vector};
   "PDL__OpenCV__$type $name";
 }
