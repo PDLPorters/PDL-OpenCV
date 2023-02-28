@@ -214,6 +214,7 @@ sub gen_wrapper {
       map ", @$_", @{$is_vector ? [] : $extra_cons_args{$class} || []}
     ]})},
     dest => qq{void cw_$vector_str${class}_DESTROY($wrapper *wrapper)},
+    dim0 => qq{ptrdiff_t cw_$vector_str${class}_dim0()},
   );
   my $hstr = <<EOF . join '', map "$_;\n", @tdecls{sort keys %tdecls};
 typedef struct $wrapper $wrapper;
@@ -233,6 +234,7 @@ EOF
 $tdecls{dest} {
 	delete wrapper;
 }
+$tdecls{dim0} { return @{[0+@fields]}; }
 EOF
   if ($is_vector) {
     my $underlying_type = $is_vector > 1 ? "$vector2_str${class}Wrapper*" : @fields ? $fields[0][0] : $STAYWRAPPED{$class} ? "${class}Wrapper*" : $class;
