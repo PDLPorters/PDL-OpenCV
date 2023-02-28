@@ -29,6 +29,26 @@
     @param image The image, where the lines will be drawn. Should be bigger or equal to the image,
     where the lines were found.
     @param lines A vector of the lines that needed to be drawn.',1,'void',['Mat','image','',['/IO']],['Mat','lines','',[]]],
+['Subdiv2D','getTriangleList','@brief Returns a list of all triangles.
+
+    @param triangleList Output vector.
+
+    The function gives each triangle as a 6 numbers vector, where each two are one of the triangle
+    vertices. i.e. p1_x = v[0], p1_y = v[1], p2_x = v[2], p2_y = v[3], p3_x = v[4], p3_y = v[5].',1,'void',['vector_Vec6f','triangleList','',['/O','/Ref']]],
+['Subdiv2D','getVoronoiFacetList','@brief Returns a list of all Voronoi facets.
+
+    @param idx Vector of vertices IDs to consider. For all vertices you can pass empty vector.
+    @param facetList Output vector of the Voronoi facets.
+    @param facetCenters Output vector of the Voronoi facets center points.',1,'void',['vector_int','idx','',['/C','/Ref']],['vector_vector_Point2f','facetList','',['/O','/Ref']],['vector_Point2f','facetCenters','',['/O','/Ref']]],
+['Subdiv2D','initDelaunay','@brief Creates a new empty Delaunay subdivision
+
+    @param rect Rectangle that includes all of the 2D points that are to be added to the subdivision.',1,'void',['Rect','rect','',[]]],
+['Subdiv2D','insert','@brief Insert multiple points into a Delaunay triangulation.
+
+    @param ptvec Points to insert.
+
+    The function inserts a vector of points into a subdivision and modifies the subdivision topology
+    appropriately.',1,'void',['vector_Point2f','ptvec','',['/C','/Ref']]],
 ['','cvtColor','@brief Converts an image from one color space to another.
 
 The function converts an input image from one color space to another. In case of a transformation

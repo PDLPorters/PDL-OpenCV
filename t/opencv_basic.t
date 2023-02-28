@@ -30,4 +30,15 @@ my ($flow,$res) = EMD($a->dummy(0),$b->dummy(0),DIST_L2);
 isa_ok $flow, 'PDL', 'EMD';
 }
 
+{
+my $pts = pdl float, q[[207 242] [210 269] [214 297] [220 322] [229 349]];
+my $s2d = PDL::OpenCV::Subdiv2D->new;
+$s2d->initDelaunay([0,0,400,400]);
+$s2d->insert($pts);
+my ($triangleList) = $s2d->getTriangleList;
+isa_ok $triangleList, 'PDL', 'getTriangleList';
+my ($facetList,$facetCenters) = $s2d->getVoronoiFacetList([]);
+isa_ok $facetCenters, 'PDL', 'getVoronoiFacetList';
+}
+
 done_testing();

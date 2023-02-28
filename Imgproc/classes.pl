@@ -1,4 +1,5 @@
 (
+['Subdiv2D',''],
 ['LineSegmentDetector','@brief Line segment detector class
 
 following the algorithm described at @cite Rafael12 .

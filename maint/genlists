@@ -65,13 +65,17 @@ my %force = map +($_=>1), qw(
   cv.LineSegmentDetector.compareSegments
   cv.LineSegmentDetector.detect
   cv.LineSegmentDetector.drawSegments
+  cv.Subdiv2D.initDelaunay
+  cv.Subdiv2D.insert
+  cv.Subdiv2D.getTriangleList
+  cv.Subdiv2D.getVoronoiFacetList
   cv.QRCodeDetector.detectAndDecodeMulti
   cv.CascadeClassifier.load
   cv.CascadeClassifier.detectMultiScale
 );
 my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
-  CascadeClassifier
+  CascadeClassifier Subdiv2D
 );
 
 if (@ARGV) {
