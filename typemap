@@ -88,19 +88,27 @@ T_OPENCV_STRING
 T_OPENCV_VECTOR
   {
   PDL_Indx sz, i;
-  cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_size(&sz, $var);
+  cw_error CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_size(&sz, $var);
+  if (CW_err.error)
+    cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_DESTROY($var);
+  PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
   ${(my $novec=$type)=~s/^vector_//; \$novec} wrap2[sz];
-  cw_error CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_copyDataTo($var, wrap2);
+  CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_copyDataTo($var, wrap2);
   if (CW_err.error)
     cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_DESTROY($var);
   PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
   AV *av = newAV(); av_extend(av, sz);
   for (i = 0; i < sz; i++) {
     SV* pxsv = newSV(0);
-    if (!pxsv) PDL_CORE_(pdl_barf)(\"Failed to create SV\");
+    if (!pxsv) {
+      for (; i < sz; i++) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrap2[i]);
+      PDL_CORE_(pdl_barf)(\"Failed to create SV\");
+    }
     ${ $type =~ /String/ ? \qq{
     const char *cptr;
     CW_err = cw_String_c_str(&cptr, wrap2[i]);
+    if (CW_err.error)
+      for (; i < sz; i++) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrap2[i]);
     PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
     sv_setpv((SV*)pxsv, cptr);
     } : $type =~ /Mat/ ? \qq{
@@ -114,6 +122,8 @@ T_OPENCV_VECTOR
     px->datatype = dt;
     PDL_CORE_(barf_if_error)(PDL_CORE_(make_physical)(px));
     CW_err = cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_copyDataTo(wrap2[i], px->data, px->nbytes);
+    if (CW_err.error)
+      for (; i < sz; i++) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrap2[i]);
     PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
     } : die qq{Can't handle $type}}
     if (!av_store(av, i, pxsv)) PDL_CORE_(pdl_barf)(\"Failed to push SV\");
