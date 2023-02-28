@@ -9,6 +9,7 @@ require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %type_alias, %extra_cons_args, %STAYWRAPPED);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
+my %REALCTYPE2NUMVAL = map +($_->realctype=>$_->numval), PDL::Types::types;
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double));
 my %overrides = (
   Tracker => {
@@ -215,6 +216,7 @@ sub gen_wrapper {
     ]})},
     dest => qq{void cw_$vector_str${class}_DESTROY($wrapper *wrapper)},
     dim0 => qq{ptrdiff_t cw_$vector_str${class}_dim0()},
+    pdlt => qq{int cw_$vector_str${class}_pdltype()},
   );
   my $hstr = <<EOF . join '', map "$_;\n", @tdecls{sort keys %tdecls};
 typedef struct $wrapper $wrapper;
@@ -235,6 +237,7 @@ $tdecls{dest} {
 	delete wrapper;
 }
 $tdecls{dim0} { return @{[0+@fields]}; }
+$tdecls{pdlt} { return @{[!@fields ? '-1' : $REALCTYPE2NUMVAL{$fields[0][0]}]}; }
 EOF
   if ($is_vector) {
     my $underlying_type = $is_vector > 1 ? "$vector2_str${class}Wrapper*" : @fields ? $fields[0][0] : $STAYWRAPPED{$class} ? "${class}Wrapper*" : $class;
