@@ -118,10 +118,9 @@ sub _par {
   return "$name(l$pcount,c$pcount,r$pcount)" if $self->{type} eq 'Mat';
   return qq{$name(n$pcount}.($self->wantempty ? '' : '='.scalar(@{$DIMTYPES{$type}})).")"
     if $self->{fixeddims} and !$self->{is_vector};
-  my $i = 0;
   return "$name(".join(',',
     (!$self->{fixeddims} ? () : "n$pcount".($self->wantempty ? '' : '='.scalar(@{$DIMTYPES{$self->{type_pp}}}))),
-    (map "n${pcount}d".$i++, 1..$self->{is_vector})).")"
+    (map "n${pcount}d$_", 0..$self->{is_vector}-1)).")"
     if $self->{is_vector};
   "PDL__OpenCV__$type $name";
 }
@@ -134,7 +133,7 @@ sub frompdl {
   my $decl = ($compmode && ($self->{use_comp} || $self->{is_other})) ? '' : "$self->{type_c} $localname;\n";
   return $decl.qq{CW_err = cw_${type}_newWithVals(@{[
     join ',', "&$localname", $self->dataptr($compmode),
-        $compmode ? "$name->dims[0]" : "\$SIZE(n${pcount}d0)"
+        $compmode ? "$name->dims[@{[$self->{fixeddims} ? 1 : 0]}]" : "\$SIZE(n${pcount}d0)"
       ]})}."; $IF_ERROR_RETURN;\n" if $self->{is_vector};
   return $decl."CW_err = ".(!$self->wantempty ? '' : $self->isempty($compmode).
     " ? cw_Mat_new(&$localname, NULL) : "
