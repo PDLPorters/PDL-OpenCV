@@ -72,6 +72,7 @@ my %force = map +($_=>1), qw(
   cv.Subdiv2D.getTriangleList
   cv.Subdiv2D.getVoronoiFacetList
   cv.QRCodeDetector.detectAndDecodeMulti
+  cv.groupRectangles
   cv.CascadeClassifier.load
   cv.CascadeClassifier.detectMultiScale
 );
