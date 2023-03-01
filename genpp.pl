@@ -94,10 +94,11 @@ sub isempty {
 sub dataptr {
   my ($self, $compmode) = @_;
   '('.(!$compmode ? "\$P($self->{name})" :
+    ($self->{type} eq 'Mat' ? "" :
     "(@{[
       $self->{fixeddims} ? $DIMTYPES{$self->{type_nostar}}[0][0] :
       $self->{is_vector} ? $self->{type_pp} : $self->{type_c}
-    ]}@{[$self->{was_ptr}?'':'*']})$self->{name}->data"
+    ]}@{[$self->{was_ptr}?'':'*']})") . "$self->{name}->data"
   ).')';
 }
 sub c_input {
