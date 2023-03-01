@@ -326,6 +326,7 @@ sub genheader {
 \n=cut
 \nuse strict;
 use warnings;
+no warnings 'redefine'; # e.g. Objdetect::convert clashing with PDL::Core
 use PDL::OpenCV; # get constants
 EOPM
   pp_addhdr(qq{#include "opencv_wrapper.h"\n#include "wraplocal.h"\n});
