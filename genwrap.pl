@@ -10,7 +10,7 @@ our (%type_overrides, %type_alias, %extra_cons_args, %STAYWRAPPED);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
 my %REALCTYPE2NUMVAL = map +($_->realctype=>$_->numval), PDL::Types::types;
-my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double));
+my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double uchar));
 my %overrides = (
   Tracker => {
     update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
@@ -237,10 +237,17 @@ $tdecls{dest} {
 	delete wrapper;
 }
 $tdecls{dim0} { return @{[0+@fields]}; }
-$tdecls{pdlt} { return @{[!@fields ? '-1' : $REALCTYPE2NUMVAL{$fields[0][0]}]}; }
+$tdecls{pdlt} { return @{[
+  @fields ? $REALCTYPE2NUMVAL{$fields[0][0]} :
+  $REALCTYPE2NUMVAL{$type_overrides{$class} ? $type_overrides{$class}[1] : $class} // '-1'
+]}; }
 EOF
   if ($is_vector) {
-    my $underlying_type = $is_vector > 1 ? "$vector2_str${class}Wrapper*" : @fields ? $fields[0][0] : $STAYWRAPPED{$class} ? "${class}Wrapper*" : $class;
+    my $underlying_type = $is_vector > 1 ? "$vector2_str${class}Wrapper*" :
+      @fields ? $fields[0][0] :
+      $STAYWRAPPED{$class} ? "${class}Wrapper*" :
+      $type_overrides{$class} ? $type_overrides{$class}[1] :
+      $class;
     my %decls = (
       nWV => qq{cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, $underlying_type *data, ptrdiff_t count)},
       size => "cw_error cw_$vector_str${class}_size(ptrdiff_t *count, $wrapper *self)",

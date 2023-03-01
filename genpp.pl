@@ -9,6 +9,7 @@ my $T = [qw(A B S U L F D)];
 our %type_overrides = (
   String => ['StringWrapper*', 'StringWrapper*'], # PP, C
   bool => ['byte', 'unsigned char'],
+  uchar => ['byte', 'unsigned char'],
   Ptr_float => ['float *', 'float *'],
 );
 our %type_alias = (
