@@ -22,6 +22,7 @@ our %default_overrides = (
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
   'Point()' => ['empty(sbyte)',],
   'Ptr<float>()' => ['empty(float)','0'],
+  'std::vector<int>()' => ['empty(long)',],
   'Size()' => ['empty(sbyte)',],
   false => [0,0], # perl, C
   true => [1,1],
@@ -62,7 +63,9 @@ sub new {
   if ($self->{is_vector}) {
     $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};
     $self->{use_comp} = 1 if $self->{is_output};
-    @$self{qw(pdltype type_c)} = ($spec ? $CTYPE2PDL{$spec->[0][0]} : $nonvector_type, ('vector_'x$self->{is_vector})."${nonvector_type}Wrapper *",
+    @$self{qw(pdltype type_c)} = (
+      $spec ? $CTYPE2PDL{$spec->[0][0]} : $self->{type_pp},
+      ('vector_'x$self->{is_vector})."${nonvector_type}Wrapper *",
     );
     @$self{qw(is_other naive_otherpar use_comp pdltype)} = (1,1,1,'') if $STAYWRAPPED{$nonvector_type} || $self->{is_vector} > 1;
     return $self;

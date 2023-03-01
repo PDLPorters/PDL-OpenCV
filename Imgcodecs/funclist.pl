@@ -1,4 +1,13 @@
 (
+['','imencode','@brief Encodes an image into a memory buffer.
+
+The function imencode compresses the image and stores it in the memory buffer that is resized to fit the
+result. See cv::imwrite for the list of supported formats and flags description.
+
+@param ext File extension that defines the output format.
+@param img Image to be written.
+@param buf Output buffer resized to fit the compressed image.
+@param params Format-specific parameters. See cv::imwrite and cv::ImwriteFlags.',0,'bool',['String','ext','',['/C','/Ref']],['Mat','img','',[]],['vector_uchar','buf','',['/O','/Ref']],['vector_int','params','std::vector<int>()',['/C','/Ref']]],
 ['','imread','@brief Loads an image from a file.
 
 @anchor imread

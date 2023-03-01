@@ -51,6 +51,7 @@ my %force = map +($_=>1), qw(
   cv.normalize
   cv.minMaxLoc
   cv.imread
+  cv.imencode
   cv.imshow
   cv.waitKey
   cv.namedWindow
