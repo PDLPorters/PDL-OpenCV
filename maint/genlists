@@ -80,6 +80,7 @@ my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
   CascadeClassifier Subdiv2D
 );
+my $no_want = qr/^(FileNode|TermCriteria|RNG|RotatedRect|Ptr_CLAHE|Ptr_GeneralizedHough|Ptr_LineSegmentDetector|Ptr_Tracker)/;
 
 if (@ARGV) {
   die "Usage: $0 [json]" if @ARGV != 1 or $ARGV[0] ne 'json';
@@ -92,10 +93,10 @@ for (@$json_data) {
   my $dest = $file =~ /core/ ? "" : basename($file, ".hpp");
 print "$file -> |$dest|\n";
   for my $t (@$d) {
-    my ($name, undef, undef, $tuples) = @$t;
+    my ($name, $ret, $flags, $args, $ret_cpp, $doc) = @$t;
     if ($name =~ /^enum\s+/) {
 print "enum: $name\n";
-      for my $t (@$tuples) {
+      for my $t (@$args) {
         my ($ename) = @$t;
         die "badly-formatted enum name $ename\n" if !(my ($pname) = $ename =~ /^const\s+(cv\..+)/);
         $pname =~ s#\.#::#g;
@@ -105,13 +106,12 @@ print "enum: $name\n";
       my $cname = $1;
       next if !$class{$cname};
 print "class: $cname\n";
-      push @{$dest2classdefs{$dest}}, [$cname, $t->[5]];
+      push @{$dest2classdefs{$dest}}, [$cname, $doc];
     } elsif ($force{$name}) {
-      my ($name, $ret, $flags, $args, $ret_cpp, $doc) = @$t;
       my (undef, @n) = split /\./, $name;
       unshift @n, '' if @n == 1;
-      my $ismethod = 0+!!$n[0];
-      $ismethod = 0 if grep $_ eq '/S', @$flags;
+      die "Unexpected number of elts in (@n)" if @n != 2;
+      my $ismethod = 0+(!!$n[0] && !grep $_ eq '/S', @$flags);
       my @aliases = grep /^=/, @$flags;
       die ">1 aliases for $name: @aliases" if @aliases > 1;
       if (@aliases) {
@@ -134,11 +134,10 @@ push @{$dest2enums{''}}, qw(CV_PI CV_2PI CV_LOG2 INT_MAX);
 writefile($_, 'constlist.txt', $dest2enums{$_}) for keys %dest2enums;
 
 my %dest2funcs;
-my $no_want = qr/^(FileNode|TermCriteria|RNG|RotatedRect|Ptr_CLAHE|Ptr_GeneralizedHough|Ptr_LineSegmentDetector|Ptr_Tracker)/;
 for my $dest (keys %dest2func2name2defs) {
   for my $name (sort keys %{$dest2func2name2defs{$dest}}) {
     my @defs = @{ $dest2func2name2defs{$dest}{$name} };
-    @defs = grep $_->[4] !~ $no_want && (!grep !ref() || $_->[0] =~ $no_want, @$_[5..$#$_]), @defs; # remove any with vector etc return-type or args
+    @defs = grep $_->[4] !~ $no_want && (!grep !ref() || $_->[0] =~ $no_want, @$_[5..$#$_]), @defs; # remove any with non-handled return-type or args
     print("none left for $name\n"), next if !@defs; # no candidates!
     push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
     @defs = grep $_->[2] ne '@overload', @defs;
