@@ -258,8 +258,7 @@ EOF
     $cstr .= <<EOF;
 $decls{nWV} {
  TRY_WRAP(
-  *cw_retval = new $wrapper;
-  (*cw_retval)->held = @{["std::vector<"x$is_vector]}@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}@{[">"x$is_vector]}@{[
+  (*cw_retval = new $wrapper)->held = @{["std::vector<"x$is_vector]}@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}@{[">"x$is_vector]}@{[
     $is_vector <= 1 && !@fields && !$STAYWRAPPED{$class} ? "(data, data + count);" :
     join "\n  ", "(count);",
       "ptrdiff_t i = 0, stride = @{[$is_vector > 1 ? 1 : 0+@fields]};",
@@ -275,8 +274,8 @@ $decls{cDT} {
  ptrdiff_t i = 0, stride = @{[$is_vector > 1 ? 1 : (0+@fields) || 1]}, count = self->held.size();
  @{[$is_vector > 1 || $STAYWRAPPED{$class} ? "" :
  "ptrdiff_t shouldbe = sizeof($underlying_type) * stride * count;
- SHOULDBE_CHECK(bytes, shouldbe)"]}
- TRY_WRAP(
+ SHOULDBE_CHECK(bytes, shouldbe)\n"
+]} TRY_WRAP(
   @{[$is_vector <= 1 && !@fields && !$STAYWRAPPED{$class} ? 'memmove(data, self->held.data(), bytes);' :
   $STAYWRAPPED{$class} || $is_vector > 1 ? qq{for (i = 0; i < count; i++)
     (data[i] = new $vector2_str${class}Wrapper)->held = self->held[i];}:
