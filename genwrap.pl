@@ -141,10 +141,9 @@ EOF
 }
 
 sub gen_code {
-	my ($class, $name, $doc, $ismethod, $ret, @params) = @_;
+	my ($ptr_only, $class, $name, $doc, $ismethod, $ret, @params) = @_;
 	$name = [$name, $name] if !ref $name;
 	my ($in_name, $out_name) = @$name;
-	my $ptr_only = $ptr_only{$class};
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
 	my $opt = $overrides{$class}{$in_name} || {};
@@ -196,14 +195,13 @@ sub gen_code {
 }
 
 sub gen_wrapper {
-  my ($class, $is_vector, @fields) = @_;
-  my $ptr_only = $ptr_only{$class};
+  my ($ptr_only, $extra_args, $class, $is_vector, @fields) = @_;
   my $vector_str = 'vector_' x $is_vector;
   my $vector2_str = $is_vector > 1 ? 'vector_' x ($is_vector-1) : '';
   my $wrapper = "$vector_str${class}Wrapper";
   my %tdecls = (
     new => qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
-      map ", @$_", @{$is_vector ? [] : $extra_cons_args{$class} || []}
+      map ", @$_", @$extra_args
     ]})},
     dest => qq{void cw_$vector_str${class}_DESTROY($wrapper *wrapper)},
     dim0 => qq{ptrdiff_t cw_$vector_str${class}_dim0()},
@@ -224,7 +222,7 @@ EOF
 @{[$constructor_override{$class} && !$is_vector ? '' :
 "$tdecls{new} {\n TRY_WRAP(" . (!$ptr_only ? " *cw_retval = new $wrapper; )" :
 "\n  (*cw_retval = new $wrapper)->held = $ptr_only(@{[
-      join ', ', map $_->[1], @{$extra_cons_args{$class} || []}
+      join ', ', map $_->[1], @$extra_args
   ]});
  )"
 ) . "\n}"]}
@@ -318,19 +316,19 @@ sub gen_chfiles {
   my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
   $cstr .= $CHEADER;
   for (sort keys %$typespecs) {
-    my ($xhstr, $xcstr) = gen_wrapper($_, 0, @{$typespecs->{$_}});
+    my ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, $extra_cons_args{$_} || [], $_, 0, @{$typespecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for (sort keys %$vectorspecs) {
-    my ($xhstr, $xcstr) = gen_wrapper($_, 1, @{$vectorspecs->{$_}});
+    my ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, [], $_, 1, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
-    ($xhstr, $xcstr) = gen_wrapper($_, 2, @{$vectorspecs->{$_}});
+    ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, [], $_, 2, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   $hstr .= $extras->[0] || '';
   $cstr .= $extras->[1] || '';
   for my $func (@{$funclist||[]}) {
-    my ($xhstr, $xcstr) = gen_code( @$func );
+    my ($xhstr, $xcstr) = gen_code($ptr_only{$func->[0]}, @$func);
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for my $c (@{$consts||[]}) {
