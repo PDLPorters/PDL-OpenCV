@@ -75,6 +75,8 @@ my %force = map +($_=>1), qw(
   cv.groupRectangles
   cv.CascadeClassifier.load
   cv.CascadeClassifier.detectMultiScale
+  cv.Tracker.init
+  cv.Tracker.update
 );
 my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
