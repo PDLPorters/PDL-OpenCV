@@ -195,7 +195,7 @@ sub gen_code {
 }
 
 sub gen_wrapper {
-  my ($ptr_only, $extra_args, $class, $is_vector, @fields) = @_;
+  my ($ptr_only, $cons_func, $extra_args, $class, $is_vector, @fields) = @_;
   my $vector_str = 'vector_' x $is_vector;
   my $vector2_str = $is_vector > 1 ? 'vector_' x ($is_vector-1) : '';
   my $wrapper = "$vector_str${class}Wrapper";
@@ -221,7 +221,7 @@ EOF
   my $cstr = <<EOF;
 @{[$constructor_override{$class} && !$is_vector ? '' :
 "$tdecls{new} {\n TRY_WRAP(" . (!$ptr_only ? " *cw_retval = new $wrapper; )" :
-"\n  (*cw_retval = new $wrapper)->held = $ptr_only(@{[
+"\n  (*cw_retval = new $wrapper)->held = $cons_func(@{[
       join ', ', map $_->[1], @$extra_args
   ]});
  )"
@@ -316,13 +316,13 @@ sub gen_chfiles {
   my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
   $cstr .= $CHEADER;
   for (sort keys %$typespecs) {
-    my ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, $extra_cons_args{$_} || [], $_, 0, @{$typespecs->{$_}});
+    my ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, $ptr_only{$_}, $extra_cons_args{$_} || [], $_, 0, @{$typespecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for (sort keys %$vectorspecs) {
-    my ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, [], $_, 1, @{$vectorspecs->{$_}});
+    my ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, undef, [], $_, 1, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
-    ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, [], $_, 2, @{$vectorspecs->{$_}});
+    ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, undef, [], $_, 2, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   $hstr .= $extras->[0] || '';
