@@ -191,5 +191,4 @@ EOF
 
 writefile($_, 'funclist.pl', genfile($dest2funcs{$_})) for keys %dest2funcs;
 
-$dest2classdefs{tracking} = [['Tracker','@brief Object-tracker in images']];
 writefile($_, 'classes.pl', genfile($dest2classdefs{$_})) for keys %dest2classdefs;

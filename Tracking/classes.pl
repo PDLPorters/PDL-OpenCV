@@ -1,3 +1,3 @@
 (
-['Tracker','@brief Object-tracker in images'],
+['Tracker','@brief Base abstract class for the long-term tracker'],
 );
