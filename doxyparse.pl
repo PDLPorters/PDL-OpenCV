@@ -6,7 +6,7 @@ our $DCODE_RE = qr/[\@\\]/;
 sub doxy_bits {
   my (undef, $words, $hash, $key) = @_;
   my $re = '(?:'.join('|', @$words).')';
-  my $bit_re = qr/$DCODE_RE$re\s+(.*?)(?=$DCODE_RE$re|\n{2,}|\n*\z)/s;
+  my $bit_re = qr/$DCODE_RE$re\s+(.*?)(?=$DCODE_RE|\n{2,}|\n*\z)/s;
   my @p;
   while ($_[0] =~ s/$bit_re//) {
     push @p, $1;
@@ -40,6 +40,7 @@ sub doxyparse {
   my %r;
   doxy_bits($text, [qw(brief short)], \%r, 'brief');
   doxy_bits($text, [qw(param)], \%r, 'params');
+  doxy_bits($text, [qw(return returns)], \%r, 'return');
   doxy_bits($text, [qw(sa see)], \%r, 'see');
   $r{main} = doxy_main($text);
   \%r;
@@ -72,10 +73,16 @@ sub doxy2pdlpod {
   if (my $p = $r->{params}) {
     $text .= qq{\n\nParameters:\n\n=over\n\n};
     for (@$p) {
-      my ($name, $rest) = split /\s+/, $_, 2;
+      (my $rest = $_) =~ s#^\s*((?:\[[^\]]*\]\s*)?\w+)\s+##;
+      my $name = $1;
       $text .= "=item $name\n\n$rest\n\n";
     }
     $text .= qq{\n\n=back\n\n};
+  }
+  if (my $p = $r->{return}) {
+    for (@$p) {
+      $text .= "\n\nReturns: $_\n\n";
+    }
   }
   $text .= qq{See also:\n@{[join "\n", @{$r->{see}}]}\n\n} if $r->{see};
   $text;
@@ -93,12 +100,14 @@ sub md2pod {
   }
   $out = $out . $text;
   $out =~ s/\\\*/*/g; # very very basic
+  $out =~ s/^\s*//gm;
   $out;
 }
 
 if (!caller) {
-  my @l = do './Imgproc/funclist.pl';
-  my ($d) = grep $_->[1] eq 'cvtColor', @l;
+  my @l = do './Videoio/funclist.pl';
+  die if $@; die $! if $!;
+  my ($d) = grep $_->[1] eq 'get', @l;
   my $r = doxyparse($d->[2]);
 require Test::More; print "RUN ", Test::More::explain($r);
   print "POD:\n", doxy2pdlpod($r);
