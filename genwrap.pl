@@ -13,18 +13,19 @@ my %REALCTYPE2NUMVAL = map +($_->realctype=>$_->numval), PDL::Types::types;
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double uchar));
 my %overrides = (
   Tracker => {
-    update => {pre=>'TRACKER_RECT_TYPE box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
+    update => {pre=>'
+#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
+cv::Rect
+#else
+cv::Rect2d
+#endif
+box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
   },
 );
 my %ptr_only = map +($_=>1), qw(Tracker LineSegmentDetector);
 my $wrap_re = qr/^(?:(?!String)[A-Z]|vector_)/;
 my %constructor_override = (
   Tracker => <<EOF,
-#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
-# define TRACKER_RECT_TYPE cv::Rect
-#else
-# define TRACKER_RECT_TYPE cv::Rect2d
-#endif
 cw_error cw_Tracker_new(TrackerWrapper **cw_retval, char *klass) {
  TRY_WRAP((*cw_retval = new TrackerWrapper)->held = cv::TrackerKCF::create();)
 }
