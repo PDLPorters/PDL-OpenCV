@@ -21,21 +21,12 @@ cv::Rect2d
 box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
   },
 );
-my %ptr_only = map +($_=>1), qw(Tracker LineSegmentDetector);
+my %ptr_only = (
+  Tracker => 'cv::TrackerKCF::create',
+  LineSegmentDetector => 'cv::createLineSegmentDetector',
+);
 my $wrap_re = qr/^(?:(?!String)[A-Z]|vector_)/;
 my %constructor_override = (
-  Tracker => <<EOF,
-cw_error cw_Tracker_new(TrackerWrapper **cw_retval, char *klass) {
- TRY_WRAP((*cw_retval = new TrackerWrapper)->held = cv::TrackerKCF::create();)
-}
-EOF
-  LineSegmentDetector => <<EOF,
-cw_error cw_LineSegmentDetector_new(LineSegmentDetectorWrapper **cw_retval, char *klass, int lsd_type) {
- TRY_WRAP(
-  (*cw_retval = new LineSegmentDetectorWrapper)->held = cv::createLineSegmentDetector(lsd_type);
- )
-}
-EOF
   String => <<EOF,
 cw_error cw_String_new(StringWrapper **cw_retval, char *klass, const char* str) {
  TRY_WRAP(
@@ -230,12 +221,14 @@ struct $wrapper {
 #endif
 EOF
   my $cstr = <<EOF;
-@{[$constructor_override{$class} && !$is_vector ? '' : "$tdecls{new} {
- TRY_WRAP( *cw_retval = new $wrapper; )
-}"]}
-$tdecls{dest} {
-	delete wrapper;
-}
+@{[$constructor_override{$class} && !$is_vector ? '' :
+"$tdecls{new} {\n TRY_WRAP(" . (!$ptr_only ? " *cw_retval = new $wrapper; )" :
+"\n  (*cw_retval = new $wrapper)->held = $ptr_only(@{[
+      join ', ', map $_->[1], @{$extra_cons_args{$class} || []}
+  ]});
+ )"
+) . "\n}"]}
+$tdecls{dest} { delete wrapper; }
 $tdecls{dim0} { return @{[0+@fields]}; }
 $tdecls{pdlt} { return @{[
   @fields ? $REALCTYPE2NUMVAL{$fields[0][0]} :
