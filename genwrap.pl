@@ -315,14 +315,16 @@ sub gen_chfiles {
   my $hstr = sprintf $HHEADER, $macro;
   my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
   $cstr .= $CHEADER;
+  my %po;
   for (sort keys %$typespecs) {
-    my ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, $ptr_only{$_}, $extra_cons_args{$_} || [], $_, 0, @{$typespecs->{$_}});
+    my ($fields, $po, $cf, $xa) = @{$typespecs->{$_}};
+    my ($xhstr, $xcstr) = gen_wrapper($po{$_} = $po, $cf, $xa || [], $_, 0, @$fields);
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for (sort keys %$vectorspecs) {
-    my ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, undef, [], $_, 1, @{$vectorspecs->{$_}});
+    my ($xhstr, $xcstr) = gen_wrapper($po{$_}, undef, [], $_, 1, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
-    ($xhstr, $xcstr) = gen_wrapper($ptr_only{$_}, undef, [], $_, 2, @{$vectorspecs->{$_}});
+    ($xhstr, $xcstr) = gen_wrapper($po{$_}, undef, [], $_, 2, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   $hstr .= $extras->[0] || '';
@@ -365,9 +367,9 @@ sub writefile {
 
 my $filegen = $ARGV[0] || die "No file given";
 my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
-my $typespec = $filegen eq 'opencv_wrapper' ? \%GLOBALTYPES : !-f 'classes.pl' ? +{} : do {
+my $typespec = $filegen eq 'opencv_wrapper' ? { map +($_=>[$GLOBALTYPES{$_}, undef, undef, $extra_cons_args{$_}]), keys %GLOBALTYPES } : !-f 'classes.pl' ? +{} : do {
   my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
-  +{map +($_->[0]=>[]), @classlist}
+  +{map +($_->[0]=>[[], $ptr_only{$_->[0]}, $ptr_only{$_->[0]}, $extra_cons_args{$_->[0]}]), @classlist}
 };
 my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
