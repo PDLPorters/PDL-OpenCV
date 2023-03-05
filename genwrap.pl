@@ -13,8 +13,7 @@ my %REALCTYPE2NUMVAL = map +($_->realctype=>$_->numval), PDL::Types::types;
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double uchar));
 my %overrides = (
   Tracker => {
-    update => {pre=>'
-#if CV_VERSION_MINOR >= 5 && CV_VERSION_MAJOR >= 4
+    update => {pre=>'#if (CV_VERSION_MAJOR*1000 + CV_VERSION_MINOR) >= 4005
 cv::Rect
 #else
 cv::Rect2d
