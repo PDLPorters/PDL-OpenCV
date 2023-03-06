@@ -315,14 +315,11 @@ sub genheader {
   my %class2doc = map +($_->[0]=>$_->[1]), @classdata;
   my @classes = sort keys %class2doc;
   my $descrip_label = @classes ? join(', ', @classes) : $last;
-  my $synopsis = join '', map "\n \$obj = PDL::OpenCV::$_->new@{[
-    @{$extra_cons_args{$_} || []} ? '('.join(', ', map qq{\$$_->[1]}, @{$extra_cons_args{$_} || []}).')' : ''
-  ]};", @classes;
   pp_addpm({At=>'Top'},<<"EOPM");
 =head1 NAME
 \nPDL::OpenCV::$last - PDL bindings for OpenCV $descrip_label
 \n=head1 SYNOPSIS
-\n use PDL::OpenCV::$last;$synopsis
+\n use PDL::OpenCV::$last;
 \n=cut
 \nuse strict;
 use warnings;
