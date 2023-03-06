@@ -342,11 +342,12 @@ EOF
     pp_bless(my $fullclass = "PDL::OpenCV::$c");
     pp_addhdr(qq{typedef ${c}Wrapper *PDL__OpenCV__$c;\n});
     my $extra_args = $extra_cons_args{$c} || [];
+    my @cons_pars = map PP::OpenCV->new(0, @$_), ['char *', 'klass'], @$extra_args;
     my $doc = $class2doc{$c} // '';
     $doc = text_trim doxy2pdlpod(doxyparse($doc)) if $doc;
     my $cons_doc = "\@brief Initialize OpenCV $c object.";
     my $cons_doxy = doxyparse($cons_doc);
-    $cons_doxy->{brief}[0] .= make_example('new', 1, [+{}, map PP::OpenCV->new(0, @$_), @$extra_args], [{name=>'obj'}], $fullclass, 1);
+    $cons_doxy->{brief}[0] .= make_example('new', 1, \@cons_pars, [{name=>'obj'}], $fullclass, 1);
     $cons_doc = text_trim doxy2pdlpod($cons_doxy);
     pp_addpm(<<EOD);
 =head1 METHODS for PDL::OpenCV::$c\n\n
@@ -357,8 +358,8 @@ $doc\n\n
 EOD
     pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
-\nPDL__OpenCV__$c cw_${c}_new(char *klass@{[ map ", @$_", @$extra_args ]})
-  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL, klass@{[ map ", $_->[1]", @$extra_args ]});
+\nPDL__OpenCV__$c cw_${c}_new(@{[join ', ', map $_->xs_par, @cons_pars]})
+  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL@{[ map ", $_->{name}", @cons_pars ]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
   OUTPUT:\n    RETVAL
 \nvoid cw_${c}_DESTROY(PDL__OpenCV__$c self)
