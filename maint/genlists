@@ -89,7 +89,7 @@ if (@ARGV) {
   print Dumper $json_data;
   exit;
 }
-my (%dest2enums, %dest2func2name2defs, %dest2classdefs);
+my (%dest2enums, %dest2func2name2defs, %dest2classdefs, %dest2class2create);
 for (@$json_data) {
   my ($file, $d) = @$_;
   my $dest = $file =~ /core/ ? "" : basename($file, ".hpp");
@@ -109,6 +109,10 @@ print "enum: $name\n";
       next if !$class{$cname};
 print "class: $cname\n";
       push @{$dest2classdefs{$dest}}, [$cname, $doc];
+    } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(create(.*))/) {
+      my ($full, $cname) = ($1, $2);
+print "classcreate: $cname\n";
+      $dest2class2create{$dest}{$cname} = [1, "cv::$full", $args, $doc];
     } elsif ($force{$name}) {
       my (undef, @n) = split /\./, $name;
       unshift @n, '' if @n == 1;
@@ -193,4 +197,10 @@ EOF
 
 writefile($_, 'funclist.pl', genfile($dest2funcs{$_})) for keys %dest2funcs;
 
+for my $dest (keys %dest2classdefs) {
+  for my $c (@{$dest2classdefs{$dest}}) {
+    next unless my $extra = $dest2class2create{$dest}{$c->[0]};
+    push @$c, @$extra;
+  }
+}
 writefile($_, 'classes.pl', genfile($dest2classdefs{$_})) for keys %dest2classdefs;

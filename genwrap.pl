@@ -201,7 +201,7 @@ sub gen_wrapper {
   my $wrapper = "$vector_str${class}Wrapper";
   my %tdecls = (
     new => qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
-      map ", @$_", @$extra_args
+      join '', map ", @$_[0,1]", @$extra_args
     ]})},
     dest => qq{void cw_$vector_str${class}_DESTROY($wrapper *wrapper)},
     dim0 => qq{ptrdiff_t cw_$vector_str${class}_dim0()},
@@ -369,7 +369,7 @@ my $filegen = $ARGV[0] || die "No file given";
 my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
 my $typespec = $filegen eq 'opencv_wrapper' ? { map +($_=>[$GLOBALTYPES{$_}, undef, undef, $extra_cons_args{$_}]), keys %GLOBALTYPES } : !-f 'classes.pl' ? +{} : do {
   my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
-  +{map +($_->[0]=>[[], $ptr_only{$_->[0]}, $ptr_only{$_->[0]}, $extra_cons_args{$_->[0]}]), @classlist}
+  +{map +($_->[0]=>[[], $_->[2]||$ptr_only{$_->[0]}, $_->[3]||$ptr_only{$_->[0]}, $_->[4]||$extra_cons_args{$_->[0]}]), @classlist}
 };
 my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';

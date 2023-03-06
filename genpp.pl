@@ -313,6 +313,7 @@ sub genheader {
   my ($last) = @_;
   local $@; my @classdata = !-f 'classes.pl' ? () : do ''. catfile curdir, 'classes.pl'; die if $@;
   my %class2doc = map +($_->[0]=>$_->[1]), @classdata;
+  my %class2info = map +($_->[0]=>[@$_[4..$#$_]]), @classdata;
   my @classes = sort keys %class2doc;
   my $descrip_label = @classes ? join(', ', @classes) : $last;
   pp_addpm({At=>'Top'},<<"EOPM");
@@ -341,13 +342,13 @@ EOF
   for my $c (@classes) {
     pp_bless(my $fullclass = "PDL::OpenCV::$c");
     pp_addhdr(qq{typedef ${c}Wrapper *PDL__OpenCV__$c;\n});
-    my $extra_args = $extra_cons_args{$c} || [];
+    my $extra_args = ($class2info{$c}||[])->[0] || $extra_cons_args{$c} || [];
     my @cons_pars = map PP::OpenCV->new(0, @$_), ['char *', 'klass'], @$extra_args;
     my $doc = $class2doc{$c} // '';
     $doc = text_trim doxy2pdlpod(doxyparse($doc)) if $doc;
-    my $cons_doc = "\@brief Initialize OpenCV $c object.";
+    my $cons_doc = ($class2info{$c}||[])->[1] || "\@brief Initialize OpenCV $c object.";
     my $cons_doxy = doxyparse($cons_doc);
-    $cons_doxy->{brief}[0] .= make_example('new', 1, \@cons_pars, [{name=>'obj'}], $fullclass, 1);
+    $cons_doxy->{brief}[0] .= make_example('new', 1, \@cons_pars, [{name=>'obj'}], $fullclass);
     $cons_doc = text_trim doxy2pdlpod($cons_doxy);
     pp_addpm(<<EOD);
 =head1 METHODS for PDL::OpenCV::$c\n\n
@@ -359,7 +360,7 @@ EOD
     pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
 \nPDL__OpenCV__$c cw_${c}_new(@{[join ', ', map $_->xs_par, @cons_pars]})
-  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL@{[ map ", $_->{name}", @cons_pars ]});
+  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL@{[ join '', map ", $_->{name}", @cons_pars ]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
   OUTPUT:\n    RETVAL
 \nvoid cw_${c}_DESTROY(PDL__OpenCV__$c self)
