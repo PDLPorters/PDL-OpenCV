@@ -216,18 +216,18 @@ sub text_trim {
 }
 
 sub make_example {
-  my ($func, $ismethod, $inputs, $outputs) = @_;
+  my ($func, $ismethod, $inputs, $outputs, $objname, $suppress_only) = @_;
   $inputs = [@$inputs[1..$#$inputs]] if $ismethod;
   my $out = "\n\n=for example\n\n";
-  for my $suppress_default (1,0) {
+  for my $suppress_default ($suppress_only ? 1 : (1,0)) {
     my $this_in = $inputs;
     $this_in = [grep !length($_->{default}//''), @$this_in] if $suppress_default;
-    next if $suppress_default and @$this_in == @$inputs;
+    next if $suppress_default and !$suppress_only and @$this_in == @$inputs;
     $out .= ' '.
-      (!@$outputs ? '' : "(@{[join ',', map qq{\$$_->{name}}, @$outputs]}) = ").
-      ($ismethod ? '$obj->' : '')."$func".
+      (!@$outputs ? '' : @$outputs == 1 ? qq{\$$outputs->[0]{name} = } : "(@{[join ',', map qq{\$$_->{name}}, @$outputs]}) = ").
+      ($ismethod ? ($objname||'$obj').'->' : '')."$func".
       (@$this_in ? '('.join(',', map "\$$_->{name}", @$this_in).')' : '').
-      ";".($suppress_default ? ' # with defaults' : '')."\n";
+      ";".(($suppress_default and !$suppress_only) ? ' # with defaults' : '')."\n";
   }
   $out."\n";
 }
@@ -342,30 +342,26 @@ EOF
     pp_addpm("=pod\n\nNone.\n\n=cut\n\n");
   }
   for my $c (@classes) {
-    pp_bless("PDL::OpenCV::$c");
+    pp_bless(my $fullclass = "PDL::OpenCV::$c");
     pp_addhdr(qq{typedef ${c}Wrapper *PDL__OpenCV__$c;\n});
+    my $extra_args = $extra_cons_args{$c} || [];
     my $doc = $class2doc{$c} // '';
-    $doc =~ s/\@brief\s*//;
+    $doc = text_trim doxy2pdlpod(doxyparse($doc)) if $doc;
+    my $cons_doc = "\@brief Initialize OpenCV $c object.";
+    my $cons_doxy = doxyparse($cons_doc);
+    $cons_doxy->{brief}[0] .= make_example('new', 1, [+{}, map PP::OpenCV->new(0, @$_), @$extra_args], [{name=>'obj'}], $fullclass, 1);
+    $cons_doc = text_trim doxy2pdlpod($cons_doxy);
     pp_addpm(<<EOD);
 =head1 METHODS for PDL::OpenCV::$c\n\n
 $doc\n\n
 =head2 new
-\n=for ref
-\nInitialize OpenCV $c object.
-\n=for example
-\n  \$obj = PDL::OpenCV::$c->new@{[
-  @{$extra_cons_args{$c} || []} ? '('.join(', ', map qq{\$$_->[1]}, @{$extra_cons_args{$c} || []}).')' : ''
-]};
+\n$cons_doc
 \n=cut
 EOD
     pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
-\nPDL__OpenCV__$c cw_${c}_new(char *klass@{[
-  map ", @$_", @{$extra_cons_args{$c} || []}
-]})
-  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL, klass@{[
-  map ", $_->[1]", @{$extra_cons_args{$c} || []}
-]});
+\nPDL__OpenCV__$c cw_${c}_new(char *klass@{[ map ", @$_", @$extra_args ]})
+  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL, klass@{[ map ", $_->[1]", @$extra_args ]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
   OUTPUT:\n    RETVAL
 \nvoid cw_${c}_DESTROY(PDL__OpenCV__$c self)
