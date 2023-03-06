@@ -23,7 +23,6 @@ box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
 );
 my %ptr_only = (
   Tracker => 'cv::TrackerKCF::create',
-  LineSegmentDetector => 'cv::createLineSegmentDetector',
 );
 my $wrap_re = qr/^(?:(?!String)[A-Z]|vector_)/;
 my %constructor_override = (
@@ -330,7 +329,7 @@ sub gen_chfiles {
   $hstr .= $extras->[0] || '';
   $cstr .= $extras->[1] || '';
   for my $func (@{$funclist||[]}) {
-    my ($xhstr, $xcstr) = gen_code($ptr_only{$func->[0]}, @$func);
+    my ($xhstr, $xcstr) = gen_code($po{$func->[0]}, @$func);
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for my $c (@{$consts||[]}) {
