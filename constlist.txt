@@ -162,6 +162,9 @@ cv::SparseMat::MAGIC_VAL
 cv::SparseMat::MAX_DIM
 cv::SparseMat::HASH_SCALE
 cv::SparseMat::HASH_BIT
+cv::TermCriteria::COUNT
+cv::TermCriteria::MAX_ITER
+cv::TermCriteria::EPS
 cv::SORT_EVERY_ROW
 cv::SORT_EVERY_COLUMN
 cv::SORT_ASCENDING
