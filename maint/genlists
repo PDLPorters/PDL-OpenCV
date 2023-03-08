@@ -80,7 +80,7 @@ my %force = map +($_=>1), qw(
 );
 my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
-  CascadeClassifier Subdiv2D
+  CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
 );
 my $no_want = qr/^(FileNode|TermCriteria|RNG|RotatedRect|Ptr_CLAHE|Ptr_GeneralizedHough|Ptr_LineSegmentDetector|Ptr_Tracker)/;
 
@@ -111,6 +111,12 @@ print "enum: $name\n";
       $ret = [map {(my $r=$_)=~s/^cv:://;$r} split /\s*,\s*/, $ret];
 print "class: $cname\n";
       push @{$dest2classdefs{$dest}}, [$cname, $ret, $doc];
+    } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(.*)\.create/) {
+      my $cname = $1;
+print "class::create: $cname\n";
+      $name =~ s/\./::/g;
+      $args = [] if @$args == 1 and $args->[0][0] =~ /Params/;
+      $dest2class2create{$dest}{$cname} = [1, $name, $args, $doc];
     } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(create(.*))/) {
       my ($full, $cname) = ($1, $2);
 print "classcreate: $cname\n";

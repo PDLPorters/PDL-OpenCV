@@ -353,7 +353,7 @@ EOF
     $cons_doc = text_trim doxy2pdlpod($cons_doxy);
     pp_addpm(<<EOD);
 =head1 METHODS for $fullclass\n\n
-$doc\n\n
+$doc\n\n@{[@{$class2super{$c}} ? "Subclass of @{$class2super{$c}}\n\n" : '']}
 =head2 new
 \n$cons_doc
 \n=cut

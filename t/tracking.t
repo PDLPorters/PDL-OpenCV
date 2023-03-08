@@ -42,7 +42,7 @@ my $writer = PDL::OpenCV::VideoWriter->new;
 ok $writer->open($outfile, $fcc, 20, [map $frame->dim($_), 1,2], 1), 'open worked';
 
 my $box=pdl(qw/169 88 192 257/);
-my $tr = PDL::OpenCV::Tracker->new;
+my $tr = PDL::OpenCV::TrackerKCF->new;
 if ($box->at(0) == 0) {
   namedWindow("ud",WINDOW_NORMAL);
   $box = selectROI("ud",$frame,1,0);
