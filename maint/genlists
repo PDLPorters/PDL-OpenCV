@@ -107,8 +107,10 @@ print "enum: $name\n";
     } elsif ($name =~ /^class cv\.(.*)/) {
       my $cname = $1;
       next if !$class{$cname};
+      $ret =~ s/^:\s*//;
+      $ret = [map {(my $r=$_)=~s/^cv:://;$r} split /\s*,\s*/, $ret];
 print "class: $cname\n";
-      push @{$dest2classdefs{$dest}}, [$cname, $doc];
+      push @{$dest2classdefs{$dest}}, [$cname, $ret, $doc];
     } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(create(.*))/) {
       my ($full, $cname) = ($1, $2);
 print "classcreate: $cname\n";

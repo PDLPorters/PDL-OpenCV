@@ -1,3 +1,3 @@
 (
-['Tracker','@brief Base abstract class for the long-term tracker'],
+['Tracker',[],'@brief Base abstract class for the long-term tracker'],
 );

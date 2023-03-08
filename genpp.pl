@@ -312,8 +312,9 @@ EOF
 sub genheader {
   my ($last) = @_;
   local $@; my @classdata = !-f 'classes.pl' ? () : do ''. catfile curdir, 'classes.pl'; die if $@;
-  my %class2doc = map +($_->[0]=>$_->[1]), @classdata;
-  my %class2info = map +($_->[0]=>[@$_[4..$#$_]]), @classdata;
+  my %class2super = map +($_->[0]=>[map "PDL::OpenCV::$_", @{$_->[1]}]), @classdata;
+  my %class2doc = map +($_->[0]=>$_->[2]), @classdata;
+  my %class2info = map +($_->[0]=>[@$_[5..$#$_]]), @classdata;
   my @classes = sort keys %class2doc;
   my $descrip_label = @classes ? join(', ', @classes) : $last;
   pp_addpm({At=>'Top'},<<"EOPM");
@@ -356,6 +357,7 @@ $doc\n\n
 =head2 new
 \n$cons_doc
 \n=cut
+\n\n\@PDL::OpenCV::${c}::ISA = qw(@{$class2super{$c}});
 EOD
     pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_

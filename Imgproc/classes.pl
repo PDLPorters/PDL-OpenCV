@@ -1,6 +1,6 @@
 (
-['Subdiv2D',''],
-['LineSegmentDetector','@brief Line segment detector class
+['Subdiv2D',[],''],
+['LineSegmentDetector',['Algorithm'],'@brief Line segment detector class
 
 following the algorithm described at @cite Rafael12 .
 

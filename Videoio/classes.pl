@@ -1,5 +1,5 @@
 (
-['VideoCapture','@brief Class for video capturing from video files, image sequences or cameras.
+['VideoCapture',[],'@brief Class for video capturing from video files, image sequences or cameras.
 
 The class provides C++ API for capturing video from cameras or for reading video files and image sequences.
 
@@ -16,7 +16,7 @@ Here is how the class can be used:
     `OPENCV_SOURCE_CODE/samples/python/video_threaded.py`
 -   (Python) %VideoCapture sample showcasing some features of the Video4Linux2 backend
     `OPENCV_SOURCE_CODE/samples/python/video_v4l2.py`'],
-['VideoWriter','@brief Video writer class.
+['VideoWriter',[],'@brief Video writer class.
 
 The class provides C++ API for writing video files or image sequences.'],
 );
