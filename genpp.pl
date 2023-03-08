@@ -352,15 +352,15 @@ EOF
     $cons_doxy->{brief}[0] .= make_example('new', 1, \@cons_pars, [{name=>'obj'}], $fullclass);
     $cons_doc = text_trim doxy2pdlpod($cons_doxy);
     pp_addpm(<<EOD);
-=head1 METHODS for PDL::OpenCV::$c\n\n
+=head1 METHODS for $fullclass\n\n
 $doc\n\n
 =head2 new
 \n$cons_doc
 \n=cut
-\n\n\@PDL::OpenCV::${c}::ISA = qw(@{$class2super{$c}});
+\n\n\@${fullclass}::ISA = qw(@{$class2super{$c}});
 EOD
     pp_addxs(<<EOF);
-MODULE = ${main::PDLMOD} PACKAGE = PDL::OpenCV::$c PREFIX=cw_${c}_
+MODULE = ${main::PDLMOD} PACKAGE = $fullclass PREFIX=cw_${c}_
 \nPDL__OpenCV__$c cw_${c}_new(@{[join ', ', map $_->xs_par, @cons_pars]})
   CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL@{[ join '', map ", $_->{name}", @cons_pars ]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
