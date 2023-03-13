@@ -11,16 +11,6 @@ my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[])
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
 my %REALCTYPE2NUMVAL = map +($_->realctype=>$_->numval), PDL::Types::types;
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double uchar));
-my %overrides = (
-  Tracker => {
-    update => {pre=>'#if (CV_VERSION_MAJOR*1000 + CV_VERSION_MINOR) >= 4005
-cv::Rect
-#else
-cv::Rect2d
-#endif
-box;',post=>'boundingBox->held = box;',argfix=>sub{$_[0][1]='box'}},
-  },
-);
 my %ptr_only = (
   Tracker => 'cv::TrackerKCF::create',
 );
@@ -145,7 +135,6 @@ sub gen_code {
 	my ($in_name, $out_name) = @$name;
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
-	my $opt = $overrides{$class}{$in_name} || {};
 	my (@input_args, @cvargs, $methodvar);
 	my ($func_ret, $cpp_ret, $after_ret) = ($ret, '', '');
 	if ($ret eq 'StringWrapper*') {
@@ -179,15 +168,12 @@ sub gen_code {
 	my $hstr = $str.";\n";
 	$str .= " {\n";
 	$str .= " TRY_WRAP(\n";
-	$str .= "  // pre:\n$$opt{pre}\n" if $$opt{pre};
 	$str .= "  $cpp_ret";
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $in_name)."(" :
 	  "$methodvar->held".($ptr_only?'->':'.')."$in_name" .
 	  ($ismethod == 1 ? "(" : ";\n");
-	$opt->{argfix}->(\@cvargs) if $opt->{argfix};
 	$str .= join(', ', @cvargs).");\n";
 	$str .= $after_ret;
-	$str .= "  // post:\n$$opt{post}\n" if $$opt{post};
 	$str .= " )\n";
 	$str .= "}\n\n";
 	return ($hstr,$str);
