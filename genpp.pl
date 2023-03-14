@@ -316,6 +316,12 @@ sub genheader {
   my %class2doc = map +($_->[0]=>$_->[2]), @classdata;
   my %class2info = map +($_->[0]=>[@$_[5..$#$_]]), @classdata;
   my @classes = sort keys %class2doc;
+  if (@classes) {
+    require ExtUtils::Typemaps;
+    my $tm = ExtUtils::Typemaps->new;
+    $tm->add_typemap(ctype => "PDL__OpenCV__$_", xstype => 'T_PTROBJ_SPECIAL') for @classes;
+    pp_add_typemaps(typemap => $tm);
+  }
   my $descrip_label = @classes ? join(', ', @classes) : $last;
   pp_addpm({At=>'Top'},<<"EOPM");
 =head1 NAME
