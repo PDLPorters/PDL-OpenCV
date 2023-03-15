@@ -1,4 +1,6 @@
 (
+['FileStorage','getFirstTopLevelNode','@brief Returns the first element of the top-level mapping.
+     @returns The first element of the top-level mapping.',1,'FileNode'],
 ['','batchDistance','@brief naive nearest neighbor finder
 
 see http://en.wikipedia.org/wiki/Nearest_neighbor_search
