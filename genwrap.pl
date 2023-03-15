@@ -4,12 +4,19 @@ use FindBin qw($Bin);
 use File::Spec::Functions;
 use PDL::Types;
 use PDL::Core qw/howbig/;
+use Config;
 
 require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %type_alias, %extra_cons_args, %STAYWRAPPED);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
-my %REALCTYPE2NUMVAL = map +($_->realctype=>$_->numval), PDL::Types::types;
+my %REALCTYPE2NUMVAL = (
+  int => PDL::Type->new($Config{intsize} == 4 ? 'long' :
+    $Config{intsize} == 8 ? 'longlong' :
+    die "Unknown intsize $Config{intsize}"
+  )->numval,
+  map +($_->realctype=>$_->numval), PDL::Types::types
+);
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double uchar));
 my %ptr_only = (
   Tracker => 'cv::TrackerKCF::create',
@@ -213,7 +220,7 @@ EOF
 $tdecls{dest} { delete wrapper; }
 $tdecls{dim0} { return @{[0+@fields]}; }
 $tdecls{pdlt} { return @{[
-  @fields ? $REALCTYPE2NUMVAL{$fields[0][0]} :
+  @fields ? $REALCTYPE2NUMVAL{$fields[0][0]} // die "Unknown ctype '$fields[0][0]' for '$class'" :
   $REALCTYPE2NUMVAL{$type_overrides{$class} ? $type_overrides{$class}[1] : $class} // '-1'
 ]}; }
 EOF
