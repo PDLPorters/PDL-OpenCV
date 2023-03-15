@@ -82,7 +82,7 @@ my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
 );
-my $no_want = qr/^(FileNode|TermCriteria|RNG|RotatedRect|Ptr_CLAHE|Ptr_GeneralizedHough|Ptr_LineSegmentDetector|Ptr_Tracker)/;
+my $no_want = qr/^(RNG|RotatedRect)/;
 
 if (@ARGV) {
   die "Usage: $0 [json]" if @ARGV != 1 or $ARGV[0] ne 'json';
