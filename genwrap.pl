@@ -205,12 +205,11 @@ struct $wrapper {
 EOF
   my $cstr = <<EOF;
 @{[$constructor_override{$class} && !$is_vector ? '' :
-"$tdecls{new} {\n TRY_WRAP(" . (!$ptr_only ? " *cw_retval = new $wrapper; )" :
+"$tdecls{new} {\n TRY_WRAP(" . (!$ptr_only ? " *cw_retval = new $wrapper;" :
 "\n  (*cw_retval = new $wrapper)->held = $cons_func(@{[
       join ', ', map $_->[1], @$extra_args
-  ]});
- )"
-) . "\n}"]}
+  ]});\n"
+) . " )\n}"]}
 $tdecls{dest} { delete wrapper; }
 $tdecls{dim0} { return @{[0+@fields]}; }
 $tdecls{pdlt} { return @{[
