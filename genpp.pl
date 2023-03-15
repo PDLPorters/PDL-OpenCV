@@ -310,7 +310,9 @@ EOF
 }
 
 sub genheader {
-  my ($last) = @_;
+  my ($last, $suppress_pmheader) = @_;
+  my $lastorig = $last;
+  $last &&= "::$last";
   local $@; my @classdata = !-f 'classes.pl' ? () : do ''. catfile curdir, 'classes.pl'; die if $@;
   my %class2super = map +($_->[0]=>[map "PDL::OpenCV::$_", @{$_->[1]}]), @classdata;
   my %class2doc = map +($_->[0]=>$_->[2]), @classdata;
@@ -322,12 +324,12 @@ sub genheader {
     $tm->add_typemap(ctype => "PDL__OpenCV__$_", xstype => 'T_PTROBJ_SPECIAL') for @classes;
     pp_add_typemaps(typemap => $tm);
   }
-  my $descrip_label = @classes ? join(', ', @classes) : $last;
-  pp_addpm({At=>'Top'},<<"EOPM");
+  my $descrip_label = @classes ? join(', ', @classes) : $lastorig;
+  pp_addpm({At=>'Top'},<<"EOPM") if !$suppress_pmheader;
 =head1 NAME
-\nPDL::OpenCV::$last - PDL bindings for OpenCV $descrip_label
+\nPDL::OpenCV$last - PDL bindings for OpenCV $descrip_label
 \n=head1 SYNOPSIS
-\n use PDL::OpenCV::$last;
+\n use PDL::OpenCV$last;
 \n=cut
 \nuse strict;
 use warnings;
@@ -338,7 +340,7 @@ EOPM
   my @flist = genpp_readfile('funclist.pl');
   my @topfuncs = grep $_->[0] eq '', @flist;
   if (@topfuncs) {
-    pp_bless("PDL::OpenCV::$last");
+    pp_bless("PDL::OpenCV$last");
     pp_addxs(<<EOF); # work around PP bug
 MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ}
 EOF
@@ -377,7 +379,7 @@ EOF
   }
   pp_export_nothing();
   pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], grep !$_->[3], @flist);
-  genconsts("::$last");
+  genconsts($last);
 }
 
 sub genconsts {
