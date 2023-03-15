@@ -127,7 +127,7 @@ sub _par {
     (!$self->{fixeddims} ? () : "n$pcount".($self->wantempty ? '' : '='.scalar(@{$DIMTYPES{$self->{type_pp}}}))),
     (map "n${pcount}d$_", 0..$self->{is_vector}-1)).")"
     if $self->{is_vector};
-  "PDL__OpenCV__$type $name";
+  "@$self{qw(type_c name)}";
 }
 sub frompdl {
   my ($self, $compmode) = @_;
@@ -321,7 +321,7 @@ sub genheader {
   if (@classes) {
     require ExtUtils::Typemaps;
     my $tm = ExtUtils::Typemaps->new;
-    $tm->add_typemap(ctype => "PDL__OpenCV__$_", xstype => 'T_PTROBJ_SPECIAL') for @classes;
+    $tm->add_typemap(ctype => "${_}Wrapper *", xstype => 'T_PTROBJ_SPECIAL') for @classes;
     pp_add_typemaps(typemap => $tm);
   }
   my $descrip_label = @classes ? join(', ', @classes) : $lastorig;
@@ -350,7 +350,6 @@ EOF
   }
   for my $c (@classes) {
     pp_bless(my $fullclass = "PDL::OpenCV::$c");
-    pp_addhdr(qq{typedef ${c}Wrapper *PDL__OpenCV__$c;\n});
     my $extra_args = ($class2info{$c}||[])->[0] || $extra_cons_args{$c} || [];
     my @cons_pars = map PP::OpenCV->new(0, @$_), ['char *', 'klass'], @$extra_args;
     my $doc = $class2doc{$c} // '';
@@ -369,11 +368,11 @@ $doc\n\n@{[@{$class2super{$c}} ? "Subclass of @{$class2super{$c}}\n\n" : '']}
 EOD
     pp_addxs(<<EOF);
 MODULE = ${main::PDLMOD} PACKAGE = $fullclass PREFIX=cw_${c}_
-\nPDL__OpenCV__$c cw_${c}_new(@{[join ', ', map $_->xs_par, @cons_pars]})
+\n${c}Wrapper *cw_${c}_new(@{[join ', ', map $_->xs_par, @cons_pars]})
   CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL@{[ join '', map ", $_->{name}", @cons_pars ]});
     PDL->barf_if_error(*(pdl_error *)&CW_err);
   OUTPUT:\n    RETVAL
-\nvoid cw_${c}_DESTROY(PDL__OpenCV__$c self)
+\nvoid cw_${c}_DESTROY(${c}Wrapper *self)
 EOF
     genpp(@$_) for grep $_->[0] eq $c, @flist;
   }
