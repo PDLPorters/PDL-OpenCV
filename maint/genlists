@@ -152,17 +152,20 @@ writefile($_, 'constlist.txt', $dest2enums{$_}) for keys %dest2enums;
 my %dest2funcs;
 for my $dest (keys %dest2func2name2defs) {
   for my $name (sort keys %{$dest2func2name2defs{$dest}}) {
-    my @defs = @{ $dest2func2name2defs{$dest}{$name} };
-    @defs = grep $_->[4] !~ $no_want && (!grep !ref() || $_->[0] =~ $no_want, @$_[5..$#$_]), @defs; # remove any with non-handled return-type or args
-    print("none left for $name\n"), next if !@defs; # no candidates!
-    push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
-    @defs = grep $_->[2] ne '@overload', @defs;
-    push(@{$dest2funcs{$dest}}, $defs[0]), next if @defs == 1;
-    my @schw = map [scalar @$_, do {my $tot = 0; $tot += length $_->[0] for @$_[5..$#$_]; $tot}, $_], @defs;
-    @schw = sort { $b->[0] <=> $a->[0] || $b->[1] <=> $a->[1] } @schw; # descending order of number of args, then length of arg-types
-    @defs = map $_->[2], @schw;
-    push(@{$dest2funcs{$dest}}, $defs[0]);
+    push @{$dest2funcs{$dest}}, selectdef($name, $dest2func2name2defs{$dest}{$name});
   }
+}
+
+sub selectdef {
+  my ($name, $defs) = @_;
+  my @defs = grep $_->[4] !~ $no_want && (!grep !ref() || $_->[0] =~ $no_want, @$_[5..$#$_]), @$defs; # remove any with non-handled return-type or args
+  print("none left for $name\n"), return if !@defs; # no candidates!
+  return $defs[0] if @defs == 1;
+  @defs = grep $_->[2] ne '@overload', @defs;
+  return $defs[0] if @defs == 1;
+  my @schw = map [scalar @$_, do {my $tot = 0; $tot += length $_->[0] for @$_[5..$#$_]; $tot}, $_], @defs;
+  @schw = sort { $b->[0] <=> $a->[0] || $b->[1] <=> $a->[1] } @schw; # descending order of number of args, then length of arg-types
+  $schw[0][2];
 }
 
 sub genfile {
