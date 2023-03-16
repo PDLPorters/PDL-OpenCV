@@ -121,7 +121,7 @@ T_OPENCV_VECTOR
     if (CW_err.error)
       for (; i < sz; i++) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrap2[i]);
     PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
-    sv_setpv((SV*)pxsv, cptr);
+    sv_setpv(pxsv, cptr);
     } : $type =~ /Mat/ ? \qq{
     PDL_Indx d1, d2, d3; pdl_datatypes dt;
     cw_Mat_pdlDims(wrap2[i], &dt, &d1, &d2, &d3);
