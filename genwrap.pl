@@ -151,7 +151,9 @@ sub gen_code {
 	} elsif ($ret =~ $wrap_re) {
 		$func_ret = "${ret}Wrapper *";
 		$cpp_ret = "cv::$ret cpp_retval = ";
-		$after_ret = "  CW_err = cw_${ret}_new(cw_retval, NULL); if (CW_err.error) return CW_err; (*cw_retval)->held = cpp_retval;\n";
+		$after_ret = "  CW_err = cw_${ret}_new(cw_retval, NULL); if (CW_err.error) return CW_err; (*cw_retval)->held = ".(
+		  $PP::OpenCV::DIMTYPES{$ret} || $STAYWRAPPED{$ret} ? "cpp_retval" : "cv::Ptr<cv::$ret>(&cpp_retval)"
+		).";\n";
 	} elsif ($ret ne 'void') {
 		$cpp_ret = "*cw_retval = ";
 	}
@@ -177,7 +179,7 @@ sub gen_code {
 	$str .= " TRY_WRAP(\n";
 	$str .= "  $cpp_ret";
 	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $in_name)."(" :
-	  "$methodvar->held".($ptr_only?'->':'.')."$in_name" .
+	  "$methodvar->held->$in_name" .
 	  ($ismethod == 1 ? "(" : ";\n");
 	$str .= join(', ', @cvargs).");\n";
 	$str .= $after_ret;
@@ -203,17 +205,17 @@ sub gen_wrapper {
 typedef struct $wrapper $wrapper;
 #ifdef __cplusplus
 struct $wrapper {
-	@{[$ptr_only ? "cv::Ptr<cv::${class}>" :
-	  !$is_vector ? "cv::${class}" :
-	  ("std::vector<"x$is_vector)."@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}".(">"x$is_vector)
+	@{[
+	  $is_vector ? ("std::vector<"x$is_vector)."@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}".(">"x$is_vector) :
+	  @fields || $STAYWRAPPED{$class} ? "cv::${class}" : "cv::Ptr<cv::${class}>"
 	]} held;
 };
 #endif
 EOF
   my $cstr = <<EOF;
 @{[$constructor_override{$class} && !$is_vector ? '' :
-"$tdecls{new} {\n TRY_WRAP(" . (!$ptr_only ? " *cw_retval = new $wrapper;" :
-"\n  (*cw_retval = new $wrapper)->held = $cons_func(@{[
+"$tdecls{new} {\n TRY_WRAP(" . (($is_vector || @fields || $STAYWRAPPED{$class}) ? " *cw_retval = new $wrapper;" :
+"\n  (*cw_retval = new $wrapper)->held = @{[$cons_func || qq{cv::makePtr<cv::$class>}]}(@{[
       join ', ', map $_->[1], @$extra_args
   ]});\n"
 ) . " )\n}"]}
