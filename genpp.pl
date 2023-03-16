@@ -234,7 +234,7 @@ sub make_example {
 
 sub genpp {
     my ($class,$func,$doc,$ismethod,$ret,@params) = @_;
-    die "No class given for method='$ismethod'" if !$class and $ismethod;
+    die "No class given for func='$func' method='$ismethod'" if !$class and $ismethod;
     my %hash = (NoPthread=>1, HandleBad=>0);
     my $doxy = doxyparse($doc);
     my $pcount = 1;
@@ -249,7 +249,7 @@ sub genpp {
       $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
       $hash{Doc} = text_trim doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
-      pp_addpm($hash{PMFunc}) if !$ismethod;
+      pp_addpm($hash{PMFunc}) if $hash{PMFunc};
       my $ret_type = $ret eq 'void' ? $ret : pop(@allpars)->{type_c};
       my @cw_params = (($ret ne 'void' ? '&RETVAL' : ()), map $_->{name}, @allpars);
       my $xs = <<EOF;
