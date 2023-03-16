@@ -20,7 +20,7 @@ PDL::OpenCV - PDL interface to OpenCV
   die "Failed to read" if !$res;
   my $writer = PDL::OpenCV::VideoWriter->new;
   # note 4th arg is an OpenCV "Size" - PDL upgrades array-ref to ndarray
-  $writer->open($outfile, fourcc('M','P','4','V'), 20, [map $frame->dim($_), 1,2], 1);
+  $writer->open($outfile, PDL::OpenCV::VideoWriter::fourcc('M','P','4','V'), 20, [map $frame->dim($_), 1,2], 1);
   while ($res) {
     $writer->write($frame);
     # and/or display it, or feed it to a Tracker, or...

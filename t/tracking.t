@@ -37,7 +37,7 @@ my $x = 1;
 ($frame, $res) = $vc->read for 1..$x; # blank frames
 
 (undef, my $outfile) = tempfile(SUFFIX=>'.avi');
-is my $fcc = fourcc(split '', 'MP4V'), 1446269005, 'fourcc right value';
+is my $fcc = PDL::OpenCV::VideoWriter::fourcc(split '', 'MP4V'), 1446269005, 'fourcc right value';
 my $writer = PDL::OpenCV::VideoWriter->new;
 ok $writer->open($outfile, $fcc, 20, [map $frame->dim($_), 1,2], 1), 'open worked';
 

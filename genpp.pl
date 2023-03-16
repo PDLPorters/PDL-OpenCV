@@ -216,7 +216,7 @@ sub text_trim {
 }
 
 sub make_example {
-  my ($func, $ismethod, $inputs, $outputs, $objname, $suppress_only) = @_;
+  my ($class, $func, $ismethod, $inputs, $outputs, $objname, $suppress_only) = @_;
   $inputs = [@$inputs[1..$#$inputs]] if $ismethod;
   my $out = "\n\n=for example\n\n";
   for my $suppress_default ($suppress_only ? 1 : (1,0)) {
@@ -225,7 +225,7 @@ sub make_example {
     next if $suppress_default and !$suppress_only and @$this_in == @$inputs;
     $out .= ' '.
       (!@$outputs ? '' : @$outputs == 1 ? qq{\$$outputs->[0]{name} = } : "(@{[join ',', map qq{\$$_->{name}}, @$outputs]}) = ").
-      ($ismethod ? ($objname||'$obj').'->' : '')."$func".
+      ($ismethod ? ($objname||'$obj').'->' : $class ? "PDL::OpenCV::${class}::" : '')."$func".
       (@$this_in ? '('.join(',', map "\$$_->{name}", @$this_in).')' : '').
       ";".(($suppress_default and !$suppress_only) ? ' # with defaults' : '')."\n";
   }
@@ -244,9 +244,9 @@ sub genpp {
     push @params, [$ret,'res','',['/O']] if $ret ne 'void';
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
     my (@inputs, @outputs); push @{$_->{is_output} ? \@outputs : \@inputs}, $_ for @allpars;
-    $hash{PMFunc} = $ismethod ? '' : "*$func = \\&${main::PDLOBJ}::$func;\n";
+    $hash{PMFunc} = $class ? '' : "*$func = \\&${main::PDLOBJ}::$func;\n";
     if (!grep $_->{is_vector} || ($_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}), @allpars) {
-      $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
+      $doxy->{brief}[0] .= make_example($class, $func, $ismethod, \@inputs, \@outputs);
       $hash{Doc} = text_trim doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
       pp_addpm($hash{PMFunc}) if $hash{PMFunc};
@@ -297,7 +297,7 @@ EOF
       ),
     );
     $doxy->{brief}[0] .= " NO BROADCASTING." if $compmode;
-    $doxy->{brief}[0] .= make_example($func, $ismethod, \@inputs, \@outputs);
+    $doxy->{brief}[0] .= make_example($class, $func, $ismethod, \@inputs, \@outputs);
     $hash{Doc} = text_trim doxy2pdlpod($doxy);
     if ($compmode) {
       $hash{Comp} = join '; ', map $_->cdecl, grep !$_->{is_other}, @outputs;
@@ -333,7 +333,6 @@ sub genheader {
 \n=cut
 \nuse strict;
 use warnings;
-no warnings 'redefine'; # e.g. Objdetect::convert clashing with PDL::Core
 use PDL::OpenCV; # get constants
 EOPM
   pp_addhdr(qq{#include "opencv_wrapper.h"\n#include "wraplocal.h"\n});
@@ -356,7 +355,7 @@ EOF
     $doc = text_trim doxy2pdlpod(doxyparse($doc)) if $doc;
     my $cons_doc = ($class2info{$c}||[])->[1] || "\@brief Initialize OpenCV $c object.";
     my $cons_doxy = doxyparse($cons_doc);
-    $cons_doxy->{brief}[0] .= make_example('new', 1, \@cons_pars, [{name=>'obj'}], $fullclass);
+    $cons_doxy->{brief}[0] .= make_example($c, 'new', 1, \@cons_pars, [{name=>'obj'}], $fullclass);
     $cons_doc = text_trim doxy2pdlpod($cons_doxy);
     pp_addpm(<<EOD);
 =head1 METHODS for $fullclass\n\n
@@ -377,7 +376,7 @@ EOF
     genpp(@$_) for grep $_->[0] eq $c, @flist;
   }
   pp_export_nothing();
-  pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], grep !$_->[3], @flist);
+  pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], grep !$_->[0], @flist);
   genconsts($last);
 }
 
