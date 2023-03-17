@@ -24,6 +24,7 @@ our %default_overrides = (
   'Ptr<float>()' => ['empty(float)','0'],
   'std::vector<int>()' => ['empty(long)',],
   'Size()' => ['empty(sbyte)',],
+  'Size(8, 8)' => ['indx(8,8)',],
   'String()' => ['undef',],
   false => [0,0], # perl, C
   true => [1,1],

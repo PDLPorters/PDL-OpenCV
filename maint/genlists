@@ -89,7 +89,7 @@ my %force = map +($_=>1), qw(
 my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
-  FileNode FileStorage DMatch KeyPoint Algorithm
+  FileNode FileStorage DMatch KeyPoint Algorithm CLAHE
 );
 my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
 

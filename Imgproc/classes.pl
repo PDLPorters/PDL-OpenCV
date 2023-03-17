@@ -1,4 +1,9 @@
 (
+['CLAHE',['Algorithm'],'@brief Base class for Contrast Limited Adaptive Histogram Equalization.',1,'cv::createCLAHE',[['double','clipLimit','40.0',[]],['Size','tileGridSize','Size(8, 8)',[]]],'@brief Creates a smart pointer to a cv::CLAHE class and initializes it.
+
+@param clipLimit Threshold for contrast limiting.
+@param tileGridSize Size of grid for histogram equalization. Input image will be divided into
+equally sized rectangular tiles. tileGridSize defines the number of tiles in row and column.'],
 ['Subdiv2D',[],''],
 ['LineSegmentDetector',['Algorithm'],'@brief Line segment detector class
 
