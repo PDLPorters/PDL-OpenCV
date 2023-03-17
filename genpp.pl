@@ -9,11 +9,11 @@ my $T = [qw(A B S U L F D)];
 our %type_overrides = (
   String => ['StringWrapper*', 'StringWrapper*'], # PP, C
   bool => ['byte', 'unsigned char'],
+  char => ['sbyte', 'char'],
   uchar => ['byte', 'unsigned char'],
   Ptr_float => ['float *', 'float *'],
 );
 our %type_alias = (
-  char => 'bool',
   string => 'String',
 );
 $type_overrides{$_} = $type_overrides{$type_alias{$_}} for keys %type_alias;
@@ -195,7 +195,7 @@ sub default_pl {
 }
 sub xs_par {
   my ($self) = @_;
-  my $xs_par = ($self->{type} =~ /^[A-Z]/ && $self->{is_other}) ? $self->par : "@$self{qw(type name)}";
+  my $xs_par = ($self->{type} =~ /^[A-Z]/ && $self->{is_other}) ? $self->par : "@$self{qw(type_c name)}";
   my $d = $self->{default} // '';
   $d = $default_overrides{$d}[1] if $default_overrides{$d};
   $d = 'cw_const_' . $d . '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
