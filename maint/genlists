@@ -36,6 +36,7 @@ my %force = map +($_=>1), qw(
   cv.batchDistance
   cv.sum
   cv.wrapperEMD
+  cv.FileNode.keys
   cv.FileStorage.getFirstTopLevelNode
   cv.FileStorage.operator[]
   cv.KeyPoint.overlap

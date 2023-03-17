@@ -1,4 +1,6 @@
 (
+['FileNode','keys','@brief Returns keys of a mapping node.
+     @returns Keys of a mapping node.',1,'vector_String'],
 ['FileStorage','getFirstTopLevelNode','@brief Returns the first element of the top-level mapping.
      @returns The first element of the top-level mapping.',1,'FileNode'],
 ['FileStorage',['operator[]','getNode'],'@overload',1,'FileNode',['c_string','nodename','',['/C']]],
