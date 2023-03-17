@@ -137,9 +137,9 @@ EOF
 }
 
 sub code_type {
-  my ($intype) = @_;
+  my ($intype, $v) = @_;
   my $is_vector = (my $no_vector = $intype) =~ s/vector_//g;
-  my $cpptype = $no_vector eq 'StringWrapper*' ? 'cv::String' : $no_vector;
+  my $cpptype = $no_vector eq 'StringWrapper*' || $no_vector eq 'String' ? 'cv::String' : $no_vector;
   $cpptype = qq{cv::$cpptype} if $cpptype =~ $wrap_re;
   $cpptype = ("std::vector<"x$is_vector).$cpptype.(">"x$is_vector)
     if $is_vector;
@@ -150,50 +150,40 @@ sub code_type {
   $intype .= "Wrapper*" if $intype =~ $wrap_re;
   my $no_ptr = $is_vector || $PP::OpenCV::DIMTYPES{$nowrapper} || $STAYWRAPPED{$nowrapper};
   $intype = "$intype *" if $was_ptr and $intype !~ $wrap_re;
-  ($no_ptr, $intype, $nowrapper, $cpptype, $was_ptr);
+  my $cpp_input = $intype eq 'StringWrapper*' ? "$v->held" :
+    $nowrapper =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held".(
+      $no_ptr ? "" : "[0]"
+    ) : $v;
+  ($no_ptr, $intype, $cpptype, $cpp_input);
 }
 
 sub gen_code {
 	my ($ptr_only, $class, $name, $doc, $ismethod, $ret, @params) = @_;
 	$name = [$name, $name] if !ref $name;
 	my ($in_name, $out_name) = @$name;
-	die "No class given for method='$ismethod'" if !$class and $ismethod;
+	die "No class given for '$name' method='$ismethod'" if !$class and $ismethod;
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
-	my (@input_args, @cvargs, $methodvar);
-	my ($no_ptr, $func_ret, undef, $cpptype) = code_type($ret);
+	my ($no_ptr, $func_ret, $cpptype) = code_type($ret, 'ret');
 	my $after_ret = $ret eq 'StringWrapper*' ? "  CW_err = cw_String_new(cw_retval, NULL, cpp_retval.c_str()); if (CW_err.error) return CW_err;\n" :
 	  $ret =~ $wrap_re ? "  CW_err = cw_${ret}_new(cw_retval, NULL); if (CW_err.error) return CW_err; (*cw_retval)->held = ".(
 	    $no_ptr ? "cpp_retval" : "cv::Ptr<$cpptype>(&cpp_retval)"
 	  ).";\n" : '';
 	my $cpp_ret = $ret eq 'void' ? '' :
-	  ($ret eq 'StringWrapper*' || $ret =~ $wrap_re) ? "auto cpp_retval = " :
+	  ($ret eq 'StringWrapper*' || $ret =~ $wrap_re) ? "$cpptype cpp_retval = " :
 	 "*cw_retval = ";
 	die "Error: '$out_name' no return type from '$ret'".do {require Data::Dumper; Data::Dumper::Dumper(\@_)} if $ret ne 'void' and !$func_ret;
-	push @input_args, "$func_ret*cw_retval" if $ret ne 'void';
-	if ($ismethod) {
-		push @input_args, "${class}Wrapper *self";
-		$methodvar = 'self';
-	}
-	while (@params) {
-		my ($s, $v) = @{shift @params};
-		(my $no_ptr, my $ctype, $s, undef, my $was_ptr) = code_type($s);
-		push @input_args, "$ctype $v";
-		push @cvargs, $ctype eq 'StringWrapper*' ? "$v->held" :
-		  $s =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held".(
-		    $no_ptr ? "" : "[0]"
-		    ) :
-		  $v;
-	}
+	my @input_args = $ret ne 'void' ? "$func_ret*cw_retval" : ();
+	push @input_args, "${class}Wrapper *self" if $ismethod;
+	push @input_args, map +(code_type(@$_))[1]." $_->[1]", @params;
 	my $fname = join '_', grep length, 'cw', $class, $out_name;
 	my $str = "cw_error $fname(" . join(", ", @input_args) . ")";
 	my $hstr = $str.";\n";
 	$str .= " {\n";
 	$str .= " TRY_WRAP(\n";
 	$str .= "  $cpp_ret";
-	$str .= $ismethod == 0 ? join('::', grep length, "cv", $class, $in_name)."(" :
-	  "$methodvar->held->$in_name" .
-	  ($ismethod == 1 ? "(" : ";\n");
-	$str .= join(', ', @cvargs).");\n";
+	$str .= !$ismethod ? join('::', grep length, "cv", $class, $in_name) :
+	  "self->held->$in_name";
+	$str .= "(".join(', ', map +(code_type(@$_))[3], @params).");\n";
 	$str .= $after_ret;
 	$str .= " )\n";
 	$str .= "}\n\n";
@@ -210,7 +200,7 @@ sub gen_wrapper {
   my $no_ptr = $is_vector || $need_cv;
   my %tdecls = (
     new => qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
-      join '', map ", @$_[0,1]", @$extra_args
+      join '', map ", ".(code_type(@$_))[1]." $_->[1]", @$extra_args
     ]})},
     dest => qq{void cw_$vector_str${class}_DESTROY($wrapper *wrapper)},
     dim0 => qq{ptrdiff_t cw_$vector_str${class}_dim0()},
@@ -231,7 +221,7 @@ EOF
 @{[$constructor_override{$class} && !$is_vector ? '' :
 "$tdecls{new} {\n TRY_WRAP(" . ($no_ptr ? " *cw_retval = new $wrapper;" :
 "\n  (*cw_retval = new $wrapper)->held = @{[$cons_func || qq{cv::makePtr<cv::$class>}]}(@{[
-      join ', ', map $_->[1], @$extra_args
+      join ', ', map +(code_type(@$_))[3], @$extra_args
   ]});\n"
 ) . " )\n}"]}
 $tdecls{dest} { delete wrapper; }
