@@ -1,5 +1,7 @@
 (
 ['Algorithm','read','@brief Reads algorithm parameters from a file storage',1,'void',['FileNode','fn','',['/C','/Ref']]],
+['Algorithm','write','@brief simplified API for language bindings
+    * @overload',1,'void',['Ptr_FileStorage','fs','',['/C','/Ref']],['String','name','String()',['/C','/Ref']]],
 ['FileNode','keys','@brief Returns keys of a mapping node.
      @returns Keys of a mapping node.',1,'vector_String'],
 ['FileStorage','getFirstTopLevelNode','@brief Returns the first element of the top-level mapping.

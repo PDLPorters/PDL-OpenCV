@@ -37,6 +37,7 @@ my %force = map +($_=>1), qw(
   cv.sum
   cv.wrapperEMD
   cv.Algorithm.read
+  cv.Algorithm.write
   cv.FileNode.keys
   cv.FileStorage.getFirstTopLevelNode
   cv.FileStorage.operator[]
