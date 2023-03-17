@@ -13,6 +13,16 @@ can then be matched using %KDTree or another method.'],
 
 query descriptor index, train descriptor index, train image index, and distance between
 descriptors.'],
+['Algorithm',[],'@brief This is a base class for all more or less complex algorithms in OpenCV
+
+especially for classes of algorithms, for which there can be multiple implementations. The examples
+are stereo correspondence (for which there are algorithms like block matching, semi-global block
+matching, graph-cut etc.), background subtraction (which can be done using mixture-of-gaussians
+models, codebook-based algorithm etc.), optical flow (block matching, Lucas-Kanade, Horn-Schunck
+etc.).
+
+Here is example of SimpleBlobDetector use in your application via Algorithm interface:
+@snippet snippets/core_various.cpp Algorithm'],
 ['FileStorage',[],'@brief XML/YAML/JSON file storage class that encapsulates all the information necessary for writing or
 reading data to/from a file.'],
 ['FileNode',[],'@brief File Storage Node class.
