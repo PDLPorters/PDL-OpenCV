@@ -167,10 +167,14 @@ sub gen_code {
 		my ($s, $v) = @{shift @params};
 		my $was_ptr = $s =~ $wrap_re ? $s =~ s/\s*\*+$// : 0;
 		$s = $type_overrides{$s}[1] if $type_overrides{$s};
-		$s = $1.$type_alias{$2} if $s =~ /^(vector_)(.*)/ and $type_alias{$2};
+		$s = $1.$type_alias{$2} if (my $is_vector = $s =~ /^(vector_)(.*)/) and $type_alias{$2};
 		my $ctype = $s . ($s =~ $wrap_re ? "Wrapper *" : '');
 		push @input_args, "$ctype $v";
-		push @cvargs, $s eq 'StringWrapper*' ? "$v->held" : $s =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held" : $v;
+		push @cvargs, $s eq 'StringWrapper*' ? "$v->held" :
+		  $s =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held".(
+		    $is_vector || $PP::OpenCV::DIMTYPES{$s} || $STAYWRAPPED{$s} ? "" : "[0]"
+		    ) :
+		  $v;
 	}
 	my $fname = join '_', grep length, 'cw', $class, $out_name;
 	my $str = "cw_error $fname(" . join(", ", @input_args) . ")";
