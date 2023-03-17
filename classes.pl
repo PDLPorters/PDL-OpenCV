@@ -1,4 +1,18 @@
 (
+['KeyPoint',[],'@brief Data structure for salient point detectors.
+
+The class instance stores a keypoint, i.e. a point feature found by one of many available keypoint
+detectors, such as Harris corner detector, #FAST, %StarDetector, %SURF, %SIFT etc.
+
+The keypoint is characterized by the 2D position, scale (proportional to the diameter of the
+neighborhood that needs to be taken into account), orientation and some other parameters. The
+keypoint neighborhood is then analyzed by another algorithm that builds a descriptor (usually
+represented as a feature vector). The keypoints representing the same object in different images
+can then be matched using %KDTree or another method.'],
+['DMatch',[],'@brief Class for matching keypoint descriptors
+
+query descriptor index, train descriptor index, train image index, and distance between
+descriptors.'],
 ['FileStorage',[],'@brief XML/YAML/JSON file storage class that encapsulates all the information necessary for writing or
 reading data to/from a file.'],
 ['FileNode',[],'@brief File Storage Node class.

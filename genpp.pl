@@ -31,7 +31,7 @@ our %extra_cons_args = (
   LineSegmentDetector => [[qw(int lsd_type)]],
   String => [['const char*', 'str']],
 );
-our %STAYWRAPPED = map +($_=>[]), qw(Mat String);
+our %STAYWRAPPED = map +($_=>[]), qw(Mat String DMatch KeyPoint);
 our $IF_ERROR_RETURN = "if (CW_err.error) return *(pdl_error *)&CW_err";
 
 {

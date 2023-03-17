@@ -1,6 +1,18 @@
 (
 ['FileStorage','getFirstTopLevelNode','@brief Returns the first element of the top-level mapping.
      @returns The first element of the top-level mapping.',1,'FileNode'],
+['KeyPoint','convert','@overload
+    @param points2f Array of (x,y) coordinates of each keypoint
+    @param keypoints Keypoints obtained from any feature detection algorithm like SIFT/SURF/ORB
+    @param size keypoint diameter
+    @param response keypoint detector response on the keypoint (that is, strength of the keypoint)
+    @param octave pyramid octave in which the keypoint has been detected
+    @param class_id object id',0,'void',['vector_Point2f','points2f','',['/C','/Ref']],['vector_KeyPoint','keypoints','',['/O','/Ref']],['float','size','1',[]],['float','response','1',[]],['int','octave','0',[]],['int','class_id','-1',[]]],
+['KeyPoint','overlap','This method computes overlap for pair of keypoints. Overlap is the ratio between area of keypoint
+    regions\' intersection and area of keypoint regions\' union (considering keypoint region as circle).
+    If they don\'t overlap, we get zero. If they coincide at same location with same size, we get 1.
+    @param kp1 First keypoint
+    @param kp2 Second keypoint',0,'float',['KeyPoint','kp1','',['/C','/Ref']],['KeyPoint','kp2','',['/C','/Ref']]],
 ['','batchDistance','@brief naive nearest neighbor finder
 
 see http://en.wikipedia.org/wiki/Nearest_neighbor_search

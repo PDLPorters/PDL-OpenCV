@@ -37,6 +37,8 @@ my %force = map +($_=>1), qw(
   cv.sum
   cv.wrapperEMD
   cv.FileStorage.getFirstTopLevelNode
+  cv.KeyPoint.overlap
+  cv.KeyPoint.convert
   cv.cvtColor
   cv.rectangle
   cv.ellipse2Poly
@@ -82,7 +84,7 @@ my %force = map +($_=>1), qw(
 my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
-  FileNode FileStorage
+  FileNode FileStorage DMatch KeyPoint
 );
 my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
 

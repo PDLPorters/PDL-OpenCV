@@ -1,6 +1,8 @@
 TYPEMAP
 
 StringWrapper* T_OPENCV_STRING
+vector_DMatchWrapper* T_OPENCV_VECTOR
+vector_KeyPointWrapper* T_OPENCV_VECTOR
 vector_MatWrapper* T_OPENCV_VECTOR
 vector_StringWrapper* T_OPENCV_VECTOR
 vector_vector_Point2fWrapper* T_OPENCV_VECTOR
@@ -40,6 +42,15 @@ T_OPENCV_VECTOR
       ${ $type =~ /String/ ? \qq{
       cw_error CW_err = cw_String_new(&wrappers[i], NULL, SvOK(*sp) ? SvPV_nolen(*sp) : NULL);
       PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+      } : $type =~ /DMatch|KeyPoint/ ? \qq{
+      cw_error CW_err = {0,NULL,0};
+      if (sv_derived_from(*sp, \"${(my $ntt=$type)=~s/^vector_(.*)Wrapper\s*\**$/PDL::OpenCV::$1/g;\$ntt}\")){
+        IV tmp = SvIV((SV*)SvRV(*sp));
+        wrappers[i] = INT2PTR(${(my $novec=$type)=~s/^vector_//; \$novec}, tmp);
+      } else {
+        for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
+        PDL_CORE_(pdl_barf)(\"$var is not of type ${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/g;\$ntt}\");
+      }
       } : $type =~ /Mat/ ? \qq{
       pdl *p = PDL_CORE_(SvPDLV)(*sp);
       if (!p) {
@@ -122,6 +133,9 @@ T_OPENCV_VECTOR
       for (; i < sz; i++) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrap2[i]);
     PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
     sv_setpv(pxsv, cptr);
+    } : $type =~ /DMatch|KeyPoint/ ? \qq{
+    sv_setref_pv(pxsv, \"${(my $ntt=$type)=~s/^vector_(.*)Wrapper\s*\**$/PDL::OpenCV::$1/g;\$ntt}\",
+                 wrap2[i]);
     } : $type =~ /Mat/ ? \qq{
     PDL_Indx d1, d2, d3; pdl_datatypes dt;
     cw_Mat_pdlDims(wrap2[i], &dt, &d1, &d2, &d3);
