@@ -1,6 +1,7 @@
 (
 ['FileStorage','getFirstTopLevelNode','@brief Returns the first element of the top-level mapping.
      @returns The first element of the top-level mapping.',1,'FileNode'],
+['FileStorage',['operator[]','getNode'],'@overload',1,'FileNode',['c_string','nodename','',['/C']]],
 ['KeyPoint','convert','@overload
     @param points2f Array of (x,y) coordinates of each keypoint
     @param keypoints Keypoints obtained from any feature detection algorithm like SIFT/SURF/ORB

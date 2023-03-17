@@ -12,6 +12,7 @@ our %type_overrides = (
   char => ['sbyte', 'char'],
   uchar => ['byte', 'unsigned char'],
   Ptr_float => ['float *', 'float *'],
+  c_string => ['char *', 'char *'],
 );
 our %type_alias = (
   string => 'String',

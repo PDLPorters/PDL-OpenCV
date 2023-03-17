@@ -37,6 +37,7 @@ my %force = map +($_=>1), qw(
   cv.sum
   cv.wrapperEMD
   cv.FileStorage.getFirstTopLevelNode
+  cv.FileStorage.operator[]
   cv.KeyPoint.overlap
   cv.KeyPoint.convert
   cv.cvtColor
