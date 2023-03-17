@@ -362,7 +362,7 @@ my $filegen = $ARGV[0] || die "No file given";
 my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
 my $typespec = $filegen eq 'opencv_wrapper' ? { map +($_=>[$GLOBALTYPES{$_}, undef, undef, $extra_cons_args{$_}]), keys %GLOBALTYPES } : !-f 'classes.pl' ? +{} : do {
   my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
-  +{map +($_->[0]=>[[], $_->[3]||$ptr_only{$_->[0]}, $_->[4]||$ptr_only{$_->[0]}, $_->[5]||$extra_cons_args{$_->[0]}]), @classlist}
+  +{map +($_->[0]=>[[], $_->[3]||$ptr_only{$_->[0]}, $_->[4]||$ptr_only{$_->[0]}, $_->[5]||$extra_cons_args{$_->[0]}]), grep !$VECTORTYPES{$_->[0]}, @classlist}
 };
 my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';

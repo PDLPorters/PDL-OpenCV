@@ -84,7 +84,7 @@ my %class = map +($_=>1), qw(
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
   FileNode FileStorage
 );
-my $no_want = qr/^(RNG|RotatedRect)/;
+my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
 
 if (@ARGV) {
   die "Usage: $0 [json]" if @ARGV != 1 or $ARGV[0] ne 'json';
