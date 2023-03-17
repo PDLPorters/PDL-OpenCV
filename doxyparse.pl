@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use Carp qw(confess);
 
 our $DCODE_RE = qr/[\@\\]/;
 # mutates $_[0]
@@ -73,7 +74,8 @@ sub doxy2pdlpod {
   if (my $p = $r->{params}) {
     $text .= qq{\n\nParameters:\n\n=over\n\n};
     for (@$p) {
-      (my $rest = $_) =~ s#^\s*((?:\[[^\]]*\]\s*)?\w+)\s+##;
+      do { require Test::More; confess(Test::More::explain($r)); } unless
+        (my $rest = $_) =~ s#^\s*((?:\[[^\]]*\]\s*)?\w+):*\s+##;
       my $name = $1;
       $text .= "=item $name\n\n$rest\n\n";
     }

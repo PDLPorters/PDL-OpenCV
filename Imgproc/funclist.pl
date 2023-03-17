@@ -89,6 +89,23 @@ floating-point.
 channels is derived automatically from src and code.
 
 @see @ref imgproc_color_conversions',0,'void',['Mat','src','',[]],['Mat','dst','',['/O']],['int','code','',[]],['int','dstCn','0',[]]],
+['','cvtColorTwoPlane','@brief Converts an image from one color space to another where the source image is
+stored in two planes.
+
+This function only supports YUV420 to RGB conversion as of now.
+
+@param src1: 8-bit image (#CV_8U) of the Y plane.
+@param src2: image containing interleaved U/V plane.
+@param dst: output image.
+@param code: Specifies the type of conversion. It can take any of the following values:
+- #COLOR_YUV2BGR_NV12
+- #COLOR_YUV2RGB_NV12
+- #COLOR_YUV2BGRA_NV12
+- #COLOR_YUV2RGBA_NV12
+- #COLOR_YUV2BGR_NV21
+- #COLOR_YUV2RGB_NV21
+- #COLOR_YUV2BGRA_NV21
+- #COLOR_YUV2RGBA_NV21',0,'void',['Mat','src1','',[]],['Mat','src2','',[]],['Mat','dst','',['/O']],['int','code','',[]]],
 ['','drawContours','@brief Draws contours outlines or filled contours.
 
 The function draws contour outlines in the image if \\f$\\texttt{thickness} \\ge 0\\f$ or fills the area
