@@ -247,8 +247,11 @@ sub genpp {
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
     my (@inputs, @outputs); push @{$_->{is_output} ? \@outputs : \@inputs}, $_ for @allpars;
     $hash{PMFunc} = $class ? '' : "*$func = \\&${main::PDLOBJ}::$func;\n";
+    my $ex_doc = $func eq 'new'
+      ? make_example($class, 'new', 1, \@inputs, [{name=>'obj'}], "PDL::OpenCV::$class")
+      : make_example($class, $func, $ismethod, \@inputs, \@outputs);
     if (!grep $_->{is_vector} || ($_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}), @allpars) {
-      $doxy->{brief}[0] .= make_example($class, $func, $ismethod, \@inputs, \@outputs);
+      $doxy->{brief}[0] .= $ex_doc;
       $hash{Doc} = text_trim doxy2pdlpod($doxy);
       pp_addpm("=head2 $func\n\n$hash{Doc}\n\n=cut\n\n");
       pp_addpm($hash{PMFunc}) if $hash{PMFunc};
@@ -299,7 +302,7 @@ EOF
       ),
     );
     $doxy->{brief}[0] .= " NO BROADCASTING." if $compmode;
-    $doxy->{brief}[0] .= make_example($class, $func, $ismethod, \@inputs, \@outputs);
+    $doxy->{brief}[0] .= $ex_doc;
     $hash{Doc} = text_trim doxy2pdlpod($doxy);
     if ($compmode) {
       $hash{Comp} = join '; ', map $_->cdecl, grep !$_->{is_other}, @outputs;
@@ -351,31 +354,18 @@ EOF
   }
   for my $c (@classes) {
     pp_bless(my $fullclass = "PDL::OpenCV::$c");
-    my $extra_args = ($class2info{$c}||[])->[0] || $extra_cons_args{$c} || [];
-    my @cons_pars = map PP::OpenCV->new(0, @$_), ['char *', 'klass'], @$extra_args;
     my $doc = $class2doc{$c} // '';
     $doc = text_trim doxy2pdlpod(doxyparse($doc)) if $doc;
-    my $cons_doc = ($class2info{$c}||[])->[1] || "\@brief Initialize OpenCV $c object.";
-    my $cons_doxy = doxyparse($cons_doc);
-    $cons_doxy->{brief}[0] .= make_example($c, 'new', 1, \@cons_pars, [{name=>'obj'}], $fullclass);
-    $cons_doc = text_trim doxy2pdlpod($cons_doxy);
     pp_addpm(<<EOD);
 =head1 METHODS for $fullclass\n\n
 $doc\n\n@{[@{$class2super{$c}} ? "Subclass of @{$class2super{$c}}\n\n" : '']}
-=head2 new
-\n$cons_doc
-\n=cut
-\n\n\@${fullclass}::ISA = qw(@{$class2super{$c}});
+=cut\n
+\@${fullclass}::ISA = qw(@{$class2super{$c}});
 EOD
-    pp_addxs(<<EOF);
-MODULE = ${main::PDLMOD} PACKAGE = $fullclass PREFIX=cw_${c}_
-\n${c}Wrapper *cw_${c}_new(@{[join ', ', map $_->xs_par, @cons_pars]})
-  CODE:\n    cw_error CW_err = cw_${c}_new(&RETVAL@{[ join '', map ", $_->{name}", @cons_pars ]});
-    PDL->barf_if_error(*(pdl_error *)&CW_err);
-  OUTPUT:\n    RETVAL
-\nvoid cw_${c}_DESTROY(${c}Wrapper *self)
-EOF
-    genpp(@$_) for grep $_->[0] eq $c, @flist;
+    my $extra_args = ($class2info{$c}||[])->[0] || $extra_cons_args{$c} || [];
+    my $cons_doc = ($class2info{$c}||[])->[1] || "\@brief Initialize OpenCV $c object.";
+    my $cons_def = [$c, 'new', $cons_doc, 0, $c, ['char *', 'klass'], @$extra_args];
+    genpp(@$_) for $cons_def, grep $_->[0] eq $c, @flist;
   }
   pp_export_nothing();
   pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], grep !$_->[0], @flist);
