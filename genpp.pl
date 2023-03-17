@@ -11,7 +11,6 @@ our %type_overrides = (
   bool => ['byte', 'unsigned char'],
   char => ['sbyte', 'char'],
   uchar => ['byte', 'unsigned char'],
-  Ptr_float => ['float *', 'float *'],
   c_string => ['char *', 'char *'],
 );
 our %type_alias = (
@@ -59,7 +58,8 @@ sub new {
   $self->{type_c_underlying} = $self->{type_c} = ($type_overrides{$nonvector_type} || [0,$nonvector_type])->[1];
   $self->{default} = $default if defined $default and length $default;
   @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'StringWrapper*' and !$self->{is_vector};
-  $self->{was_ptr} = 1 if (my $type_nostar = $type) =~ s/\s*\*+$// or $type =~ /^Ptr_/;
+  my $type_nostar = $type;
+  $self->{type_c_underlying} = $self->{type_c} = "$type_nostar *", $self->{type_pp} = $type_nostar, $self->{was_ptr} = 1 if $type_nostar =~ s/\s*\*+$// or $type_nostar =~ s/^Ptr_//;
   $self->{type_nostar} = $type_nostar;
   if ($self->{is_vector}) {
     $self->{fixeddims} = 1 if my $spec = $DIMTYPES{$nonvector_type};

@@ -143,12 +143,13 @@ sub code_type {
   $cpptype = qq{cv::$cpptype} if $cpptype =~ $wrap_re;
   $cpptype = ("std::vector<"x$is_vector).$cpptype.(">"x$is_vector)
     if $is_vector;
-  my $was_ptr = $intype =~ $wrap_re ? $intype =~ s/\s*\*+$// : 0;
+  my $was_ptr = $intype =~ $wrap_re ? ($intype =~ s/\s*\*+$// || $intype =~ s/^Ptr_//) : 0;
   $intype = $type_overrides{$intype}[1] if $type_overrides{$intype};
   $intype = ('vector_'x$is_vector).$type_alias{$no_vector} if $is_vector and $type_alias{$no_vector};
   my $nowrapper = $intype;
   $intype .= "Wrapper*" if $intype =~ $wrap_re;
   my $no_ptr = $is_vector || $PP::OpenCV::DIMTYPES{$nowrapper} || $STAYWRAPPED{$nowrapper};
+  $intype = "$intype *" if $was_ptr and $intype !~ $wrap_re;
   ($no_ptr, $intype, $nowrapper, $cpptype, $was_ptr);
 }
 
