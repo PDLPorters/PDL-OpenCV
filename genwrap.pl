@@ -136,6 +136,22 @@ int get_ocvtype(const int datatype,const int planes) {
 EOF
 }
 
+sub code_type {
+  my ($intype) = @_;
+  my $is_vector = (my $no_vector = $intype) =~ s/vector_//g;
+  my $cpptype = $no_vector eq 'StringWrapper*' ? 'cv::String' : $no_vector;
+  $cpptype = qq{cv::$cpptype} if $cpptype =~ $wrap_re;
+  $cpptype = ("std::vector<"x$is_vector).$cpptype.(">"x$is_vector)
+    if $is_vector;
+  my $was_ptr = $intype =~ $wrap_re ? $intype =~ s/\s*\*+$// : 0;
+  $intype = $type_overrides{$intype}[1] if $type_overrides{$intype};
+  $intype = ('vector_'x$is_vector).$type_alias{$no_vector} if $is_vector and $type_alias{$no_vector};
+  my $nowrapper = $intype;
+  $intype .= "Wrapper*" if $intype =~ $wrap_re;
+  my $no_ptr = $is_vector || $PP::OpenCV::DIMTYPES{$nowrapper} || $STAYWRAPPED{$nowrapper};
+  ($no_ptr, $intype, $nowrapper, $cpptype, $was_ptr);
+}
+
 sub gen_code {
 	my ($ptr_only, $class, $name, $doc, $ismethod, $ret, @params) = @_;
 	$name = [$name, $name] if !ref $name;
@@ -143,20 +159,14 @@ sub gen_code {
 	die "No class given for method='$ismethod'" if !$class and $ismethod;
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
 	my (@input_args, @cvargs, $methodvar);
-	my ($func_ret, $cpp_ret, $after_ret) = ($ret, '', '');
-	if ($ret eq 'StringWrapper*') {
-		$func_ret = "StringWrapper *";
-		$cpp_ret = "cv::String cpp_retval = ";
-		$after_ret = "  CW_err = cw_String_new(cw_retval, NULL, cpp_retval.c_str()); if (CW_err.error) return CW_err;\n";
-	} elsif ($ret =~ $wrap_re) {
-		$func_ret = "${ret}Wrapper *";
-		$cpp_ret = "cv::$ret cpp_retval = ";
-		$after_ret = "  CW_err = cw_${ret}_new(cw_retval, NULL); if (CW_err.error) return CW_err; (*cw_retval)->held = ".(
-		  $PP::OpenCV::DIMTYPES{$ret} || $STAYWRAPPED{$ret} ? "cpp_retval" : "cv::Ptr<cv::$ret>(&cpp_retval)"
-		).";\n";
-	} elsif ($ret ne 'void') {
-		$cpp_ret = "*cw_retval = ";
-	}
+	my ($no_ptr, $func_ret, undef, $cpptype) = code_type($ret);
+	my $after_ret = $ret eq 'StringWrapper*' ? "  CW_err = cw_String_new(cw_retval, NULL, cpp_retval.c_str()); if (CW_err.error) return CW_err;\n" :
+	  $ret =~ $wrap_re ? "  CW_err = cw_${ret}_new(cw_retval, NULL); if (CW_err.error) return CW_err; (*cw_retval)->held = ".(
+	    $no_ptr ? "cpp_retval" : "cv::Ptr<$cpptype>(&cpp_retval)"
+	  ).";\n" : '';
+	my $cpp_ret = $ret eq 'void' ? '' :
+	  ($ret eq 'StringWrapper*' || $ret =~ $wrap_re) ? "auto cpp_retval = " :
+	 "*cw_retval = ";
 	die "Error: '$out_name' no return type from '$ret'".do {require Data::Dumper; Data::Dumper::Dumper(\@_)} if $ret ne 'void' and !$func_ret;
 	push @input_args, "$func_ret*cw_retval" if $ret ne 'void';
 	if ($ismethod) {
@@ -165,14 +175,11 @@ sub gen_code {
 	}
 	while (@params) {
 		my ($s, $v) = @{shift @params};
-		my $was_ptr = $s =~ $wrap_re ? $s =~ s/\s*\*+$// : 0;
-		$s = $type_overrides{$s}[1] if $type_overrides{$s};
-		$s = $1.$type_alias{$2} if (my $is_vector = $s =~ /^(vector_)(.*)/) and $type_alias{$2};
-		my $ctype = $s . ($s =~ $wrap_re ? "Wrapper *" : '');
+		(my $no_ptr, my $ctype, $s, undef, my $was_ptr) = code_type($s);
 		push @input_args, "$ctype $v";
-		push @cvargs, $s eq 'StringWrapper*' ? "$v->held" :
+		push @cvargs, $ctype eq 'StringWrapper*' ? "$v->held" :
 		  $s =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held".(
-		    $is_vector || $PP::OpenCV::DIMTYPES{$s} || $STAYWRAPPED{$s} ? "" : "[0]"
+		    $no_ptr ? "" : "[0]"
 		    ) :
 		  $v;
 	}
@@ -197,6 +204,9 @@ sub gen_wrapper {
   my $vector_str = 'vector_' x $is_vector;
   my $vector2_str = $is_vector > 1 ? 'vector_' x ($is_vector-1) : '';
   my $wrapper = "$vector_str${class}Wrapper";
+  my $need_cv = @fields || $STAYWRAPPED{$class};
+  my $vector_class = ("std::vector<"x$is_vector).($need_cv ? qq{cv::$class} : $class).(">"x$is_vector);
+  my $no_ptr = $is_vector || $need_cv;
   my %tdecls = (
     new => qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
       join '', map ", @$_[0,1]", @$extra_args
@@ -210,15 +220,15 @@ typedef struct $wrapper $wrapper;
 #ifdef __cplusplus
 struct $wrapper {
 	@{[
-	  $is_vector ? ("std::vector<"x$is_vector)."@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}".(">"x$is_vector) :
-	  @fields || $STAYWRAPPED{$class} ? "cv::${class}" : "cv::Ptr<cv::${class}>"
+	  $is_vector ? $vector_class :
+	  $need_cv ? "cv::${class}" : "cv::Ptr<cv::${class}>"
 	]} held;
 };
 #endif
 EOF
   my $cstr = <<EOF;
 @{[$constructor_override{$class} && !$is_vector ? '' :
-"$tdecls{new} {\n TRY_WRAP(" . (($is_vector || @fields || $STAYWRAPPED{$class}) ? " *cw_retval = new $wrapper;" :
+"$tdecls{new} {\n TRY_WRAP(" . ($no_ptr ? " *cw_retval = new $wrapper;" :
 "\n  (*cw_retval = new $wrapper)->held = @{[$cons_func || qq{cv::makePtr<cv::$class>}]}(@{[
       join ', ', map $_->[1], @$extra_args
   ]});\n"
@@ -246,7 +256,7 @@ EOF
     $cstr .= <<EOF;
 $decls{nWV} {
  TRY_WRAP(
-  (*cw_retval = new $wrapper)->held = @{["std::vector<"x$is_vector]}@{[@fields || $STAYWRAPPED{$class} ? qq{cv::$class} : $class]}@{[">"x$is_vector]}@{[
+  (*cw_retval = new $wrapper)->held = $vector_class@{[
     $is_vector <= 1 && !@fields && !$STAYWRAPPED{$class} ? "(data, data + count);" :
     join "\n  ", "(count);",
       "ptrdiff_t i = 0, stride = @{[$is_vector > 1 ? 1 : 0+@fields]};",
