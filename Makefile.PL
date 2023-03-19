@@ -82,7 +82,7 @@ sub MY::postamble {
   my $const = -f 'constlist.txt' ? 'wraplocal.h : constlist.txt' : '';
   join "\n", pdlpp_postamble($package),
     genwrap_from('opencv_wrapper', 0, ','),
-    genwrap_from('wraplocal', 0, ','),
+    genwrap_from('wraplocal', 0, ',', 'nocons'),
     $const,
     cpp_build($self, qw(opencv_wrapper wraplocal));
 }

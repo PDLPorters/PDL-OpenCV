@@ -6,6 +6,10 @@ vector_KeyPointWrapper* T_OPENCV_VECTOR
 vector_MatWrapper* T_OPENCV_VECTOR
 vector_StringWrapper* T_OPENCV_VECTOR
 vector_vector_Point2fWrapper* T_OPENCV_VECTOR
+KeyPointWrapper* T_PTROBJ_SPECIAL
+DMatchWrapper* T_PTROBJ_SPECIAL
+FileStorageWrapper* T_PTROBJ_SPECIAL
+FileNodeWrapper* T_PTROBJ_SPECIAL
 
 INPUT
 T_PTROBJ_SPECIAL

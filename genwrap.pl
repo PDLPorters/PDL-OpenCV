@@ -376,13 +376,13 @@ sub readclasses {
 }
 
 my $filegen = $ARGV[0] || die "No file given";
+my @cvheaders = grep length, split /,/, $ARGV[1]||'';
+my $cons_arg = $ARGV[2] // '';
 my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
 my $localclasses = readclasses();
-my $globalclasses = +{ map +($_=>[$GLOBALTYPES{$_}, undef, "cv::$_", $extra_cons_args{$_}]), keys %GLOBALTYPES };
-$globalclasses->{$_} = delete $localclasses->{$_} for grep exists $localclasses->{$_}, keys %$globalclasses;
-my $typespec = $filegen eq 'opencv_wrapper' ? $globalclasses : $localclasses;
+my $globalclasses = +{ (map +($_=>[$GLOBALTYPES{$_}, undef, "cv::$_", $extra_cons_args{$_}]), keys %GLOBALTYPES), %$localclasses };
+my $typespec = $filegen eq 'opencv_wrapper' ? $globalclasses : $cons_arg eq 'nocons' ? +{} : $localclasses;
 my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
-my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
 my $consts = $filegen eq 'opencv_wrapper' ? [] : -f 'constlist.txt' ? gen_consts() : [];
 make_chfiles($filegen, $extras, $typespec, $vectorspecs, \@cvheaders, $funclist, $consts);
