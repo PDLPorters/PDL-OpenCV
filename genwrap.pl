@@ -18,9 +18,6 @@ my %REALCTYPE2NUMVAL = (
   map +($_->realctype=>$_->numval), PDL::Types::types
 );
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double uchar));
-my %ptr_only = (
-  Tracker => 'cv::TrackerKCF::create',
-);
 my $wrap_re = qr/^(?:(?!String)[A-Z]|vector_)/;
 my %constructor_override = (
   String => <<EOF,
@@ -369,8 +366,8 @@ sub readclasses {
   return +{} if !-f 'classes.pl';
   my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
   +{map +($_->[0]=>[
-    [], $_->[3]||$ptr_only{$_->[0]},
-    $_->[4]||$ptr_only{$_->[0]}, $_->[5]||$extra_cons_args{$_->[0]}
+    [], $_->[3],
+    $_->[4], $_->[5]||$extra_cons_args{$_->[0]}
   ]), @classlist
   };
 }
