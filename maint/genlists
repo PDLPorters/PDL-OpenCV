@@ -84,6 +84,7 @@ my %force = map +($_=>1), qw(
   cv.groupRectangles
   cv.CascadeClassifier.load
   cv.CascadeClassifier.detectMultiScale
+  cv.CascadeClassifier.read
   cv.HOGDescriptor.detectMultiScale
   cv.Tracker.init
   cv.Tracker.update

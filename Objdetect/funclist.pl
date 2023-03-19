@@ -53,6 +53,9 @@
     @param filename Name of the file from which the classifier is loaded. The file may contain an old
     HAAR classifier trained by the haartraining application or a new cascade classifier trained by the
     traincascade application.',1,'bool',['String','filename','',['/C','/Ref']]],
+['CascadeClassifier','read','@brief Reads a classifier from a FileStorage node.
+
+    @note The file may contain a new cascade classifier (trained traincascade application) only.',1,'bool',['FileNode','node','',['/C','/Ref']]],
 ['HOGDescriptor','detectMultiScale','@brief Detects objects of different sizes in the input image. The detected objects are returned as a list
     of rectangles.
     @param img Matrix of the type CV_8U or CV_8UC3 containing an image where objects are detected.
