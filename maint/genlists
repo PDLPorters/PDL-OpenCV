@@ -36,6 +36,7 @@ my %force = map +($_=>1), qw(
   cv.batchDistance
   cv.sum
   cv.wrapperEMD
+  cv.GeneralizedHough.detect
   cv.Algorithm.read
   cv.Algorithm.write
   cv.FileNode.keys
@@ -89,7 +90,7 @@ my %force = map +($_=>1), qw(
 my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
-  FileNode FileStorage DMatch KeyPoint Algorithm CLAHE
+  FileNode FileStorage DMatch KeyPoint Algorithm CLAHE GeneralizedHough
 );
 my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
 

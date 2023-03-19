@@ -1,4 +1,5 @@
 (
+['GeneralizedHough','detect','',1,'void',['Mat','edges','',[]],['Mat','dx','',[]],['Mat','dy','',[]],['Mat','positions','',['/O']],['Mat','votes','Mat()',['/O']]],
 ['LineSegmentDetector','compareSegments','@brief Draws two groups of lines in blue and red, counting the non overlapping (mismatching) pixels.
 
     @param size The size of the image, where lines1 and lines2 were found.
