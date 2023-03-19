@@ -11,6 +11,7 @@ The implementation is based on @cite Lukezic_IJCV2018 Discriminative Correlation
  * as well as the matlab implementation. For more information about KCF with color-names features, please refer to
  * <http://www.cvl.isy.liu.se/research/objrec/visualtracking/colvistrack/index.html>.',1,'cv::TrackerKCF::create',[],'@brief Create KCF tracker instance
     @param parameters KCF parameters TrackerKCF::Params'],
+['SparseOpticalFlow',['Algorithm'],'@brief Base interface for sparse optical flow algorithms.'],
 ['DISOpticalFlow',['DenseOpticalFlow'],'@brief DIS optical flow algorithm.
 
 This class implements the Dense Inverse Search (DIS) optical flow algorithm. More

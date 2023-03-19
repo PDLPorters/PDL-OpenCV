@@ -19,6 +19,7 @@ $type_overrides{$_} = $type_overrides{$type_alias{$_}} for keys %type_alias;
 our %default_overrides = (
   'vector_Mat()' => ['undef',],
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
+  'cv::Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
   'Point()' => ['empty(sbyte)',],
   'Ptr<float>()' => ['empty(float)','0'],
   'std::vector<int>()' => ['empty(long)',],

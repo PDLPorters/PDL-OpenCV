@@ -90,12 +90,13 @@ my %force = map +($_=>1), qw(
   cv.HOGDescriptor.compute
   cv.Tracker.init
   cv.Tracker.update
+  cv.SparseOpticalFlow.calc
 );
 my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
   FileNode FileStorage DMatch KeyPoint Algorithm CLAHE GeneralizedHough
-  HOGDescriptor SparsePyrLKOpticalFlow DISOpticalFlow
+  HOGDescriptor SparsePyrLKOpticalFlow DISOpticalFlow SparseOpticalFlow
 );
 my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
 
