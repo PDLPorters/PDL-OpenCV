@@ -61,6 +61,7 @@ my %force = map +($_=>1), qw(
   cv.imread
   cv.imencode
   cv.imshow
+  cv.addText
   cv.waitKey
   cv.namedWindow
   cv.selectROI

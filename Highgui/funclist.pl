@@ -1,4 +1,17 @@
 (
+['','addText','@brief Draws a text on the image.
+
+@param img 8-bit 3-channel image where the text should be drawn.
+@param text Text to write on an image.
+@param org Point(x,y) where the text should start on an image.
+@param nameFont Name of the font. The name should match the name of a system font (such as
+*Times*). If the font is not found, a default one is used.
+@param pointSize Size of the font. If not specified, equal zero or negative, the point size of the
+font is set to a system-dependent default value. Generally, this is 12 points.
+@param color Color of the font in BGRA where A = 255 is fully transparent.
+@param weight Font weight. Available operation flags are : cv::QtFontWeights You can also specify a positive integer for better control.
+@param style Font style. Available operation flags are : cv::QtFontStyles
+@param spacing Spacing between characters. It can be negative or positive.',0,'void',['Mat','img','',['/C','/Ref']],['String','text','',['/C','/Ref']],['Point','org','',[]],['String','nameFont','',['/C','/Ref']],['int','pointSize','-1',[]],['Scalar','color','Scalar::all(0)',[]],['int','weight','QT_FONT_NORMAL',[]],['int','style','QT_STYLE_NORMAL',[]],['int','spacing','0',[]]],
 ['','destroyWindow','@brief Destroys the specified window.
 
 The function destroyWindow destroys the window with the given name.
