@@ -32,7 +32,6 @@ our %default_overrides = (
   true => [1,1],
 );
 our %extra_cons_args = (
-  LineSegmentDetector => [[qw(int lsd_type)]],
   String => [['const char*', 'str']],
 );
 our %STAYWRAPPED = map +($_=>[]), qw(Mat String DMatch KeyPoint);
