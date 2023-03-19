@@ -8,11 +8,11 @@ The keypoint is characterized by the 2D position, scale (proportional to the dia
 neighborhood that needs to be taken into account), orientation and some other parameters. The
 keypoint neighborhood is then analyzed by another algorithm that builds a descriptor (usually
 represented as a feature vector). The keypoints representing the same object in different images
-can then be matched using %KDTree or another method.'],
+can then be matched using %KDTree or another method.',0,'cv::KeyPoint',[],''],
 ['DMatch',[],'@brief Class for matching keypoint descriptors
 
 query descriptor index, train descriptor index, train image index, and distance between
-descriptors.'],
+descriptors.',0,'cv::DMatch',[],''],
 ['Algorithm',[],'@brief This is a base class for all more or less complex algorithms in OpenCV
 
 especially for classes of algorithms, for which there can be multiple implementations. The examples
@@ -24,7 +24,10 @@ etc.).
 Here is example of SimpleBlobDetector use in your application via Algorithm interface:
 @snippet snippets/core_various.cpp Algorithm'],
 ['FileStorage',[],'@brief XML/YAML/JSON file storage class that encapsulates all the information necessary for writing or
-reading data to/from a file.'],
+reading data to/from a file.',0,'cv::FileStorage',[],'@brief The constructors.
+
+     The full constructor opens the file. Alternatively you can use the default constructor and then
+     call FileStorage::open.'],
 ['FileNode',[],'@brief File Storage Node class.
 
 The node is used to store each and every element of the file storage opened for reading. When
@@ -35,5 +38,8 @@ accessed by a name, and ordered collections (sequences) where elements do not ha
 accessed by index. Type of the file node can be determined using FileNode::type method.
 
 Note that file nodes are only used for navigating file storages opened for reading. When a file
-storage is opened for writing, no data is stored in memory after it is written.'],
+storage is opened for writing, no data is stored in memory after it is written.',0,'cv::FileNode',[],'@brief The constructors.
+
+     These constructors are used to create a default file node, construct it from obsolete structures or
+     from the another file node.'],
 );

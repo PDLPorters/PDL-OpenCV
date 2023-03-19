@@ -15,8 +15,16 @@ Here is how the class can be used:
 -   (Python) A multi threaded video processing sample can be found at
     `OPENCV_SOURCE_CODE/samples/python/video_threaded.py`
 -   (Python) %VideoCapture sample showcasing some features of the Video4Linux2 backend
-    `OPENCV_SOURCE_CODE/samples/python/video_v4l2.py`'],
+    `OPENCV_SOURCE_CODE/samples/python/video_v4l2.py`',0,'cv::VideoCapture',[],'@brief Default constructor
+    @note In @ref videoio_c "C API", when you finished working with video, release CvCapture structure with
+    cvReleaseCapture(), or use Ptr\\<CvCapture\\> that calls cvReleaseCapture() automatically in the
+    destructor.'],
 ['VideoWriter',[],'@brief Video writer class.
 
-The class provides C++ API for writing video files or image sequences.'],
+The class provides C++ API for writing video files or image sequences.',0,'cv::VideoWriter',[],'@brief Default constructors
+
+    The constructors/functions initialize video writers.
+    -   On Linux FFMPEG is used to write videos;
+    -   On Windows FFMPEG or MSWF or DSHOW is used;
+    -   On MacOSX AVFoundation is used.'],
 );

@@ -322,7 +322,7 @@ sub genheader {
   local $@; my @classdata = !-f 'classes.pl' ? () : do ''. catfile curdir, 'classes.pl'; die if $@;
   my %class2super = map +($_->[0]=>[map "PDL::OpenCV::$_", @{$_->[1]}]), @classdata;
   my %class2doc = map +($_->[0]=>$_->[2]), @classdata;
-  my %class2info = map +($_->[0]=>[@$_[5..$#$_]]), @classdata;
+  my %class2info = map +($_->[0]=>[@$_[4..$#$_]]), @classdata;
   my @classes = sort keys %class2doc;
   if (@classes) {
     require ExtUtils::Typemaps;
@@ -355,6 +355,9 @@ EOF
   }
   for my $c (@classes) {
     pp_bless(my $fullclass = "PDL::OpenCV::$c");
+    pp_addxs(<<EOF); # work around PP bug
+MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ}
+EOF
     my $doc = $class2doc{$c} // '';
     $doc = text_trim doxy2pdlpod(doxyparse($doc)) if $doc;
     pp_addpm(<<EOD);
@@ -363,10 +366,10 @@ $doc\n\n@{[@{$class2super{$c}} ? "Subclass of @{$class2super{$c}}\n\n" : '']}
 =cut\n
 \@${fullclass}::ISA = qw(@{$class2super{$c}});
 EOD
-    my $extra_args = ($class2info{$c}||[])->[0] || $extra_cons_args{$c} || [];
-    my $cons_doc = ($class2info{$c}||[])->[1] || "\@brief Initialize OpenCV $c object.";
+    my $extra_args = ($class2info{$c}||[])->[1] || $extra_cons_args{$c} || [];
+    my $cons_doc = ($class2info{$c}||[])->[2] || "\@brief Initialize OpenCV $c object.";
     my $cons_def = [$c, 'new', $cons_doc, 0, $c, ['char *', 'klass'], @$extra_args];
-    genpp(@$_) for $cons_def, grep $_->[0] eq $c, @flist;
+    genpp(@$_) for ($class2info{$c}[0] ? $cons_def : ()), grep $_->[0] eq $c, @flist;
   }
   pp_export_nothing();
   pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], grep !$_->[0], @flist);

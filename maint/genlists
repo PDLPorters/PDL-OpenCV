@@ -130,6 +130,11 @@ print "class::create: $cname\n";
       my ($full, $cname) = ($1, $2);
 print "classcreate: $cname\n";
       $dest2class2create{$dest}{$cname} = [1, "cv::$full", $args, $doc];
+    } elsif ($name =~ /^cv\.([^.]+)\.\1/) { # Python constructors
+      my $cname = $1;
+print "class.class: $cname\n";
+print(" skipping with @{[0+@$args]}\n"), next if @$args; # temporary
+      $dest2class2create{$dest}{$cname} = [0, "cv::$cname", $args, $doc];
     } elsif ($force{$name}) {
       my (undef, @n) = split /\./, $name;
       unshift @n, '' if @n == 1;

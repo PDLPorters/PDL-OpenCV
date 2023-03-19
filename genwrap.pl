@@ -206,6 +206,8 @@ sub gen_wrapper {
     dim0 => qq{ptrdiff_t cw_$vector_str${class}_dim0()},
     pdlt => qq{int cw_$vector_str${class}_pdltype()},
   );
+  my $no_cons = !$is_vector && !defined($cons_func);
+  delete @tdecls{qw(new dest)} if $no_cons;
   my $hstr = <<EOF . join '', map "$_;\n", @tdecls{sort keys %tdecls};
 typedef struct $wrapper $wrapper;
 #ifdef __cplusplus
@@ -218,14 +220,14 @@ struct $wrapper {
 #endif
 EOF
   my $cstr = <<EOF;
-@{[$constructor_override{$class} && !$is_vector ? '' :
+@{[$no_cons || ($constructor_override{$class} && !$is_vector) ? '' :
 "$tdecls{new} {\n TRY_WRAP(" . ($no_ptr ? " *cw_retval = new $wrapper;" :
-"\n  (*cw_retval = new $wrapper)->held = @{[$cons_func || qq{cv::makePtr<cv::$class>}]}(@{[
+"\n  (*cw_retval = new $wrapper)->held = @{[($ptr_only ? '' : qq{cv::makePtr<}).$cons_func.($ptr_only ? '' : qq{>})]}(@{[
       join ', ', map +(code_type(@$_))[3], @$extra_args
   ]});\n"
 ) . " )\n}"]}
-$tdecls{dest} { delete wrapper; }
-$tdecls{dim0} { return @{[0+@fields]}; }
+@{[$no_cons ? '' : "$tdecls{dest} { delete wrapper; }\n"
+]}$tdecls{dim0} { return @{[0+@fields]}; }
 $tdecls{pdlt} { return @{[
   @fields ? $REALCTYPE2NUMVAL{$fields[0][0]} // die "Unknown ctype '$fields[0][0]' for '$class'" :
   $REALCTYPE2NUMVAL{$type_overrides{$class} ? $type_overrides{$class}[1] : $class} // '-1'
@@ -363,12 +365,22 @@ sub writefile {
   print $fh $new;
 }
 
+sub readclasses {
+  return +{} if !-f 'classes.pl';
+  my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
+  +{map +($_->[0]=>[
+    [], $_->[3]||$ptr_only{$_->[0]},
+    $_->[4]||$ptr_only{$_->[0]}, $_->[5]||$extra_cons_args{$_->[0]}
+  ]), @classlist
+  };
+}
+
 my $filegen = $ARGV[0] || die "No file given";
 my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
-my $typespec = $filegen eq 'opencv_wrapper' ? { map +($_=>[$GLOBALTYPES{$_}, undef, undef, $extra_cons_args{$_}]), keys %GLOBALTYPES } : !-f 'classes.pl' ? +{} : do {
-  my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
-  +{map +($_->[0]=>[[], $_->[3]||$ptr_only{$_->[0]}, $_->[4]||$ptr_only{$_->[0]}, $_->[5]||$extra_cons_args{$_->[0]}]), grep !$VECTORTYPES{$_->[0]}, @classlist}
-};
+my $localclasses = readclasses();
+my $globalclasses = +{ map +($_=>[$GLOBALTYPES{$_}, undef, "cv::$_", $extra_cons_args{$_}]), keys %GLOBALTYPES };
+$globalclasses->{$_} = delete $localclasses->{$_} for grep exists $localclasses->{$_}, keys %$globalclasses;
+my $typespec = $filegen eq 'opencv_wrapper' ? $globalclasses : $localclasses;
 my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;

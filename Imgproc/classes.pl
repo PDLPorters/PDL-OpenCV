@@ -4,7 +4,8 @@
 @param clipLimit Threshold for contrast limiting.
 @param tileGridSize Size of grid for histogram equalization. Input image will be divided into
 equally sized rectangular tiles. tileGridSize defines the number of tiles in row and column.'],
-['Subdiv2D',[],''],
+['Subdiv2D',[],'',0,'cv::Subdiv2D',[],'creates an empty Subdiv2D object.
+    To create a new empty Delaunay subdivision you need to use the #initDelaunay function.'],
 ['LineSegmentDetector',['Algorithm'],'@brief Line segment detector class
 
 following the algorithm described at @cite Rafael12 .
