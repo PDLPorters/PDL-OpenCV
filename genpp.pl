@@ -9,7 +9,6 @@ my $T = [qw(A B S U L F D)];
 our %type_overrides = (
   String => ['StringWrapper*', 'StringWrapper*'], # PP, C
   bool => ['byte', 'unsigned char'],
-  char => ['sbyte', 'char'],
   uchar => ['byte', 'unsigned char'],
   c_string => ['char *', 'char *'],
 );
@@ -59,7 +58,8 @@ sub new {
   $self->{type_pp} = ($type_overrides{$nonvector_type} || [$nonvector_type])->[0];
   $self->{type_c_underlying} = $self->{type_c} = ($type_overrides{$nonvector_type} || [0,$nonvector_type])->[1];
   $self->{default} = $default if defined $default and length $default;
-  @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if ($self->{type_c} eq 'char *' or $self->{type_c} eq 'StringWrapper*') and !$self->{is_vector};
+  @$self{qw(is_other naive_otherpar)} = (1,1), return $self if ($self->{type_c} eq 'char' or $self->{type_c} eq 'char *') and !$self->{is_vector};
+  @$self{qw(is_other naive_otherpar use_comp)} = (1,1,1), return $self if $self->{type_c} eq 'StringWrapper*' and !$self->{is_vector};
   my $type_nostar = $type;
   $self->{type_c_underlying} = $self->{type_c} = "$type_nostar *", $self->{type_pp} = $type_nostar, $self->{was_ptr} = 1 if $type_nostar =~ s/\s*\*+$// or $type_nostar =~ s/^Ptr_//;
   $self->{type_nostar} = $type_nostar;
@@ -107,7 +107,7 @@ sub c_input {
     if $self->{was_ptr} and $self->wantempty;
   return ($self->{was_ptr} ? '&' : '').$self->dataptr($compmode).'[0]'
     if $self->{dimless};
-  return "\$COMP($self->{name})" if $self->{use_comp};
+  return "\$COMP($self->{name})" if $self->{is_other} || $self->{use_comp};
   $self->{name}.($compmode?'_LOCAL':'');
 }
 sub par {
