@@ -53,6 +53,19 @@
     @param filename Name of the file from which the classifier is loaded. The file may contain an old
     HAAR classifier trained by the haartraining application or a new cascade classifier trained by the
     traincascade application.',1,'bool',['String','filename','',['/C','/Ref']]],
+['HOGDescriptor','detectMultiScale','@brief Detects objects of different sizes in the input image. The detected objects are returned as a list
+    of rectangles.
+    @param img Matrix of the type CV_8U or CV_8UC3 containing an image where objects are detected.
+    @param foundLocations Vector of rectangles where each rectangle contains the detected object.
+    @param foundWeights Vector that will contain confidence values for each detected object.
+    @param hitThreshold Threshold for the distance between features and SVM classifying plane.
+    Usually it is 0 and should be specified in the detector coefficients (as the last free coefficient).
+    But if the free coefficient is omitted (which is allowed), you can specify it manually here.
+    @param winStride Window stride. It must be a multiple of block stride.
+    @param padding Padding
+    @param scale Coefficient of the detection window increase.
+    @param finalThreshold Final threshold
+    @param useMeanshiftGrouping indicates grouping algorithm',1,'void',['Mat','img','',[]],['vector_Rect','foundLocations','',['/O','/Ref']],['vector_double','foundWeights','',['/O','/Ref']],['double','hitThreshold','0',[]],['Size','winStride','Size()',[]],['Size','padding','Size()',[]],['double','scale','1.05',[]],['double','finalThreshold','2.0',[]],['bool','useMeanshiftGrouping','false',[]]],
 ['QRCodeDetector','detectAndDecodeMulti','@brief Both detects and decodes QR codes
     @param img grayscale or color (BGR) image containing QR codes.
     @param decoded_info UTF8-encoded output vector of string or empty vector of string if the codes cannot be decoded.

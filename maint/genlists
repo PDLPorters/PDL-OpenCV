@@ -84,6 +84,7 @@ my %force = map +($_=>1), qw(
   cv.groupRectangles
   cv.CascadeClassifier.load
   cv.CascadeClassifier.detectMultiScale
+  cv.HOGDescriptor.detectMultiScale
   cv.Tracker.init
   cv.Tracker.update
 );
@@ -91,6 +92,7 @@ my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
   FileNode FileStorage DMatch KeyPoint Algorithm CLAHE GeneralizedHough
+  HOGDescriptor
 );
 my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
 
@@ -114,7 +116,7 @@ print "enum: $name\n";
         $pname =~ s#\.#::#g;
         push @{$dest2enums{$dest}}, $pname;
       }
-    } elsif ($name =~ /^class cv\.(.*)/) {
+    } elsif ($name =~ /^(?:class|struct) cv\.(.*)/) {
       my $cname = $1;
       next if !$class{$cname};
       $ret =~ s/^:\s*//;
