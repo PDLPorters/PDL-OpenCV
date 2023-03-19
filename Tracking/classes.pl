@@ -11,6 +11,12 @@ The implementation is based on @cite Lukezic_IJCV2018 Discriminative Correlation
  * as well as the matlab implementation. For more information about KCF with color-names features, please refer to
  * <http://www.cvl.isy.liu.se/research/objrec/visualtracking/colvistrack/index.html>.',1,'cv::TrackerKCF::create',[],'@brief Create KCF tracker instance
     @param parameters KCF parameters TrackerKCF::Params'],
+['SparsePyrLKOpticalFlow',['SparseOpticalFlow'],'@brief Class used for calculating a sparse optical flow.
+
+The class can calculate an optical flow for a sparse feature set using the
+iterative Lucas-Kanade method with pyramids.
+
+@sa calcOpticalFlowPyrLK',1,'cv::SparsePyrLKOpticalFlow::create',[],''],
 ['Tracker',[],'@brief Base abstract class for the long-term tracker'],
 ['TrackerMIL',['Tracker'],'@brief The MIL algorithm trains a classifier in an online manner to separate the object from the
 background.

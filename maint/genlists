@@ -93,7 +93,7 @@ my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
   FileNode FileStorage DMatch KeyPoint Algorithm CLAHE GeneralizedHough
-  HOGDescriptor
+  HOGDescriptor SparsePyrLKOpticalFlow
 );
 my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
 
@@ -128,7 +128,7 @@ print "class: $cname\n";
       my $cname = $1;
 print "class::create: $cname\n";
       $name =~ s/\./::/g;
-      $args = [] if @$args == 1 and $args->[0][0] =~ /Params/;
+      $args = [] if (@$args == 1 and $args->[0][0] =~ /Params/) or grep $_->[0] =~ /$no_want/, @$args; # temporary
       $dest2class2create{$dest}{$cname} = [1, $name, $args, $doc];
     } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(create(.*))/) {
       my ($full, $cname) = ($1, $2);
