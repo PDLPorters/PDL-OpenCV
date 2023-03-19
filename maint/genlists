@@ -93,7 +93,7 @@ my %class = map +($_=>1), qw(
   LineSegmentDetector Tracker VideoCapture VideoWriter QRCodeDetector
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
   FileNode FileStorage DMatch KeyPoint Algorithm CLAHE GeneralizedHough
-  HOGDescriptor SparsePyrLKOpticalFlow
+  HOGDescriptor SparsePyrLKOpticalFlow DISOpticalFlow
 );
 my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
 

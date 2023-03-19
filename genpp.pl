@@ -187,13 +187,14 @@ sub destroy_code {
 sub default_pl {
   my ($self) = @_;
   my $d = $self->{default} // '';
-  $d =~ s/[A-Z][A-Z0-9_]+/$&()/g if length $d and $d !~ /\(/;
+  $d =~ s/[A-Z][A-Z0-9_]+/$&()/g if length $d and $d !~ /\(|::/;
   if ($self->{is_output}) {
     $d = 'PDL->null' if !$self->{is_other} and (!length $d or $d eq 'Mat()' or ($d eq '0' && $self->{was_ptr}));
   }
   if ($default_overrides{$d}) {
     $d = $default_overrides{$d}[0];
   }
+  $d =~ s/([A-Za-z0-9_:]+::[A-Za-z_][A-Za-z0-9_]+)/PDL::OpenCV::$1()/g;
   length $d ? "\$$self->{name} = $d if !defined \$$self->{name};" : ();
 }
 sub xs_par {
@@ -201,7 +202,7 @@ sub xs_par {
   my $xs_par = ($self->{type} =~ /^[A-Z]/ && $self->{is_other}) ? $self->par : "@$self{qw(type_c name)}";
   my $d = $self->{default} // '';
   $d = $default_overrides{$d}[1] if $default_overrides{$d};
-  $d = 'cw_const_' . $d . '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/;
+  $d = 'cw_const_' . $d . '()' if length $d and $d !~ /\(/ and $d =~ /[^0-9\.\-]/ and ($d =~ s/::/_/g or 1);
   $xs_par . (length $d ? "=$d" : '');
 }
 sub cdecl {
