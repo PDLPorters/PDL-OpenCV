@@ -189,7 +189,7 @@ sub default_pl {
   my $d = $self->{default} // '';
   $d =~ s/[A-Z][A-Z0-9_]+/$&()/g if length $d and $d !~ /\(/;
   if ($self->{is_output}) {
-    $d = 'PDL->null' if !$self->{naive_otherpar} and (!length $d or $d eq 'Mat()' or ($d eq '0' && $self->{was_ptr}));
+    $d = 'PDL->null' if !$self->{is_other} and (!length $d or $d eq 'Mat()' or ($d eq '0' && $self->{was_ptr}));
   }
   if ($default_overrides{$d}) {
     $d = $default_overrides{$d}[0];
