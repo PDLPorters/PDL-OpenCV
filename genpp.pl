@@ -22,6 +22,7 @@ our %default_overrides = (
   'Point()' => ['empty(sbyte)',],
   'Ptr<float>()' => ['empty(float)','0'],
   'std::vector<int>()' => ['empty(long)',],
+  'std::vector<Point>()' => ['empty(indx)',],
   'Size()' => ['empty(sbyte)',],
   'Size(8, 8)' => ['indx(8,8)',],
   'String()' => ['undef',],

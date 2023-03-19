@@ -86,6 +86,7 @@ my %force = map +($_=>1), qw(
   cv.CascadeClassifier.detectMultiScale
   cv.CascadeClassifier.read
   cv.HOGDescriptor.detectMultiScale
+  cv.HOGDescriptor.compute
   cv.Tracker.init
   cv.Tracker.update
 );

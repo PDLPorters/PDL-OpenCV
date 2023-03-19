@@ -56,6 +56,12 @@
 ['CascadeClassifier','read','@brief Reads a classifier from a FileStorage node.
 
     @note The file may contain a new cascade classifier (trained traincascade application) only.',1,'bool',['FileNode','node','',['/C','/Ref']]],
+['HOGDescriptor','compute','@brief Computes HOG descriptors of given image.
+    @param img Matrix of the type CV_8U containing an image where HOG features will be calculated.
+    @param descriptors Matrix of the type CV_32F
+    @param winStride Window stride. It must be a multiple of block stride.
+    @param padding Padding
+    @param locations Vector of Point',1,'void',['Mat','img','',[]],['vector_float','descriptors','',['/O','/Ref']],['Size','winStride','Size()',[]],['Size','padding','Size()',[]],['vector_Point','locations','std::vector<Point>()',['/C','/Ref']]],
 ['HOGDescriptor','detectMultiScale','@brief Detects objects of different sizes in the input image. The detected objects are returned as a list
     of rectangles.
     @param img Matrix of the type CV_8U or CV_8UC3 containing an image where objects are detected.
