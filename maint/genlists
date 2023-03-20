@@ -99,11 +99,23 @@ my %class = map +($_=>1), qw(
   HOGDescriptor SparsePyrLKOpticalFlow DISOpticalFlow SparseOpticalFlow
 );
 my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
+my $skip_re = join '|',
+  qr/^cv\.ipp/,
+  qr/^cv\.moments/,
+  qr/^cv\.HuMoments/,
+  qr/\.Params$/,
+  ;
+my $inc_all = 0;
+my %valid_arg = map +($_=>1), qw(json all);
 
 if (@ARGV) {
-  die "Usage: $0 [json]" if @ARGV != 1 or $ARGV[0] ne 'json';
-  print Dumper $json_data;
-  exit;
+  die "Usage: $0 [json|all]" if @ARGV != 1 or !$valid_arg{$ARGV[0]};
+  if ($ARGV[0] eq 'json') {
+    print Dumper $json_data;
+    exit;
+  } elsif ($ARGV[0] eq 'all') {
+    $inc_all = 1;
+  }
 }
 my (%dest2enums, %dest2func2name2defs, %dest2classdefs, %dest2class2create);
 for (@$json_data) {
@@ -112,6 +124,10 @@ for (@$json_data) {
 print "$file -> |$dest|\n";
   for my $t (@$d) {
     my ($name, $ret, $flags, $args, $ret_cpp, $doc) = @$t;
+    if ($inc_all and $name =~ $skip_re) {
+print "SKIP: $name\n";
+      next;
+    }
     if ($name =~ /^enum\s+/) {
 print "enum: $name\n";
       for my $t (@$args) {
@@ -122,7 +138,7 @@ print "enum: $name\n";
       }
     } elsif ($name =~ /^(?:class|struct) cv\.(.*)/) {
       my $cname = $1;
-      next if !$class{$cname};
+      next if !$inc_all and !$class{$cname};
       $ret =~ s/^:\s*//;
       $ret = [map {(my $r=$_)=~s/^cv:://;$r} split /\s*,\s*/, $ret];
 print "class: $cname\n";
@@ -142,10 +158,9 @@ print "classcreate: $cname\n";
 print "class.class: $cname\n";
 print(" skipping with @{[0+@$args]}\n"), next if @$args; # temporary
       $dest2class2create{$dest}{$cname} = [0, "cv::$cname", $args, $doc];
-    } elsif ($force{$name}) {
+    } elsif ($inc_all or $force{$name}) {
       my (undef, @n) = split /\./, $name;
       unshift @n, '' if @n == 1;
-      die "Unexpected number of elts in (@n)" if @n != 2;
       my $ismethod = 0+(!!$n[0] && !grep $_ eq '/S', @$flags);
       my @aliases = grep /^=/, @$flags;
       die ">1 aliases for $name: @aliases" if @aliases > 1;
