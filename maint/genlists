@@ -40,6 +40,7 @@ my %force = map +($_=>1), qw(
   cv.Algorithm.read
   cv.Algorithm.write
   cv.FileNode.keys
+  cv.FileNode.rawSize
   cv.FileStorage.getFirstTopLevelNode
   cv.FileStorage.operator[]
   cv.KeyPoint.overlap

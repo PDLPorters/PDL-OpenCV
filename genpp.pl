@@ -11,6 +11,7 @@ our %type_overrides = (
   bool => ['byte', 'unsigned char'],
   uchar => ['byte', 'unsigned char'],
   c_string => ['char *', 'char *'],
+  size_t => ['indx', 'size_t'],
 );
 our %type_alias = (
   string => 'String',
