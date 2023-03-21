@@ -7,7 +7,10 @@ use PDL::Core qw/howbig/;
 use Config;
 
 require ''. catfile $Bin, 'genpp.pl';
-our (%type_overrides, %type_alias, %extra_cons_args, %STAYWRAPPED);
+our (%type_overrides, %type_alias, %STAYWRAPPED);
+my %extra_cons_args = (
+  String => [['const char*', 'str']],
+);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
 my %REALCTYPE2NUMVAL = (
@@ -366,8 +369,7 @@ sub readclasses {
   return +{} if !-f 'classes.pl';
   my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
   +{map +($_->[0]=>[
-    [], $_->[3],
-    $_->[4], $_->[5]||$extra_cons_args{$_->[0]}
+    [], @$_[3..5],
   ]), @classlist
   };
 }

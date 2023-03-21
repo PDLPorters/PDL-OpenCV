@@ -32,9 +32,6 @@ our %default_overrides = (
   false => [0,0], # perl, C
   true => [1,1],
 );
-our %extra_cons_args = (
-  String => [['const char*', 'str']],
-);
 our %STAYWRAPPED = map +($_=>[]), qw(Mat String DMatch KeyPoint);
 our $IF_ERROR_RETURN = "if (CW_err.error) return *(pdl_error *)&CW_err";
 
@@ -370,7 +367,7 @@ $doc\n\n@{[@{$class2super{$c}} ? "Subclass of @{$class2super{$c}}\n\n" : '']}
 =cut\n
 \@${fullclass}::ISA = qw(@{$class2super{$c}});
 EOD
-    my $extra_args = ($class2info{$c}||[])->[1] || $extra_cons_args{$c} || [];
+    my $extra_args = ($class2info{$c}||[])->[1] || [];
     my $cons_doc = ($class2info{$c}||[])->[2] || "\@brief Initialize OpenCV $c object.";
     my $cons_def = [$c, 'new', $cons_doc, 0, $c, ['char *', 'klass'], @$extra_args];
     genpp(@$_) for ($class2info{$c}[0] ? $cons_def : ()), grep $_->[0] eq $c, @flist;
