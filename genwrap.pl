@@ -27,10 +27,7 @@ my %constructor_override = (
 );
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/utility.hpp> /* allows control number of threads */
 #include "opencv_wrapper.h"
-#include "wraplocal.h"
 /* use C name mangling */
 extern "C" {
 EOF
@@ -67,9 +64,9 @@ my $HHEADER = <<'EOF';
 #ifdef __cplusplus
 extern "C" {
 #endif
+EOF
+my $HTOP_GLOBAL = <<'EOF';
 #include <stddef.h>
-#ifndef _CW_ERROR_ALREADY
-#define _CW_ERROR_ALREADY
 /* can't directly include pdl.h so copy-paste and modify names: */
 typedef enum {
   CW_ENONE = 0, /* usable as boolean */
@@ -81,9 +78,6 @@ typedef struct {
   const char *message; /* if error but this NULL, parsing/alloc error */
   char needs_free;
 } cw_error;
-#endif
-EOF
-my $HBODY_GLOBAL = <<'EOF';
 #define TRY_WRAP(...) \
  cw_error CW_err = {CW_ENONE, NULL, 0}; \
  try { \
@@ -98,6 +92,8 @@ my $HBODY_GLOBAL = <<'EOF';
   snprintf(buf, sizeof(buf), "copyDataTo: wrong number of bytes passed; expected %td, passed %td", expected, got); \
   return {CW_EUSERERROR,strdup(buf),1}; \
  }
+EOF
+my $HBODY_GLOBAL = <<'EOF';
 cw_error cw_Mat_pdlDims(MatWrapper *wrapper, int *t, ptrdiff_t *l, ptrdiff_t *c, ptrdiff_t *r);
 cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data);
 cw_error cw_Mat_copyDataTo(MatWrapper *self, void *data, ptrdiff_t bytes);
@@ -309,8 +305,8 @@ sub gen_const {
 
 sub gen_chfiles {
   my ($macro, $extras, $typespecs, $vectorspecs, $cvheaders, $funclist, $consts, @params) = @_;
-  my $hstr = sprintf $HHEADER, $macro;
-  my $cstr = join '', map "#include <opencv2/$_.hpp>\n", @{$cvheaders||[]};
+  my $hstr = sprintf($HHEADER, $macro) . $extras->[0];
+  my $cstr = join '', (map "#include <opencv2/$_.hpp>\n", qw(opencv core/utility), @{$cvheaders||[]}), $extras->[2];
   $cstr .= $CHEADER;
   my %po;
   for (sort keys %$typespecs) {
@@ -324,8 +320,8 @@ sub gen_chfiles {
     ($xhstr, $xcstr) = gen_wrapper($po{$_}, undef, [], $_, 2, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
-  $hstr .= $extras->[0] || '';
-  $cstr .= $extras->[1] || '';
+  $hstr .= $extras->[1] || '';
+  $cstr .= $extras->[3] || '';
   for my $func (@{$funclist||[]}) {
     my ($xhstr, $xcstr) = gen_code($po{$func->[0]}, @$func);
     $hstr .= $xhstr; $cstr .= $xcstr;
@@ -374,7 +370,7 @@ sub readclasses {
 my $filegen = $ARGV[0] || die "No file given";
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $cons_arg = $ARGV[2] // '';
-my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
+my $extras = $filegen eq 'opencv_wrapper' ? [$HTOP_GLOBAL,$HBODY_GLOBAL,"",gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},"",qq{#include "wraplocal.h"\n},""];
 my $localclasses = readclasses();
 my $globalclasses = +{ (map +($_=>[$GLOBALTYPES{$_}, undef, "cv::$_", [[$extra_cons_args{$_}]]]), keys %GLOBALTYPES), %$localclasses };
 my $typespec = $filegen eq 'opencv_wrapper' ? $globalclasses : $cons_arg eq 'nocons' ? +{} : $localclasses;
