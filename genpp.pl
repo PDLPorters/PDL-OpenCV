@@ -367,8 +367,8 @@ $doc\n\n@{[@{$class2super{$c}} ? "Subclass of @{$class2super{$c}}\n\n" : '']}
 =cut\n
 \@${fullclass}::ISA = qw(@{$class2super{$c}});
 EOD
-    my $extra_args = ($class2info{$c}||[])->[1] || [];
-    my $cons_doc = ($class2info{$c}||[])->[2] || "\@brief Initialize OpenCV $c object.";
+    my $cons_info = ($class2info{$c}||[])->[1] || [[[], "\@brief Initialize OpenCV $c object."]];
+    my ($extra_args, $cons_doc) = @{$cons_info->[0]};
     my $cons_def = [$c, 'new', $cons_doc, 0, $c, ['char *', 'klass'], @$extra_args];
     genpp(@$_) for ($class2info{$c}[0] ? $cons_def : ()), grep $_->[0] eq $c, @flist;
   }

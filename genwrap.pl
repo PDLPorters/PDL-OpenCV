@@ -318,7 +318,7 @@ sub gen_chfiles {
   my %po;
   for (sort keys %$typespecs) {
     my ($fields, $po, $cf, $xa) = @{$typespecs->{$_}};
-    my ($xhstr, $xcstr) = gen_wrapper($po{$_} = $po, $cf, $xa || [], $_, 0, @$fields);
+    my ($xhstr, $xcstr) = gen_wrapper($po{$_} = $po, $cf, ($xa||[[[]]])->[0][0], $_, 0, @$fields);
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for (sort keys %$vectorspecs) {
@@ -379,7 +379,7 @@ my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $cons_arg = $ARGV[2] // '';
 my $extras = $filegen eq 'opencv_wrapper' ? [$HBODY_GLOBAL,gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},""];
 my $localclasses = readclasses();
-my $globalclasses = +{ (map +($_=>[$GLOBALTYPES{$_}, undef, "cv::$_", $extra_cons_args{$_}]), keys %GLOBALTYPES), %$localclasses };
+my $globalclasses = +{ (map +($_=>[$GLOBALTYPES{$_}, undef, "cv::$_", [[$extra_cons_args{$_}]]]), keys %GLOBALTYPES), %$localclasses };
 my $typespec = $filegen eq 'opencv_wrapper' ? $globalclasses : $cons_arg eq 'nocons' ? +{} : $localclasses;
 my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
