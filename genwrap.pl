@@ -8,9 +8,6 @@ use Config;
 
 require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %type_alias, %STAYWRAPPED);
-my %extra_cons_args = (
-  String => [['const char*', 'str']],
-);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
 my %REALCTYPE2NUMVAL = (
@@ -22,14 +19,11 @@ my %REALCTYPE2NUMVAL = (
 );
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double uchar));
 my $wrap_re = qr/^(?:(?!String)[A-Z]|vector_)/;
+my %extra_cons_args = (
+  String => [['const char*', 'str']],
+);
 my %constructor_override = (
-  String => <<EOF,
-cw_error cw_String_new(StringWrapper **cw_retval, char *klass, const char* str) {
- TRY_WRAP(
-  (*cw_retval = new StringWrapper)->held = str ? cv::String(str) : cv::String();
- )
-}
-EOF
+  String => "str ? cv::String(str) : cv::String();"
 );
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
@@ -220,11 +214,14 @@ struct $wrapper {
 #endif
 EOF
   my $cstr = <<EOF;
-@{[$no_cons || ($constructor_override{$class} && !$is_vector) ? '' :
-"$tdecls{new} {\n TRY_WRAP(" . ($no_ptr ? " *cw_retval = new $wrapper;" :
-"\n  (*cw_retval = new $wrapper)->held = @{[($ptr_only ? '' : qq{cv::makePtr<}).$cons_func.($ptr_only ? '' : qq{>})]}(@{[
+@{[$no_cons ? '' :
+"$tdecls{new} {\n TRY_WRAP(" . (
+$no_ptr && !(($constructor_override{$class} && !$is_vector)) ? " *cw_retval = new $wrapper;" :
+"\n  (*cw_retval = new $wrapper)->held = ".
+(($constructor_override{$class} && !$is_vector) ? "$constructor_override{$class}\n" :
+($ptr_only ? '' : qq{cv::makePtr<}).$cons_func.($ptr_only ? '' : qq{>})."(@{[
       join ', ', map +(code_type(@$_))[3], @$extra_args
-  ]});\n"
+  ]});\n")
 ) . " )\n}"]}
 @{[$no_cons ? '' : "$tdecls{dest} { delete wrapper; }\n"
 ]}$tdecls{dim0} { return @{[0+@fields]}; }
@@ -298,7 +295,6 @@ $decls{gV} {
 }
 EOF
   }
-  $cstr .= $constructor_override{$class} || '' if !$is_vector;
   ($hstr, $cstr);
 }
 
