@@ -147,9 +147,9 @@ print "class: $cname\n";
     } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(.*)\.create/) {
       my $cname = $1;
 print "class::create: $cname\n";
-      $name =~ s/\./::/g;
+      (my $colons = $name) =~ s/\./::/g;
       $args = [] if (@$args == 1 and $args->[0][0] =~ /Params/) or grep $_->[0] =~ /$no_want/, @$args; # temporary
-      $dest2class2create{$dest}{$cname} = [1, $name, $args, $doc];
+      $dest2class2create{$dest}{$cname} = [1, $colons, $args, $doc];
     } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(create(.*))/) {
       my ($full, $cname) = ($1, $2);
 print "classcreate: $cname\n";
@@ -166,14 +166,15 @@ print(" skipping with @{[0+@$args]}\n"), next if @$args; # temporary
       my $ismethod = 0+(!!$n[0] && !grep $_ eq '/S', @$flags);
       my @aliases = grep /^=/, @$flags;
       die ">1 aliases for $name: @aliases" if @aliases > 1;
+      my $name_alias = $name;
       if (@aliases) {
         die "alias for $name no '=': $aliases[0]" unless $aliases[0] =~ s/^=//;
         $n[1] = [$n[1], $aliases[0]];
-        $name .= "/$aliases[0]";
+        $name_alias .= "/$aliases[0]";
       }
       push @n, $doc, $ismethod, $ret, @$args;
-      push @{$dest2func2name2defs{$dest}{$name}}, \@n;
-      print "$name\n";
+      push @{$dest2func2name2defs{$dest}{$name_alias}}, \@n;
+      print "$name_alias\n";
     }
   }
 }
