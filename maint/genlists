@@ -146,12 +146,14 @@ print "class: $cname\n";
       push @{$dest2classdefs{$dest}}, [$cname, $ret, $doc];
     } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(.*)\.create/) {
       my $cname = $1;
+      die "Already got create $cname, now $name" if $dest2class2create{$dest}{$cname};
 print "class::create: $cname\n";
       (my $colons = $name) =~ s/\./::/g;
       $args = [] if (@$args == 1 and $args->[0][0] =~ /Params/) or grep $_->[0] =~ /$no_want/, @$args; # temporary
       $dest2class2create{$dest}{$cname} = [1, $colons, $args, $doc];
     } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(create(.*))/) {
       my ($full, $cname) = ($1, $2);
+      die "Already got create $cname, now $name" if $dest2class2create{$dest}{$cname};
 print "classcreate: $cname\n";
       $dest2class2create{$dest}{$cname} = [1, "cv::$full", $args, $doc];
     } elsif ($name =~ /^cv\.([^.]+)\.\1/) { # Python constructors
