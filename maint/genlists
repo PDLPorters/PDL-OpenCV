@@ -162,6 +162,7 @@ print(" skipping with @{[0+@$args]}\n"), next if @$args; # temporary
     } elsif ($inc_all or $force{$name}) {
       my (undef, @n) = split /\./, $name;
       unshift @n, '' if @n == 1;
+      die "Unexpected number of elts in (@n)" if @n != 2;
       my $ismethod = 0+(!!$n[0] && !grep $_ eq '/S', @$flags);
       my @aliases = grep /^=/, @$flags;
       die ">1 aliases for $name: @aliases" if @aliases > 1;
