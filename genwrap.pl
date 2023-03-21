@@ -192,7 +192,6 @@ sub gen_wrapper {
     pdlt => qq{int cw_$vector_str${class}_pdltype()},
   );
   my $hstr = <<EOF . join '', map "$_;\n", @tdecls_all{sort keys %tdecls_all};
-typedef struct $wrapper $wrapper;
 #ifdef __cplusplus
 struct $wrapper {
 	@{[
@@ -308,6 +307,9 @@ sub gen_chfiles {
   my $hstr = sprintf($HHEADER, $macro) . $extras->[0];
   my $cstr = join '', (map "#include <opencv2/$_.hpp>\n", qw(opencv core/utility), @{$cvheaders||[]}), $extras->[2];
   $cstr .= $CHEADER;
+  $hstr .= join '', map join(' ', 'typedef struct', ("${_}Wrapper") x 2).";\n", sort keys %$typespecs;
+  $hstr .= join '', map join(' ', 'typedef struct', ("vector_${_}Wrapper") x 2).";\n", sort keys %$vectorspecs;
+  $hstr .= join '', map join(' ', 'typedef struct', ("vector_vector_${_}Wrapper") x 2).";\n", sort keys %$vectorspecs;
   my %po;
   for (sort keys %$typespecs) {
     my ($fields, $po, $cf, $xa) = @{$typespecs->{$_}};
