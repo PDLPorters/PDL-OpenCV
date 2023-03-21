@@ -191,18 +191,11 @@ sub gen_wrapper {
   my $wrapper = "$vector_str${class}Wrapper";
   my $need_cv = @fields || $STAYWRAPPED{$class};
   my $vector_class = ("std::vector<"x$is_vector).($need_cv ? qq{cv::$class} : $class).(">"x$is_vector);
-  my $no_ptr = $is_vector || $need_cv;
-  my %tdecls = (
-    new => qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
-      join '', map ", ".(code_type(@$_))[1]." $_->[1]", @$extra_args
-    ]})},
-    dest => qq{void cw_$vector_str${class}_DESTROY($wrapper *wrapper)},
+  my %tdecls_all = (
     dim0 => qq{ptrdiff_t cw_$vector_str${class}_dim0()},
     pdlt => qq{int cw_$vector_str${class}_pdltype()},
   );
-  my $no_cons = !$is_vector && !defined($cons_func);
-  delete @tdecls{qw(new dest)} if $no_cons;
-  my $hstr = <<EOF . join '', map "$_;\n", @tdecls{sort keys %tdecls};
+  my $hstr = <<EOF . join '', map "$_;\n", @tdecls_all{sort keys %tdecls_all};
 typedef struct $wrapper $wrapper;
 #ifdef __cplusplus
 struct $wrapper {
@@ -214,22 +207,30 @@ struct $wrapper {
 #endif
 EOF
   my $cstr = <<EOF;
-@{[$no_cons ? '' :
-"$tdecls{new} {\n TRY_WRAP(" . (
-$no_ptr && !(($constructor_override{$class} && !$is_vector)) ? " *cw_retval = new $wrapper;" :
-"\n  (*cw_retval = new $wrapper)->held = ".
-(($constructor_override{$class} && !$is_vector) ? "$constructor_override{$class}\n" :
-($ptr_only ? '' : qq{cv::makePtr<}).$cons_func.($ptr_only ? '' : qq{>})."(@{[
-      join ', ', map +(code_type(@$_))[3], @$extra_args
-  ]});\n")
-) . " )\n}"]}
-@{[$no_cons ? '' : "$tdecls{dest} { delete wrapper; }\n"
-]}$tdecls{dim0} { return @{[0+@fields]}; }
-$tdecls{pdlt} { return @{[
+$tdecls_all{dim0} { return @{[0+@fields]}; }
+$tdecls_all{pdlt} { return @{[
   @fields ? $REALCTYPE2NUMVAL{$fields[0][0]} // die "Unknown ctype '$fields[0][0]' for '$class'" :
   $REALCTYPE2NUMVAL{$type_overrides{$class} ? $type_overrides{$class}[1] : $class} // '-1'
 ]}; }
 EOF
+  if ($is_vector || defined $cons_func) {
+    my $dest_decl = "void cw_$vector_str${class}_DESTROY($wrapper *wrapper)";
+    $hstr .= "$dest_decl;\n";
+    $cstr .= qq{$dest_decl { delete wrapper; }\n};
+    my $no_ptr = $is_vector || $need_cv;
+    my $use_override = $constructor_override{$class} && !$is_vector;
+    my $new_decl = qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
+	join '', map ", ".(code_type(@$_))[1]." $_->[1]", @$extra_args
+      ]})};
+    $hstr .= "$new_decl;\n";
+    $cstr .= "$new_decl {\n TRY_WRAP(";
+    $cstr .= $no_ptr && !$use_override ? " *cw_retval = new $wrapper;" :
+      "\n  (*cw_retval = new $wrapper)->held = ".
+      ($use_override ? "$constructor_override{$class}\n" :
+	($ptr_only ? '' : qq{cv::makePtr<}).$cons_func.($ptr_only ? '' : qq{>}).
+	"(@{[ join ', ', map +(code_type(@$_))[3], @$extra_args ]});\n");
+    $cstr .= " )\n}\n";
+  }
   if ($is_vector) {
     my $underlying_type = $is_vector > 1 ? "$vector2_str${class}Wrapper*" :
       @fields ? $fields[0][0] :
