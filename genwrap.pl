@@ -169,6 +169,7 @@ sub gen_code {
 	my $hstr = $str.";\n";
 	$str .= " {\n";
 	$str .= " TRY_WRAP(\n";
+	$str .= "  if (!cw_retval) throw std::invalid_argument(\"NULL retval pointer passed to ${class}::$out_name\");\n" if $ret ne 'void';
 	$str .= "  $cpp_ret";
 	$str .= !$ismethod ? join('::', grep length, "cv", $class, $in_name) :
 	  "self->held->$in_name";
