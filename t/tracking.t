@@ -28,7 +28,7 @@ die "Failed to load" if $CC_DIR and !$loaded;
 
 my $vfile='t/Megamind.avi';
 my $vc = PDL::OpenCV::VideoCapture->new;
-die if !$vc->open($vfile, CAP_ANY, []);
+die if !$vc->open($vfile, CAP_ANY);
 isnt $vc->getBackendName, undef, 'getBackendName works';
 my ($frame, $res) = $vc->read;
 ok $res, 'read a frame right';

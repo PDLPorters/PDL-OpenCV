@@ -326,6 +326,15 @@ EOF
     pp_def($pfunc, %hash);
 }
 
+sub maybe_suffix {
+  my ($suffixh, $class, $name, @rest) = @_;
+  ($class,
+    ref($name) ? $name :
+      [$name, $name.($suffixh->{$class}{$name}++ ? $suffixh->{$class}{$name} : '')],
+    @rest
+  );
+}
+
 sub genheader {
   my ($last, $suppress_pmheader) = @_;
   my $lastorig = $last;
@@ -355,12 +364,13 @@ EOPM
   pp_addhdr(qq{#include "opencv_wrapper.h"\n#include "wraplocal.h"\n});
   my @flist = genpp_readfile('funclist.pl');
   my @topfuncs = grep $_->[0] eq '', @flist;
+  my %class2func2suffix;
   if (@topfuncs) {
     pp_bless("PDL::OpenCV$last");
     pp_addxs(<<EOF); # work around PP bug
 MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ}
 EOF
-    genpp(@$_) for @topfuncs;
+    genpp(maybe_suffix \%class2func2suffix, @$_) for @topfuncs;
   } else {
     pp_addpm("=pod\n\nNone.\n\n=cut\n\n");
   }
@@ -379,13 +389,12 @@ $doc\n\n@{[@{$class2super{$c}} ? "Subclass of @{$class2super{$c}}\n\n" : '']}
 EOD
     if ($class2info{$c}[0]) {
       my $cons_info = ($class2info{$c}||[])->[1] || [[[], "\@brief Initialize OpenCV $c object."]];
-      my $func_suffix = 0;
       for my $tuple (@$cons_info) {
         my ($extra_args, $cons_doc) = @$tuple;
-        genpp($c, 'new'.($func_suffix++ ? $func_suffix : ''), $cons_doc, 0, $c, ['char *', 'klass'], @$extra_args);
+        genpp(maybe_suffix \%class2func2suffix, $c, 'new', $cons_doc, 0, $c, ['char *', 'klass'], @$extra_args);
       }
     }
-    genpp(@$_) for grep $_->[0] eq $c, @flist;
+    genpp(maybe_suffix \%class2func2suffix, @$_) for grep $_->[0] eq $c, @flist;
   }
   pp_export_nothing();
   pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], grep !$_->[0], @flist);

@@ -118,7 +118,7 @@ if (@ARGV) {
     $inc_all = 1;
   }
 }
-my (%dest2enums, %dest2func2name2defs, %dest2classdefs, %dest2class2create);
+my (%dest2enums, %dest2funcs, %dest2classdefs, %dest2class2create);
 for (@$json_data) {
   my ($file, $d) = @$_;
   my $dest = $file =~ /core/ ? "" : basename($file, ".hpp");
@@ -162,20 +162,23 @@ print "class.class: $cname @{[0+@$args]}\n";
       $dest2class2create{$dest}{$cname} ||= [0, "cv::$cname", []];
       push @{$dest2class2create{$dest}{$cname}[2]}, [$args, $doc];
     } elsif ($inc_all or $force{$name}) {
+      my @foundbad = map /$no_want/, $ret, map $_->[0], @$args;
+      print(" skipping a $name, found (@foundbad)\n"), next if @foundbad;
       my (undef, @n) = split /\./, $name;
       unshift @n, '' if @n == 1;
       die "Unexpected number of elts in (@n)" if @n != 2;
       my $ismethod = 0+(!!$n[0] && !grep $_ eq '/S', @$flags);
-      my @aliases = grep /^=/, @$flags;
-      die ">1 aliases for $name: @aliases" if @aliases > 1;
       my $name_alias = $name;
-      if (@aliases) {
-        die "alias for $name no '=': $aliases[0]" unless $aliases[0] =~ s/^=//;
-        $n[1] = [$n[1], $aliases[0]];
-        $name_alias .= "/$aliases[0]";
+      if (my @aliases = grep /^=/, @$flags) {
+        die ">1 aliases for $name: @aliases" if @aliases > 1;
+        $aliases[0] =~ s/^=//;
+        if ($aliases[0] !~ /\d$/) { # we replace their numbering with ours
+          $n[1] = [$n[1], $aliases[0]];
+          $name_alias .= "/$aliases[0]";
+        }
       }
       push @n, $doc, $ismethod, $ret, @$args;
-      push @{$dest2func2name2defs{$dest}{$name_alias}}, \@n;
+      push @{$dest2funcs{$dest}}, \@n;
       print "$name_alias\n";
     }
   }
@@ -187,25 +190,6 @@ for my $bits (qw(8U 8S 16U 16S 32S 32F 64F)) {
 push @{$dest2enums{''}}, qw(CV_PI CV_2PI CV_LOG2 INT_MAX);
 
 writefile($_, 'constlist.txt', $dest2enums{$_}) for keys %dest2enums;
-
-my %dest2funcs;
-for my $dest (keys %dest2func2name2defs) {
-  for my $name (sort keys %{$dest2func2name2defs{$dest}}) {
-    push @{$dest2funcs{$dest}}, selectdef($name, $dest2func2name2defs{$dest}{$name});
-  }
-}
-
-sub selectdef {
-  my ($name, $defs) = @_;
-  my @defs = grep $_->[4] !~ $no_want && (!grep !ref() || $_->[0] =~ $no_want, @$_[5..$#$_]), @$defs; # remove any with non-handled return-type or args
-  print("none left for $name\n"), return if !@defs; # no candidates!
-  return $defs[0] if @defs == 1;
-  @defs = grep $_->[2] ne '@overload', @defs;
-  return $defs[0] if @defs == 1;
-  my @schw = map [scalar @$_, do {my $tot = 0; $tot += length $_->[0] for @$_[5..$#$_]; $tot}, $_], @defs;
-  @schw = sort { $b->[0] <=> $a->[0] || $b->[1] <=> $a->[1] } @schw; # descending order of number of args, then length of arg-types
-  $schw[0][2];
-}
 
 sub genfile {
   my ($d) = @_;

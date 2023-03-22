@@ -1,4 +1,53 @@
 (
+['VideoCapture','open','@brief  Opens a video file or a capturing device or an IP video stream for video capturing.
+
+    @overload
+
+    Parameters are same as the constructor VideoCapture(const String& filename, int apiPreference = CAP_ANY)
+    @return `true` if the file has been successfully opened
+
+    The method first calls VideoCapture::release to close the already opened file or camera.',1,'bool',['String','filename','',['/C','/Ref']],['int','apiPreference','CAP_ANY',[]]],
+['VideoCapture','open','@brief  Opens a camera for video capturing
+
+    @overload
+
+    The `params` parameter allows to specify extra parameters encoded as pairs `(paramId_1, paramValue_1, paramId_2, paramValue_2, ...)`.
+    See cv::VideoCaptureProperties
+
+    @return `true` if the file has been successfully opened
+
+    The method first calls VideoCapture::release to close the already opened file or camera.',1,'bool',['String','filename','',['/C','/Ref']],['int','apiPreference','',[]],['vector_int','params','',['/C','/Ref']]],
+['VideoCapture','open','@brief  Opens a camera for video capturing
+
+    @overload
+
+    Parameters are same as the constructor VideoCapture(int index, int apiPreference = CAP_ANY)
+    @return `true` if the camera has been successfully opened.
+
+    The method first calls VideoCapture::release to close the already opened file or camera.',1,'bool',['int','index','',[]],['int','apiPreference','CAP_ANY',[]]],
+['VideoCapture','open','@brief Returns true if video capturing has been initialized already.
+
+    @overload
+
+    The `params` parameter allows to specify extra parameters encoded as pairs `(paramId_1, paramValue_1, paramId_2, paramValue_2, ...)`.
+    See cv::VideoCaptureProperties
+
+    @return `true` if the camera has been successfully opened.
+
+    The method first calls VideoCapture::release to close the already opened file or camera.',1,'bool',['int','index','',[]],['int','apiPreference','',[]],['vector_int','params','',['/C','/Ref']]],
+['VideoCapture','read','@brief Grabs, decodes and returns the next video frame.
+
+    @param [out] image the video frame is returned here. If no frames has been grabbed the image will be empty.
+    @return `false` if no frames has been grabbed
+
+    The method/function combines VideoCapture::grab() and VideoCapture::retrieve() in one call. This is the
+    most convenient method for reading video files or capturing data from decode and returns the just
+    grabbed frame. If no frames has been grabbed (camera has been disconnected, or there are no more
+    frames in video file), the method returns false and the function returns empty image (with %cv::Mat, test it with Mat::empty()).
+
+    @note In @ref videoio_c "C API", functions cvRetrieveFrame() and cv.RetrieveFrame() return image stored inside the video
+    capturing structure. It is not allowed to modify or release the image! You can copy the frame using
+    cvCloneImage and then do whatever you want with the copy.',1,'bool',['Mat','image','',['/O']]],
 ['VideoCapture','get','@brief Returns the specified VideoCapture property
 
     @param propId Property identifier from cv::VideoCaptureProperties (eg. cv::CAP_PROP_POS_MSEC, cv::CAP_PROP_POS_FRAMES, ...)
@@ -17,35 +66,6 @@
 ['VideoCapture','getBackendName','@brief Returns used backend API name
 
      @note Stream should be opened.',1,'String'],
-['VideoCapture','open','@brief  Opens a camera for video capturing
-
-    @overload
-
-    The `params` parameter allows to specify extra parameters encoded as pairs `(paramId_1, paramValue_1, paramId_2, paramValue_2, ...)`.
-    See cv::VideoCaptureProperties
-
-    @return `true` if the file has been successfully opened
-
-    The method first calls VideoCapture::release to close the already opened file or camera.',1,'bool',['String','filename','',['/C','/Ref']],['int','apiPreference','',[]],['vector_int','params','',['/C','/Ref']]],
-['VideoCapture','read','@brief Grabs, decodes and returns the next video frame.
-
-    @param [out] image the video frame is returned here. If no frames has been grabbed the image will be empty.
-    @return `false` if no frames has been grabbed
-
-    The method/function combines VideoCapture::grab() and VideoCapture::retrieve() in one call. This is the
-    most convenient method for reading video files or capturing data from decode and returns the just
-    grabbed frame. If no frames has been grabbed (camera has been disconnected, or there are no more
-    frames in video file), the method returns false and the function returns empty image (with %cv::Mat, test it with Mat::empty()).
-
-    @note In @ref videoio_c "C API", functions cvRetrieveFrame() and cv.RetrieveFrame() return image stored inside the video
-    capturing structure. It is not allowed to modify or release the image! You can copy the frame using
-    cvCloneImage and then do whatever you want with the copy.',1,'bool',['Mat','image','',['/O']]],
-['VideoWriter','fourcc','@brief Concatenates 4 chars to a fourcc code
-
-    @return a fourcc code
-
-    This static method constructs the fourcc code of the codec to be used in the constructor
-    VideoWriter::VideoWriter or VideoWriter::open.',0,'int',['char','c1','',[]],['char','c2','',[]],['char','c3','',[]],['char','c4','',[]]],
 ['VideoWriter','open','@brief Initializes or reinitializes video writer.
 
     The method opens video writer. Parameters are the same as in the constructor
@@ -53,10 +73,19 @@
     @return `true` if video writer has been successfully initialized
 
     The method first calls VideoWriter::release to close the already opened file.',1,'bool',['String','filename','',['/C','/Ref']],['int','fourcc','',[]],['double','fps','',[]],['Size','frameSize','',[]],['bool','isColor','true',[]]],
+['VideoWriter','open','@overload',1,'bool',['String','filename','',['/C','/Ref']],['int','apiPreference','',[]],['int','fourcc','',[]],['double','fps','',[]],['Size','frameSize','',[]],['bool','isColor','true',[]]],
+['VideoWriter','open','@overload',1,'bool',['String','filename','',['/C','/Ref']],['int','fourcc','',[]],['double','fps','',[]],['Size','frameSize','',['/C','/Ref']],['vector_int','params','',['/C','/Ref']]],
+['VideoWriter','open','@overload',1,'bool',['String','filename','',['/C','/Ref']],['int','apiPreference','',[]],['int','fourcc','',[]],['double','fps','',[]],['Size','frameSize','',['/C','/Ref']],['vector_int','params','',['/C','/Ref']]],
 ['VideoWriter','write','@brief Writes the next video frame
 
     @param image The written frame. In general, color images are expected in BGR format.
 
     The function/method writes the specified image to video file. It must have the same size as has
     been specified when opening the video writer.',1,'void',['Mat','image','',[]]],
+['VideoWriter','fourcc','@brief Concatenates 4 chars to a fourcc code
+
+    @return a fourcc code
+
+    This static method constructs the fourcc code of the codec to be used in the constructor
+    VideoWriter::VideoWriter or VideoWriter::open.',0,'int',['char','c1','',[]],['char','c2','',[]],['char','c3','',[]],['char','c4','',[]]],
 );

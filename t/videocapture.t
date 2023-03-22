@@ -9,7 +9,7 @@ use PDL::OpenCV::Videoio;
 my $vfile='t/Megamind.avi';
 my $vc = PDL::OpenCV::VideoCapture->new;
 isa_ok $vc, 'PDL::OpenCV::VideoCapture';
-die if !$vc->open($vfile, CAP_ANY, []);
+die if !$vc->open($vfile, CAP_ANY);
 my ($frame, $res) = $vc->read;
 ok $res, 'read successful';
 is_deeply [$frame->dims], [3,720,528], 'right dims' or diag $frame->info;

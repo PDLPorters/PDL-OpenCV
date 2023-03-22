@@ -22,7 +22,6 @@ my %extra_cons_args = (
 my %constructor_override = (
   String => "str ? cv::String(str) : cv::String();"
 );
-my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $CHEADER = <<'EOF';
 #include "opencv_wrapper.h"
 /* use C name mangling */
@@ -143,6 +142,7 @@ sub code_type {
       $no_ptr ? "" : "[0]"
     ) : $v;
   $cpp_input = "static_cast<cv::HOGDescriptor::HistogramNormType>($v)" if $intype_orig eq 'HOGDescriptor_HistogramNormType';
+  $cpp_input = "static_cast<bool>($v)" if $intype_orig eq 'bool';
   ($no_ptr, $intype, $cpptype, $cpp_input);
 }
 
@@ -326,8 +326,9 @@ sub gen_chfiles {
   }
   $hstr .= $extras->[1] || '';
   $cstr .= $extras->[3] || '';
+  my %class2func2suffix;
   for my $func (@{$funclist||[]}) {
-    my ($xhstr, $xcstr) = gen_code($po{$func->[0]}, @$func);
+    my ($xhstr, $xcstr) = gen_code($po{$func->[0]}, maybe_suffix(\%class2func2suffix, @$func));
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for my $c (@{$consts||[]}) {
@@ -379,6 +380,7 @@ my $localclasses = readclasses();
 my $globalclasses = +{ (map +($_=>[$GLOBALTYPES{$_}, undef, "cv::$_", [[$extra_cons_args{$_}]]]), keys %GLOBALTYPES), %$localclasses };
 my $typespec = $filegen eq 'opencv_wrapper' ? $globalclasses : $cons_arg eq 'nocons' ? +{} : $localclasses;
 my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
+my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
 my $consts = ($filegen eq 'opencv_wrapper' or $cons_arg ne 'nocons')  && -f 'constlist.txt' ? gen_consts() : [];
 make_chfiles($filegen, $extras, $typespec, $vectorspecs, \@cvheaders, $funclist, $consts);
