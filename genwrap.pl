@@ -142,7 +142,7 @@ sub code_type {
       $no_ptr ? "" : "[0]"
     ) : $v;
   $cpp_input = "static_cast<cv::HOGDescriptor::HistogramNormType>($v)" if $intype_orig eq 'HOGDescriptor_HistogramNormType';
-  $cpp_input = "static_cast<bool>($v)" if $intype_orig eq 'bool';
+  $cpp_input = "static_cast<bool>($v)" if $intype_orig eq 'bool'; # help C++ pick which polymorphism to call
   ($no_ptr, $intype, $cpptype, $cpp_input);
 }
 

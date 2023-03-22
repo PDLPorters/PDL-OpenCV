@@ -33,7 +33,7 @@ our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
     CONFIGURE_REQUIRES => {
         'ExtUtils::CppGuess' => '0.22',
         'ExtUtils::MakeMaker' => '6.3002',
-        'PDL' => '2.081_02', # pp_add_typemaps
+        'PDL' => '2.082', # pp_add_typemaps
         'Alien::OpenCV' => 0,
     },
     TEST_REQUIRES => {
