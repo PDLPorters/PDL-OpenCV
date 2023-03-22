@@ -307,8 +307,7 @@ sub gen_const {
 sub gen_chfiles {
   my ($macro, $extras, $typespecs, $vectorspecs, $cvheaders, $funclist, $consts, @params) = @_;
   my $hstr = sprintf($HHEADER, $macro) . $extras->[0];
-  my $cstr = join '', (map "#include <opencv2/$_.hpp>\n", qw(opencv core/utility), @{$cvheaders||[]}), $extras->[2];
-  $cstr .= $CHEADER;
+  my $cstr = join '', (map "#include <opencv2/$_.hpp>\n", qw(opencv core/utility), @{$cvheaders||[]}), $extras->[2], $CHEADER;
   $hstr .= join '', map join(' ', 'typedef struct', ("${_}Wrapper") x 2).";\n", sort keys %$typespecs;
   $hstr .= join '', map join(' ', 'typedef struct', ("vector_${_}Wrapper") x 2).";\n", sort keys %$vectorspecs;
   $hstr .= join '', map join(' ', 'typedef struct', ("vector_vector_${_}Wrapper") x 2).";\n", sort keys %$vectorspecs;
@@ -380,5 +379,5 @@ my $globalclasses = +{ (map +($_=>[$GLOBALTYPES{$_}, undef, "cv::$_", [[$extra_c
 my $typespec = $filegen eq 'opencv_wrapper' ? $globalclasses : $cons_arg eq 'nocons' ? +{} : $localclasses;
 my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
-my $consts = $filegen eq 'opencv_wrapper' ? [] : -f 'constlist.txt' ? gen_consts() : [];
+my $consts = ($filegen eq 'opencv_wrapper' or $cons_arg ne 'nocons')  && -f 'constlist.txt' ? gen_consts() : [];
 make_chfiles($filegen, $extras, $typespec, $vectorspecs, \@cvheaders, $funclist, $consts);
