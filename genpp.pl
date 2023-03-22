@@ -1,10 +1,14 @@
 use strict;
 use warnings;
+use Config;
 use PDL::Types;
 use File::Spec::Functions qw(catfile curdir);
 use File::Basename 'dirname';
 require ''. catfile dirname(__FILE__), 'doxyparse.pl';
 
+our $INT_PDLTYPE = $Config{intsize} == 4 ? 'int' :
+  $Config{intsize} == 8 ? 'longlong' :
+  die "Unknown intsize $Config{intsize}";
 my $T = [qw(A B S U L F D)];
 our %type_overrides = (
   String => ['StringWrapper*', 'StringWrapper*'], # PP, C
@@ -12,9 +16,11 @@ our %type_overrides = (
   uchar => ['byte', 'unsigned char'],
   c_string => ['char *', 'char *'],
   size_t => ['indx', 'size_t'],
+  int => [$INT_PDLTYPE, 'int'],
 );
 our %type_alias = (
   string => 'String',
+  HOGDescriptor_HistogramNormType => 'int',
 );
 $type_overrides{$_} = $type_overrides{$type_alias{$_}} for keys %type_alias;
 our %default_overrides = (
@@ -249,8 +255,8 @@ sub genpp {
     my @allpars = map PP::OpenCV->new($pcount++, @$_), @params;
     my (@inputs, @outputs); push @{$_->{is_output} ? \@outputs : \@inputs}, $_ for @allpars;
     $hash{PMFunc} = $class ? '' : "*$func = \\&${main::PDLOBJ}::$func;\n";
-    my $ex_doc = $func eq 'new'
-      ? make_example($class, 'new', 1, \@inputs, [{name=>'obj'}], "PDL::OpenCV::$class")
+    my $ex_doc = $func =~ /^new\d*$/
+      ? make_example($class, $func, 1, \@inputs, [{name=>'obj'}], "PDL::OpenCV::$class")
       : make_example($class, $func, $ismethod, \@inputs, \@outputs);
     if (!grep $_->{is_vector} || ($_->{type_pp} =~ /^[A-Z]/ && !$_->{is_other}), @allpars) {
       $doxy->{brief}[0] .= $ex_doc;
@@ -367,10 +373,15 @@ $doc\n\n@{[@{$class2super{$c}} ? "Subclass of @{$class2super{$c}}\n\n" : '']}
 =cut\n
 \@${fullclass}::ISA = qw(@{$class2super{$c}});
 EOD
-    my $cons_info = ($class2info{$c}||[])->[1] || [[[], "\@brief Initialize OpenCV $c object."]];
-    my ($extra_args, $cons_doc) = @{$cons_info->[0]};
-    my $cons_def = [$c, 'new', $cons_doc, 0, $c, ['char *', 'klass'], @$extra_args];
-    genpp(@$_) for ($class2info{$c}[0] ? $cons_def : ()), grep $_->[0] eq $c, @flist;
+    if ($class2info{$c}[0]) {
+      my $cons_info = ($class2info{$c}||[])->[1] || [[[], "\@brief Initialize OpenCV $c object."]];
+      my $func_suffix = 0;
+      for my $tuple (@$cons_info) {
+        my ($extra_args, $cons_doc) = @$tuple;
+        genpp($c, 'new'.($func_suffix++ ? $func_suffix : ''), $cons_doc, 0, $c, ['char *', 'klass'], @$extra_args);
+      }
+    }
+    genpp(@$_) for grep $_->[0] eq $c, @flist;
   }
   pp_export_nothing();
   pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], grep !$_->[0], @flist);

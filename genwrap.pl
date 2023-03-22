@@ -7,14 +7,11 @@ use PDL::Core qw/howbig/;
 use Config;
 
 require ''. catfile $Bin, 'genpp.pl';
-our (%type_overrides, %type_alias, %STAYWRAPPED);
+our (%type_overrides, %type_alias, %STAYWRAPPED, $INT_PDLTYPE);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
 my %REALCTYPE2NUMVAL = (
-  int => PDL::Type->new($Config{intsize} == 4 ? 'long' :
-    $Config{intsize} == 8 ? 'longlong' :
-    die "Unknown intsize $Config{intsize}"
-  )->numval,
+  int => PDL::Type->new($INT_PDLTYPE)->numval,
   map +($_->realctype=>$_->numval), PDL::Types::types
 );
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double uchar));
@@ -128,6 +125,7 @@ EOF
 
 sub code_type {
   my ($intype, $v) = @_;
+  my $intype_orig = $intype;
   my $is_vector = (my $no_vector = $intype) =~ s/vector_//g;
   my $cpptype = $no_vector eq 'StringWrapper*' || $no_vector eq 'String' ? 'cv::String' : $no_vector;
   $cpptype = qq{cv::$cpptype} if $cpptype =~ $wrap_re;
@@ -144,6 +142,7 @@ sub code_type {
     $nowrapper =~ $wrap_re ? ($was_ptr ? '&' : '')."$v->held".(
       $no_ptr ? "" : "[0]"
     ) : $v;
+  $cpp_input = "static_cast<cv::HOGDescriptor::HistogramNormType>($v)" if $intype_orig eq 'HOGDescriptor_HistogramNormType';
   ($no_ptr, $intype, $cpptype, $cpp_input);
 }
 
@@ -181,7 +180,7 @@ sub gen_code {
 }
 
 sub gen_wrapper {
-  my ($ptr_only, $cons_func, $extra_args, $class, $is_vector, @fields) = @_;
+  my ($ptr_only, $cons_func, $cons_info, $class, $is_vector, @fields) = @_;
   my $vector_str = 'vector_' x $is_vector;
   my $vector2_str = $is_vector > 1 ? 'vector_' x ($is_vector-1) : '';
   my $wrapper = "$vector_str${class}Wrapper";
@@ -214,17 +213,20 @@ EOF
     $cstr .= qq{$dest_decl { delete wrapper; }\n};
     my $no_ptr = $is_vector || $need_cv;
     my $use_override = $constructor_override{$class} && !$is_vector;
-    my $new_decl = qq{cw_error cw_$vector_str${class}_new($wrapper **cw_retval, char *klass@{[
-	join '', map ", ".(code_type(@$_))[1]." $_->[1]", @$extra_args
-      ]})};
-    $hstr .= "$new_decl;\n";
-    $cstr .= "$new_decl {\n TRY_WRAP(";
-    $cstr .= $no_ptr && !$use_override ? " *cw_retval = new $wrapper;" :
-      "\n  (*cw_retval = new $wrapper)->held = ".
-      ($use_override ? "$constructor_override{$class}\n" :
-	($ptr_only ? '' : qq{cv::makePtr<}).$cons_func.($ptr_only ? '' : qq{>}).
-	"(@{[ join ', ', map +(code_type(@$_))[3], @$extra_args ]});\n");
-    $cstr .= " )\n}\n";
+    my $func_suffix = 0;
+    for my $extra_args ($is_vector ? [] : map $_->[0], @$cons_info) {
+      my $new_decl = qq{cw_error cw_$vector_str${class}_new@{[$func_suffix++ ? $func_suffix : '']}($wrapper **cw_retval, char *klass@{[
+	  join '', map ", ".(code_type(@$_))[1]." $_->[1]", @$extra_args
+	]})};
+      $hstr .= "$new_decl;\n";
+      $cstr .= "$new_decl {\n TRY_WRAP(";
+      $cstr .= $no_ptr && !$use_override ? " *cw_retval = new $wrapper;" :
+	"\n  (*cw_retval = new $wrapper)->held = ".
+	($use_override ? "$constructor_override{$class}\n" :
+	  ($ptr_only ? '' : qq{cv::makePtr<}).$cons_func.($ptr_only ? '' : qq{>}).
+	  "(@{[ join ', ', map +(code_type(@$_))[3], @$extra_args ]});\n");
+      $cstr .= " )\n}\n";
+    }
   }
   if ($is_vector) {
     my $underlying_type = $is_vector > 1 ? "$vector2_str${class}Wrapper*" :
@@ -313,7 +315,7 @@ sub gen_chfiles {
   my %po;
   for (sort keys %$typespecs) {
     my ($fields, $po, $cf, $xa) = @{$typespecs->{$_}};
-    my ($xhstr, $xcstr) = gen_wrapper($po{$_} = $po, $cf, ($xa||[[[]]])->[0][0], $_, 0, @$fields);
+    my ($xhstr, $xcstr) = gen_wrapper($po{$_} = $po, $cf, $xa||[[[]]], $_, 0, @$fields);
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for (sort keys %$vectorspecs) {
