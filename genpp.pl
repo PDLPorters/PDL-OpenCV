@@ -102,13 +102,14 @@ sub isempty {
 }
 sub dataptr {
   my ($self, $compmode) = @_;
+  my $cast = "($self->{type_c_underlying}@{[$self->{was_ptr}?'':'*']})";
   '('.(!$compmode ? "\$P($self->{name})" :
-    ($self->{type} eq 'Mat' ? "" :
-    "($self->{type_c_underlying}@{[$self->{was_ptr}?'':'*']})") . "$self->{name}->data"
+    ($self->{type} eq 'Mat' ? "" : $cast) . "$self->{name}->data"
   ).')';
 }
 sub c_input {
-  my ($self, $compmode) = @_;
+  my ($self, $compmode, $force_comp) = @_;
+  return "\$COMP($self->{name})" if $force_comp and $compmode;
   return $self->isempty($compmode)." ? NULL : ".$self->dataptr($compmode)
     if $self->{was_ptr} and $self->wantempty;
   return ($self->{was_ptr} ? '&' : '').$self->dataptr($compmode).'[0]'
@@ -303,7 +304,10 @@ EOF
         !$compmode ? () : (map "PDL_RETERROR(PDL_err, PDL->make_physical($_->{name}));\n", @pars),
         (map $_->frompdl($compmode), @pdl_inits),
         (!@pdl_inits ? () : qq{if (@{[join ' || ', map "!".$_->c_input($compmode), @pdl_inits]}) {\n$destroy_in$destroy_out\$CROAK("Error during initialisation");\n}\n}),
-        "CW_err = $cfunc(".join(',', ($retcapture ? "&".($compmode ? '$COMP(res)' : $ret_obj->c_input) : ()), map $_->c_input($compmode), @allpars).");\n",
+        "CW_err = $cfunc(".join(',',
+          ($retcapture ? "&".$ret_obj->c_input($compmode, 1) : ()),
+          map $_->c_input($compmode), @allpars
+        ).");\n",
         !$compmode ? (map $_->topdl2(0), @nonfixed_outputs) : (),
         $destroy_in, !$compmode ? ($destroy_out) : (),
         "$IF_ERROR_RETURN;\n",
