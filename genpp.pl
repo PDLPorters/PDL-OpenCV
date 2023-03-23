@@ -9,6 +9,10 @@ require ''. catfile dirname(__FILE__), 'doxyparse.pl';
 our $INT_PDLTYPE = $Config{intsize} == 4 ? 'int' :
   $Config{intsize} == 8 ? 'longlong' :
   die "Unknown intsize $Config{intsize}";
+our %REALCTYPE2PDLTYPE = (
+  int => PDL::Type->new($INT_PDLTYPE),
+  map +($_->realctype=>$_), PDL::Types::types
+);
 my $T = [qw(A B S U L F D)];
 our %type_overrides = (
   String => ['StringWrapper*', 'StringWrapper*'], # PP, C
@@ -28,13 +32,8 @@ our %default_overrides = (
   'vector_Mat()' => ['undef',],
   'Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
   'cv::Mat()' => ['PDL->zeroes(sbyte,0,0,0)',],
-  'Point()' => ['empty(sbyte)',],
   'Ptr<float>()' => ['empty(float)','0'],
-  'std::vector<int>()' => ['empty(long)',],
-  'std::vector<Point>()' => ['empty(indx)',],
   'Scalar::all(0)' => ['[0,0,0,0]',],
-  'Size()' => ['empty(sbyte)',],
-  'Size(8, 8)' => ['indx(8,8)',],
   'String()' => ['undef',],
   false => [0,0], # perl, C
   true => [1,1],
@@ -55,6 +54,7 @@ our %DIMTYPES = (
   Vec4f=>[map ['float', "v$_", "val[$_]"], 0..3],
   Vec6f=>[map ['float', "v$_", "val[$_]"], 0..5],
 );
+my $dimtypes_re = join '|', sort keys %DIMTYPES; $dimtypes_re = qr/$dimtypes_re/;
 our %CTYPE2PDL = map +($_->realctype => $_->ppforcetype), PDL::Types::types();
 our %FLAG2KEY = ('/IO' => 'is_io', '/O' => 'is_output');
 sub new {
@@ -203,6 +203,9 @@ sub default_pl {
   if ($default_overrides{$d}) {
     $d = $default_overrides{$d}[0];
   }
+  $d =~ s/^std::vector<($dimtypes_re|int)>\(\)$/"empty($REALCTYPE2PDLTYPE{$DIMTYPES{$1} ? $DIMTYPES{$1}[0][0] : $1})"/e;
+  $d =~ s/^($dimtypes_re)\(\)$/"empty($REALCTYPE2PDLTYPE{$DIMTYPES{$1}[0][0]})"/e;
+  $d =~ s/^($dimtypes_re)(\(.*\))$/$REALCTYPE2PDLTYPE{$DIMTYPES{$1}[0][0]}.$2/e;
   $d =~ s/([A-Za-z0-9_:]+::[A-Za-z_][A-Za-z0-9_]+)/PDL::OpenCV::$1()/g;
   length $d ? "\$$self->{name} = $d if !defined \$$self->{name};" : ();
 }

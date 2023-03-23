@@ -22,6 +22,7 @@ isa_ok my $pic = imread('t/qrcode.png'), 'PDL', 'imread';
 my $pic2 = $pic->glue(1,$pic);
 is hconcat([$pic, $pic2])->dim(1), $pic->dim(1)*3, 'hconcat array-ref worked';
 is +(sumElems($data))[0]->sumover, 4560, 'sumElems';
+isa_ok +PDL::OpenCV::CLAHE->new, 'PDL::OpenCV::CLAHE', 'Size default OK';
 
 {
 my $a = pdl float, q[[1 1] [1 2] [0 3] [0 4] [1 5]];

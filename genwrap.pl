@@ -7,13 +7,9 @@ use PDL::Core qw/howbig/;
 use Config;
 
 require ''. catfile $Bin, 'genpp.pl';
-our (%type_overrides, %type_alias, %STAYWRAPPED, $INT_PDLTYPE);
+our (%type_overrides, %type_alias, %STAYWRAPPED, $INT_PDLTYPE, %REALCTYPE2PDLTYPE);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
 my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
-my %REALCTYPE2NUMVAL = (
-  int => PDL::Type->new($INT_PDLTYPE)->numval,
-  map +($_->realctype=>$_->numval), PDL::Types::types
-);
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double uchar));
 my $wrap_re = qr/^(?:(?!String)[A-Z]|vector_)/;
 my %extra_cons_args = (
@@ -204,8 +200,8 @@ EOF
   my $cstr = <<EOF;
 $tdecls_all{dim0} { return @{[0+@fields]}; }
 $tdecls_all{pdlt} { return @{[
-  @fields ? $REALCTYPE2NUMVAL{$fields[0][0]} // die "Unknown ctype '$fields[0][0]' for '$class'" :
-  $REALCTYPE2NUMVAL{$type_overrides{$class} ? $type_overrides{$class}[1] : $class} // '-1'
+  @fields ? eval {$REALCTYPE2PDLTYPE{$fields[0][0]}->numval} // die "Unknown ctype '$fields[0][0]' for '$class'" :
+  eval {$REALCTYPE2PDLTYPE{$type_overrides{$class} ? $type_overrides{$class}[1] : $class}->numval} // '-1'
 ]}; }
 EOF
   if ($is_vector || defined $cons_func) {
