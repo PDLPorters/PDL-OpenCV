@@ -207,6 +207,7 @@ sub default_pl {
   $d =~ s/^($dimtypes_re)\(\)$/"empty($REALCTYPE2PDLTYPE{$DIMTYPES{$1}[0][0]})"/e;
   $d =~ s/^($dimtypes_re)(\(.*\))$/$REALCTYPE2PDLTYPE{$DIMTYPES{$1}[0][0]}.$2/e;
   $d =~ s/([A-Za-z0-9_:]+::[A-Za-z_][A-Za-z0-9_]+)/PDL::OpenCV::$1()/g;
+  $d =~ s/^(TermCriteria)(\(.*\))$/"PDL::OpenCV::$1->new".(length $2 == 2 ? '' : '2').$2/e;
   length $d ? "\$$self->{name} = $d if !defined \$$self->{name};" : ();
 }
 sub xs_par {

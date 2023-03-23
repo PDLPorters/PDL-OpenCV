@@ -7,6 +7,7 @@ use PDL::NiceSlice;
 use PDL::OpenCV;
 use PDL::OpenCV::Imgproc;
 use PDL::OpenCV::Imgcodecs;
+use PDL::OpenCV::Tracking;
 
 my $data = (xvals(5,8,3)+10*yvals(5,8,3)+zvals(1,1,3))->mv(2,0);
 my $slice = float $data(0);
@@ -23,6 +24,7 @@ my $pic2 = $pic->glue(1,$pic);
 is hconcat([$pic, $pic2])->dim(1), $pic->dim(1)*3, 'hconcat array-ref worked';
 is +(sumElems($data))[0]->sumover, 4560, 'sumElems';
 isa_ok +PDL::OpenCV::CLAHE->new, 'PDL::OpenCV::CLAHE', 'Size default OK';
+isa_ok +PDL::OpenCV::SparsePyrLKOpticalFlow->new, 'PDL::OpenCV::SparsePyrLKOpticalFlow', 'TermCriteria default OK';
 
 {
 my $a = pdl float, q[[1 1] [1 2] [0 3] [0 4] [1 5]];

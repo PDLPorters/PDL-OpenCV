@@ -133,6 +133,39 @@ filled with zero .',0,'void',['vector_Mat','src','',[]],['vector_Mat','dst','',[
  @param src input array or vector of matrices. all of the matrices must have the same number of rows and the same depth.
  @param dst output array. It has the same number of rows and depth as the src, and the sum of cols of the src.
 same depth.',0,'void',['vector_Mat','src','',[]],['Mat','dst','',['/O']]],
+['RNG','fill','@brief Fills arrays with random numbers.
+
+    @param mat 2D or N-dimensional matrix; currently matrices with more than
+    4 channels are not supported by the methods, use Mat::reshape as a
+    possible workaround.
+    @param distType distribution type, RNG::UNIFORM or RNG::NORMAL.
+    @param a first distribution parameter; in case of the uniform
+    distribution, this is an inclusive lower boundary, in case of the normal
+    distribution, this is a mean value.
+    @param b second distribution parameter; in case of the uniform
+    distribution, this is a non-inclusive upper boundary, in case of the
+    normal distribution, this is a standard deviation (diagonal of the
+    standard deviation matrix or the full standard deviation matrix).
+    @param saturateRange pre-saturation flag; for uniform distribution only;
+    if true, the method will first convert a and b to the acceptable value
+    range (according to the mat datatype) and then will generate uniformly
+    distributed random numbers within the range [saturate(a), saturate(b)),
+    if saturateRange=false, the method will generate uniformly distributed
+    random numbers in the original range [a, b) and then will saturate them,
+    it means, for example, that
+    <tt>theRNG().fill(mat_8u, RNG::UNIFORM, -DBL_MAX, DBL_MAX)</tt> will likely
+    produce array mostly filled with 0\'s and 255\'s, since the range (0, 255)
+    is significantly smaller than [-DBL_MAX, DBL_MAX).
+
+    Each of the methods fills the matrix with the random values from the
+    specified distribution. As the new numbers are generated, the RNG state
+    is updated accordingly. In case of multiple-channel images, every
+    channel is filled independently, which means that RNG cannot generate
+    samples from the multi-dimensional Gaussian distribution with
+    non-diagonal covariance matrix directly. To do that, the method
+    generates samples from multi-dimensional standard Gaussian distribution
+    with zero mean and identity covariation matrix, and then transforms them
+    using transform to get samples from the specified Gaussian distribution.',1,'void',['Mat','mat','',['/IO']],['int','distType','',[]],['Mat','a','',[]],['Mat','b','',[]],['bool','saturateRange','false',[]]],
 ['Algorithm','write','@brief simplified API for language bindings
     * @overload',1,'void',['Ptr_FileStorage','fs','',['/C','/Ref']],['String','name','String()',['/C','/Ref']]],
 ['Algorithm','read','@brief Reads algorithm parameters from a file storage',1,'void',['FileNode','fn','',['/C','/Ref']]],

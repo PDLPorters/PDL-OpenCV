@@ -25,6 +25,15 @@ my @HEADERS_FILES = do { local @ARGV = $HEADERS; grep !/^\s*#/, <> };
 chomp @HEADERS_FILES;
 
 my $tdir = tempdir(CLEANUP=>1);
+my %force_wrap = (
+  RotatedRect => [['.*angle.*']],
+  RNG => [['.*']],
+  TermCriteria => [['.*']],
+);
+my $class_re = join '|', keys %force_wrap;
+my $cons_re = join '|',
+  map "$_\\((?:".join('|', '', @{$force_wrap{$_}[0]}).")\\)", # always default
+  keys %force_wrap;
 sub process_header {
   my ($dir, $file) = @_;
   open my $fh, '<', catfile($dir, $file) or die "$file: $!";
@@ -33,9 +42,9 @@ sub process_header {
   make_path $outdir or die "$outdir: $!" if !-d $outdir;
   open my $outfh, '>', $outfile or die "$outfile: $!";
   my $intext = do { local $/; <$fh> };
-  $intext =~ s/(class\s+)(CV_EXPORTS)(\s+RotatedRect)/$1${2}_W$3/;
-  $intext =~ s/^(\s*)(RotatedRect\((?:.*angle|\)))/${1}CV_WRAP $2/gm;
-  $intext =~ s/^(\s*)(.*?boundingRect\()/${1}CV_WRAP $2/m;
+  $intext =~ s/(class\s+)(CV_EXPORTS)(\s+(?:$class_re))/$1${2}_W$3/g;
+  $intext =~ s/^(\s*)($cons_re)/${1}CV_WRAP $2/gm;
+  $intext =~ s/^(\s*)((?:.*?boundingRect|void\s+fill)\()/${1}CV_WRAP $2/gm;
   print $outfh $intext;
   $outfile;
 }
@@ -56,6 +65,7 @@ my %force = map +($_=>1), qw(
   cv.sum
   cv.wrapperEMD
   cv.GeneralizedHough.detect
+  cv.RNG.fill
   cv.Algorithm.read
   cv.Algorithm.write
   cv.FileNode.keys
@@ -121,7 +131,6 @@ my %class = map +($_=>1), qw(
   HOGDescriptor SparsePyrLKOpticalFlow DISOpticalFlow SparseOpticalFlow
   TermCriteria RNG RotatedRect
 );
-my $no_want = qr/^(TermCriteria|RNG)/;
 my $skip_re = join '|',
   qr/^cv\.ipp/,
   qr/^cv\.moments/,
@@ -171,7 +180,7 @@ print "class: $cname\n";
       die "Already got create $cname, now $name" if $dest2class2create{$dest}{$cname};
 print "class::create: $cname\n";
       (my $colons = $name) =~ s/\./::/g;
-      $args = [] if (@$args == 1 and $args->[0][0] =~ /Params/) or grep $_->[0] =~ /$no_want/, @$args; # temporary
+      $args = [] if @$args == 1 and $args->[0][0] =~ /Params/; # temporary
       $dest2class2create{$dest}{$cname} = [1, $colons, [[$args, $doc]]];
     } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(create(.*))/) {
       my ($full, $cname) = ($1, $2);
@@ -184,8 +193,6 @@ print "class.class: $cname @{[0+@$args]}\n";
       $dest2class2create{$dest}{$cname} ||= [0, "cv::$cname", []];
       push @{$dest2class2create{$dest}{$cname}[2]}, [$args, $doc];
     } elsif ($inc_all or $force{$name}) {
-      my @foundbad = map /$no_want/, $ret, map $_->[0], @$args;
-      print(" skipping a $name, found (@foundbad)\n"), next if @foundbad;
       my (undef, @n) = split /\./, $name;
       unshift @n, '' if @n == 1;
       die "Unexpected number of elts in (@n)" if @n != 2;

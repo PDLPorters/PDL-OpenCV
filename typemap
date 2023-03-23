@@ -7,6 +7,8 @@ vector_MatWrapper* T_OPENCV_VECTOR
 vector_StringWrapper* T_OPENCV_VECTOR
 vector_vector_Point2fWrapper* T_OPENCV_VECTOR
 RotatedRectWrapper* T_PTROBJ_SPECIAL
+RNGWrapper* T_PTROBJ_SPECIAL
+TermCriteriaWrapper* T_PTROBJ_SPECIAL
 KeyPointWrapper* T_PTROBJ_SPECIAL
 DMatchWrapper* T_PTROBJ_SPECIAL
 FileStorageWrapper* T_PTROBJ_SPECIAL

@@ -33,6 +33,30 @@ can then be matched using %KDTree or another method.',0,'cv::KeyPoint',[[[],''],
 
 query descriptor index, train descriptor index, train image index, and distance between
 descriptors.',0,'cv::DMatch',[[[],''],[[['int','_queryIdx','',[]],['int','_trainIdx','',[]],['float','_distance','',[]]],''],[[['int','_queryIdx','',[]],['int','_trainIdx','',[]],['int','_imgIdx','',[]],['float','_distance','',[]]],'']]],
+['TermCriteria',[],'@brief The class defining termination criteria for iterative algorithms.
+
+You can initialize it by default constructor and then override any parameters, or the structure may
+be fully initialized using the advanced variant of the constructor.',0,'cv::TermCriteria',[[[],''],[[['int','type','',[]],['int','maxCount','',[]],['double','epsilon','',[]]],'@param type The type of termination criteria, one of TermCriteria::Type
+    @param maxCount The maximum number of iterations or elements to compute.
+    @param epsilon The desired accuracy or change in parameters at which the iterative algorithm stops.']]],
+['RNG',[],'@brief Random Number Generator
+
+Random number generator. It encapsulates the state (currently, a 64-bit
+integer) and has methods to return scalar random values and to fill
+arrays with random values. Currently it supports uniform and Gaussian
+(normal) distributions. The generator uses Multiply-With-Carry
+algorithm, introduced by G. Marsaglia (
+<http://en.wikipedia.org/wiki/Multiply-with-carry> ).
+Gaussian-distribution random numbers are generated using the Ziggurat
+algorithm ( <http://en.wikipedia.org/wiki/Ziggurat_algorithm> ),
+introduced by G. Marsaglia and W. W. Tsang.',0,'cv::RNG',[[[],'@brief constructor
+
+    These are the RNG constructors. The first form sets the state to some
+    pre-defined value, equal to 2\\*\\*32-1 in the current implementation. The
+    second form sets the state to the specified value. If you passed state=0
+    , the constructor uses the above default value instead to avoid the
+    singular random number sequence, consisting of all zeros.'],[[['uint64','state','',[]]],'@overload
+    @param state 64-bit value used to initialize the RNG.']]],
 ['Algorithm',[],'@brief This is a base class for all more or less complex algorithms in OpenCV
 
 especially for classes of algorithms, for which there can be multiple implementations. The examples

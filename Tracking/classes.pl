@@ -30,7 +30,7 @@ if the previous frame\'s flow field is passed).',1,'cv::DISOpticalFlow::create',
 The class can calculate an optical flow for a sparse feature set using the
 iterative Lucas-Kanade method with pyramids.
 
-@sa calcOpticalFlowPyrLK',1,'cv::SparsePyrLKOpticalFlow::create',[[[],'']]],
+@sa calcOpticalFlowPyrLK',1,'cv::SparsePyrLKOpticalFlow::create',[[[['Size','winSize','Size(21, 21)',[]],['int','maxLevel','3',[]],['TermCriteria','crit','TermCriteria(TermCriteria::COUNT+TermCriteria::EPS, 30, 0.01)',[]],['int','flags','0',[]],['double','minEigThreshold','1e-4',[]]],'']]],
 ['Tracker',[],'@brief Base abstract class for the long-term tracker'],
 ['TrackerMIL',['Tracker'],'@brief The MIL algorithm trains a classifier in an online manner to separate the object from the
 background.
