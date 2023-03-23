@@ -263,6 +263,47 @@ parent, or nested contours, the corresponding elements of hierarchy[i] will be n
 @param offset Optional offset by which every contour point is shifted. This is useful if the
 contours are extracted from the image ROI and then they should be analyzed in the whole image
 context.',0,'void',['Mat','image','',[]],['vector_Mat','contours','',['/O']],['Mat','hierarchy','',['/O']],['int','mode','',[]],['int','method','',[]],['Point','offset','Point()',[]]],
+['','fitEllipseDirect','@brief Fits an ellipse around a set of 2D points.
+
+ The function calculates the ellipse that fits a set of 2D points.
+ It returns the rotated rectangle in which the ellipse is inscribed.
+ The Direct least square (Direct) method by @cite Fitzgibbon1999 is used.
+
+ For an ellipse, this basis set is \\f$ \\chi= \\left(x^2, x y, y^2, x, y, 1\\right) \\f$,
+ which is a set of six free coefficients \\f$ A^T=\\left\\{A_{\\text{xx}},A_{\\text{xy}},A_{\\text{yy}},A_x,A_y,A_0\\right\\} \\f$.
+ However, to specify an ellipse, all that is needed is five numbers; the major and minor axes lengths \\f$ (a,b) \\f$,
+ the position \\f$ (x_0,y_0) \\f$, and the orientation \\f$ \\theta \\f$. This is because the basis set includes lines,
+ quadratics, parabolic and hyperbolic functions as well as elliptical functions as possible fits.
+ The Direct method confines the fit to ellipses by ensuring that \\f$ 4 A_{xx} A_{yy}- A_{xy}^2 > 0 \\f$.
+ The condition imposed is that \\f$ 4 A_{xx} A_{yy}- A_{xy}^2=1 \\f$ which satisfies the inequality
+ and as the coefficients can be arbitrarily scaled is not overly restrictive.
+
+ \\f{equation*}{
+ \\epsilon ^2= A^T D^T D A \\quad \\text{with} \\quad A^T C A =1 \\quad \\text{and} \\quad C=\\left(\\begin{matrix}
+ 0 & 0  & 2  & 0  & 0  &  0  \\\\
+ 0 & -1  & 0  & 0  & 0  &  0 \\\\
+ 2 & 0  & 0  & 0  & 0  &  0 \\\\
+ 0 & 0  & 0  & 0  & 0  &  0 \\\\
+ 0 & 0  & 0  & 0  & 0  &  0 \\\\
+ 0 & 0  & 0  & 0  & 0  &  0
+ \\end{matrix} \\right)
+ \\f}
+
+ The minimum cost is found by solving the generalized eigenvalue problem.
+
+ \\f{equation*}{
+ D^T D A = \\lambda  \\left( C\\right) A
+ \\f}
+
+ The system produces only one positive eigenvalue \\f$ \\lambda\\f$ which is chosen as the solution
+ with its eigenvector \\f$\\mathbf{u}\\f$. These are used to find the coefficients
+
+ \\f{equation*}{
+ A = \\sqrt{\\frac{1}{\\mathbf{u}^T C \\mathbf{u}}}  \\mathbf{u}
+ \\f}
+ The scaling factor guarantees that  \\f$A^T C A =1\\f$.
+
+ @param points Input 2D point set, stored in std::vector\\<\\> or Mat',0,'RotatedRect',['Mat','points','',[]]],
 ['','rectangle','@brief Draws a simple, thick, or filled up-right rectangle.
 
 The function cv::rectangle draws a rectangle outline or a filled rectangle whose two opposite corners

@@ -5,6 +5,9 @@ use warnings;
 use JSON::PP;
 use File::Basename;
 use File::Spec::Functions;
+use File::Temp qw(tempdir);
+use File::Path qw(make_path);
+use File::Basename qw(dirname);
 use Cwd;
 use IPC::Open2;
 use Data::Dumper;
@@ -21,12 +24,28 @@ EOF
 my @HEADERS_FILES = do { local @ARGV = $HEADERS; grep !/^\s*#/, <> };
 chomp @HEADERS_FILES;
 
+my $tdir = tempdir(CLEANUP=>1);
+sub process_header {
+  my ($dir, $file) = @_;
+  open my $fh, '<', catfile($dir, $file) or die "$file: $!";
+  my $outfile = catfile($tdir, $file);
+  my $outdir = dirname $outfile;
+  make_path $outdir or die "$outdir: $!" if !-d $outdir;
+  open my $outfh, '>', $outfile or die "$outfile: $!";
+  my $intext = do { local $/; <$fh> };
+  $intext =~ s/(class\s+)(CV_EXPORTS)(\s+RotatedRect)/$1${2}_W$3/;
+  $intext =~ s/^(\s*)(RotatedRect\((?:.*angle|\)))/${1}CV_WRAP $2/gm;
+  $intext =~ s/^(\s*)(.*?boundingRect\()/${1}CV_WRAP $2/m;
+  print $outfh $intext;
+  $outfile;
+}
+
 my $json_data;
 {
 my $old_dir = getcwd();
 chdir $CVDIR or die "chdir: $!";
 my $pid = open2(my $child_out, my $child_in, qw(python3 -c), $PYSCRIPT);
-print $child_in map catfile($HEADERS_DIR, $_)."\n", @HEADERS_FILES;
+print $child_in map process_header($HEADERS_DIR, $_)."\n", @HEADERS_FILES;
 close $child_in;
 $json_data = decode_json do { local $/; <$child_out> };
 chdir $old_dir or die "chdir: $!";
@@ -45,11 +64,13 @@ my %force = map +($_=>1), qw(
   cv.FileStorage.operator[]
   cv.KeyPoint.overlap
   cv.KeyPoint.convert
+  cv.RotatedRect.boundingRect
   cv.cvtColor
   cv.rectangle
   cv.ellipse2Poly
   cv.getAffineTransform
   cv.getGaborKernel
+  cv.fitEllipseDirect
   cv.drawContours
   cv.findContours
   cv.threshold
@@ -98,8 +119,9 @@ my %class = map +($_=>1), qw(
   CascadeClassifier Subdiv2D TrackerKCF TrackerCSRT TrackerMIL
   FileNode FileStorage DMatch KeyPoint Algorithm CLAHE GeneralizedHough
   HOGDescriptor SparsePyrLKOpticalFlow DISOpticalFlow SparseOpticalFlow
+  TermCriteria RNG RotatedRect
 );
-my $no_want = qr/^(TermCriteria|RNG|RotatedRect)/;
+my $no_want = qr/^(TermCriteria|RNG)/;
 my $skip_re = join '|',
   qr/^cv\.ipp/,
   qr/^cv\.moments/,

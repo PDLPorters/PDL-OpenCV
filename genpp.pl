@@ -50,6 +50,7 @@ our %DIMTYPES = (
   Rect=>[map ['ptrdiff_t', $_], qw(x y width height)],
   Scalar=>[map ['double', "v$_", "val[$_]"], 0..3],
   Size=>[map ['ptrdiff_t', $_], qw(width height)],
+  Size2f=>[map ['float', $_], qw(width height)],
   Vec4f=>[map ['float', "v$_", "val[$_]"], 0..3],
   Vec6f=>[map ['float', "v$_", "val[$_]"], 0..5],
 );

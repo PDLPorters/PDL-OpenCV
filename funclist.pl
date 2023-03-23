@@ -1,4 +1,6 @@
 (
+['RotatedRect','boundingRect','returns 4 vertices of the rectangle
+    @param pts The points array for storing rectangle vertices. The order is bottomLeft, topLeft, topRight, bottomRight.',1,'Rect'],
 ['KeyPoint','convert','This method converts vector of keypoints to vector of points or the reverse, where each keypoint is
     assigned the same size and the same orientation.
 

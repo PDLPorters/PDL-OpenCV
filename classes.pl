@@ -1,4 +1,18 @@
 (
+['RotatedRect',[],'@brief The class represents rotated (i.e. not up-right) rectangles on a plane.
+
+Each rectangle is specified by the center point (mass center), length of each side (represented by
+#Size2f structure) and the rotation angle in degrees.
+
+The sample below demonstrates how to use RotatedRect:
+@snippet snippets/core_various.cpp RotatedRect_demo
+![image](pics/rotatedrect.png)
+
+@sa CamShift, fitEllipse, minAreaRect, CvBox2D',0,'cv::RotatedRect',[[[],''],[[['Point2f','center','',['/C','/Ref']],['Size2f','size','',['/C','/Ref']],['float','angle','',[]]],'full constructor
+    @param center The rectangle mass center.
+    @param size Width and height of the rectangle.
+    @param angle The rotation angle in a clockwise direction. When the angle is 0, 90, 180, 270 etc.,
+    the rectangle becomes an up-right rectangle.']]],
 ['KeyPoint',[],'@brief Data structure for salient point detectors.
 
 The class instance stores a keypoint, i.e. a point feature found by one of many available keypoint
