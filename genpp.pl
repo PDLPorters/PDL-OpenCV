@@ -16,6 +16,7 @@ our %type_overrides = (
   uchar => ['byte', 'unsigned char'],
   c_string => ['char *', 'char *'],
   size_t => ['indx', 'size_t'],
+  uint64 => ['ulonglong', 'uint64_t'],
   int => [$INT_PDLTYPE, 'int'],
 );
 our %type_alias = (

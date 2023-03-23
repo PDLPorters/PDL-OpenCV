@@ -12,6 +12,8 @@ DMatchWrapper* T_PTROBJ_SPECIAL
 FileStorageWrapper* T_PTROBJ_SPECIAL
 FileNodeWrapper* T_PTROBJ_SPECIAL
 
+uint64_t T_IV
+
 INPUT
 T_PTROBJ_SPECIAL
   if (!SvOK($arg)) {
