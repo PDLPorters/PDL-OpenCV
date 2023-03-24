@@ -224,10 +224,10 @@ EOF
 	]})};
       $hstr .= "$new_decl;\n";
       $cstr .= "$new_decl {\n TRY_WRAP(";
-      $cstr .= $no_ptr && !$use_override ? " *cw_retval = new $wrapper;" :
+      $cstr .= $no_ptr && !$use_override && !@$extra_args ? " *cw_retval = new $wrapper;" :
 	"\n  (*cw_retval = new $wrapper)->held = ".
 	($use_override ? "$constructor_override{$class}\n" :
-	  maybe_wrap(!$ptr_only, ["cv::makePtr"], $cons_func).
+	  maybe_wrap(!$no_ptr && !$ptr_only, ["cv::makePtr"], $cons_func).
 	  "(@{[ join ', ', map +(code_type(@$_))[3], @$extra_args ]});\n");
       $cstr .= " )\n}\n";
     }
