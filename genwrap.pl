@@ -118,14 +118,18 @@ int get_ocvtype(const int datatype,const int planes) {
 EOF
 }
 
+sub maybe_wrap {
+  my ($flag, $wrapping, $to_wrap) = @_;
+  !$flag ? $to_wrap : join('', map "$_<", @$wrapping).$to_wrap.(">"x@$wrapping)
+}
+
 sub code_type {
   my ($intype, $v) = @_;
   my $intype_orig = $intype;
   my $is_vector = (my $no_vector = $intype) =~ s/vector_//g;
   my $cpptype = $no_vector eq 'StringWrapper*' || $no_vector eq 'String' ? 'cv::String' : $no_vector;
   $cpptype = qq{cv::$cpptype} if $cpptype =~ $wrap_re;
-  $cpptype = ("std::vector<"x$is_vector).$cpptype.(">"x$is_vector)
-    if $is_vector;
+  $cpptype = maybe_wrap($is_vector, [("std::vector")x$is_vector], $cpptype);
   my $was_ptr = $intype =~ $wrap_re ? ($intype =~ s/\s*\*+$// || $intype =~ s/^Ptr_//) : 0;
   $intype = $type_overrides{$intype}[1] if $type_overrides{$intype};
   $intype = ('vector_'x$is_vector).$type_alias{$no_vector} if $is_vector and $type_alias{$no_vector};
@@ -185,7 +189,7 @@ sub gen_wrapper {
   my $vector2_str = $is_vector > 1 ? 'vector_' x ($is_vector-1) : '';
   my $wrapper = "$vector_str${class}Wrapper";
   my $need_cv = @fields || $STAYWRAPPED{$class};
-  my $vector_class = ("std::vector<"x$is_vector).($need_cv ? qq{cv::$class} : $class).(">"x$is_vector);
+  my $vector_class = maybe_wrap($is_vector, [("std::vector")x$is_vector], ($need_cv ? qq{cv::$class} : $class));
   my %tdecls_all = (
     dim0 => qq{ptrdiff_t cw_$vector_str${class}_dim0()},
     pdlt => qq{int cw_$vector_str${class}_pdltype()},
@@ -195,7 +199,7 @@ sub gen_wrapper {
 struct $wrapper {
 	@{[
 	  $is_vector ? $vector_class :
-	  $need_cv ? "cv::${class}" : "cv::Ptr<cv::${class}>"
+	  maybe_wrap(!$need_cv, ["cv::Ptr"], qq{cv::$class})
 	]} held;
 };
 #endif
@@ -223,7 +227,7 @@ EOF
       $cstr .= $no_ptr && !$use_override ? " *cw_retval = new $wrapper;" :
 	"\n  (*cw_retval = new $wrapper)->held = ".
 	($use_override ? "$constructor_override{$class}\n" :
-	  ($ptr_only ? '' : qq{cv::makePtr<}).$cons_func.($ptr_only ? '' : qq{>}).
+	  maybe_wrap(!$ptr_only, ["cv::makePtr"], $cons_func).
 	  "(@{[ join ', ', map +(code_type(@$_))[3], @$extra_args ]});\n");
       $cstr .= " )\n}\n";
     }
