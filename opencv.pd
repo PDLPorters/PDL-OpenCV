@@ -13,7 +13,7 @@ PDL::OpenCV - PDL interface to OpenCV
 =head1 SYNOPSIS
 
   use PDL::OpenCV::Videoio; # ucfirsted name of the OpenCV "module"
-  my $vfile='t/Megamind.avi';
+  my $vfile='t/frames.avi';
   my $vc = PDL::OpenCV::VideoCapture->new; # name of the OpenCV class
   die "Failed to open $vfile" if !$vc->open($vfile);
   my ($frame, $res) = $vc->read;

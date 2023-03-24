@@ -6,7 +6,7 @@ use PDL::LiteF;
 use PDL::OpenCV;
 use PDL::OpenCV::Videoio;
 
-my $vfile='t/Megamind.avi';
+my $vfile='t/frames.avi';
 my $vc = PDL::OpenCV::VideoCapture->new;
 isa_ok $vc, 'PDL::OpenCV::VideoCapture';
 die if !$vc->open($vfile, CAP_ANY);
