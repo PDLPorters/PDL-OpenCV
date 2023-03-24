@@ -6,6 +6,8 @@ vector_KeyPointWrapper* T_OPENCV_VECTOR
 vector_MatWrapper* T_OPENCV_VECTOR
 vector_StringWrapper* T_OPENCV_VECTOR
 vector_vector_Point2fWrapper* T_OPENCV_VECTOR
+vector_vector_DMatchWrapper* T_OPENCV_VECTOR2
+vector_vector_KeyPointWrapper* T_OPENCV_VECTOR2
 RotatedRectWrapper* T_PTROBJ_SPECIAL
 RNGWrapper* T_PTROBJ_SPECIAL
 TermCriteriaWrapper* T_PTROBJ_SPECIAL
@@ -98,6 +100,54 @@ T_OPENCV_VECTOR
   }
   }
 
+T_OPENCV_VECTOR2
+  {
+  if (!SvOK($arg)) {
+    cw_error CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_new(&$var, NULL);
+    PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  } else {
+    if (!SvROK($arg)) PDL_CORE_(pdl_barf)(\"$var not a reference\");
+    if(SvTYPE(SvRV($arg)) != SVt_PVAV) PDL_CORE_(pdl_barf)(\"$var not an array-ref\");
+    AV *av = (AV *)SvRV($arg);
+    PDL_Indx count = av_len(av) + 1, i = 0;
+    for (i = 0; i < count; i++) {
+      SV **sp = av_fetch(av, i, 0);
+      if (!sp) PDL_CORE_(pdl_barf)(\"$var index %td not a valid SV\", i);
+      if (!SvROK(*sp)) PDL_CORE_(pdl_barf)(\"$var index %td not a reference\", i);
+      if(SvTYPE(SvRV(*sp)) != SVt_PVAV) PDL_CORE_(pdl_barf)(\"$var index %td not an array-ref\", i);
+      AV *av2 = (AV *)SvRV(*sp);
+      PDL_Indx count2 = av_len(av2) + 1, i2 = 0;
+      for (i2 = 0; i2 < count2; i2++) {
+        SV **sp2 = av_fetch(av2, i2, 0);
+        if (!sp2) PDL_CORE_(pdl_barf)(\"$var index %td/%td not a valid SV\", i, i2);
+        if (!SvOK(*sp2)) PDL_CORE_(pdl_barf)(\"$var index %td/%td not defined\", i, i2);
+        if (!SvROK(*sp2)) PDL_CORE_(pdl_barf)(\"$var index %td/%td not a reference\", i, i2);
+        if (!sv_derived_from(*sp2, \"${(my $novecstar=$type)=~s/^(?:vector_){2}(.*)Wrapper\s*\**$/PDL::OpenCV::$1/; \$novecstar}\"))
+          PDL_CORE_(pdl_barf)(\"$var index %td/%td not a ${(my $novecstar=$type)=~s/^(?:vector_){2}(.*)Wrapper\s*\**$/PDL::OpenCV::$1/; \$novecstar}\", i, i2);
+      }
+    }
+    ${(my $novec=$type)=~s/^vector_//; \$novec} wrappers[count];
+    for (i = 0; i < count; i++) {
+      SV **sp = av_fetch(av, i, 0);
+      AV *av2 = (AV *)SvRV(*sp);
+      PDL_Indx count2 = av_len(av2) + 1, i2 = 0;
+      ${(my $novec=$type)=~s/^(?:vector_){2}//; \$novec} wrap2[count2];
+      for (i2 = 0; i2 < count2; i2++) {
+        SV **sp2 = av_fetch(av2, i2, 0);
+        IV tmp = SvIV((SV*)SvRV(*sp2));
+        wrap2[i2] = INT2PTR(${(my $novec=$type)=~s/^(?:vector_){2}//; \$novec}, tmp);
+      }
+      cw_error CW_err = cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_newWithVals(&wrappers[i], wrap2, count2);
+      if (CW_err.error)
+        for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
+      PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+    }
+    cw_error CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_newWithVals(&$var, wrappers, count);
+    for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
+    PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  }
+  }
+
 OUTPUT
 T_PTROBJ_SPECIAL
   sv_setref_pv($arg, \"${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/;\$ntt}\",
@@ -178,6 +228,45 @@ T_OPENCV_VECTOR
     } : die qq{Can't handle $type}}
     if (!av_store(av, i, pxsv)) PDL_CORE_(pdl_barf)(\"Failed to push SV\");
     cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrap2[i]);
+  }
+  cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_DESTROY($var);
+  sv_setsv($arg, newRV_noinc((SV*)av));
+  }
+
+T_OPENCV_VECTOR2
+  {
+  PDL_Indx count, i;
+  cw_error CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_size(&count, $var);
+  if (CW_err.error)
+    cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_DESTROY($var);
+  PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  ${(my $novec=$type)=~s/^vector_//; \$novec} wrapper[count];
+  CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_copyDataTo($var, wrapper);
+  if (CW_err.error)
+    cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_DESTROY($var);
+  PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+  AV *av = newAV(); av_extend(av, count);
+  for (i = 0; i < count; i++) {
+    PDL_Indx count2, i2;
+    cw_error CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_size(&count2, $var);
+    if (CW_err.error)
+      cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_DESTROY($var);
+    PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
+    AV *av2 = newAV(); av_extend(av2, count);
+    ${(my $novec=$type)=~s/^(?:vector_){2}//; \$novec} wrap2[count2];
+    for (i2 = 0; i2 < count2; i2++) {
+      SV* pxsv = newSV(0);
+      if (!pxsv) {
+        for (; i < count; i++) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrapper[i]);
+        for (; i2 < count2; i2++) cw_${(my $novecstar=$type)=~s/^(?:vector_){2}(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrap2[i2]);
+        PDL_CORE_(pdl_barf)(\"Failed to create SV\");
+      }
+      sv_setref_pv(pxsv, \"${(my $novecstar=$type)=~s/^(?:vector_){2}(.*)Wrapper\s*\**$/$1/; \$novecstar}\",
+                   wrap2[i2]);
+      if (!av_store(av2, i2, pxsv)) PDL_CORE_(pdl_barf)(\"Failed to push SV\");
+    }
+    if (!av_store(av, i, newRV_noinc((SV*)av2))) PDL_CORE_(pdl_barf)(\"Failed to push AVref\");
+    cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrapper[i]);
   }
   cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_DESTROY($var);
   sv_setsv($arg, newRV_noinc((SV*)av));
