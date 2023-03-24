@@ -158,7 +158,7 @@ sub gen_code {
 	my ($no_ptr, $func_ret, $cpptype) = code_type($ret, 'ret');
 	my $after_ret = $ret eq 'StringWrapper*' ? "  CW_err = cw_String_new(cw_retval, NULL, cpp_retval.c_str()); if (CW_err.error) return CW_err;\n" :
 	  $ret =~ $wrap_re ? "  CW_err = cw_${ret}_new(cw_retval, NULL); if (CW_err.error) return CW_err; (*cw_retval)->held = ".(
-	    $no_ptr ? "cpp_retval" : "cv::Ptr<$cpptype>(&cpp_retval)"
+	    $no_ptr ? "cpp_retval" : "cv::Ptr<$cpptype>(new $cpptype(cpp_retval))"
 	  ).";\n" : '';
 	my $cpp_ret = $ret eq 'void' ? '' :
 	  ($ret eq 'StringWrapper*' || $ret =~ $wrap_re) ? "$cpptype cpp_retval = " :
@@ -212,10 +212,10 @@ $tdecls_all{pdlt} { return @{[
 ]}; }
 EOF
   if ($is_vector || defined $cons_func) {
+    my $no_ptr = $is_vector || $need_cv;
     my $dest_decl = "void cw_$vector_str${class}_DESTROY($wrapper *wrapper)";
     $hstr .= "$dest_decl;\n";
-    $cstr .= qq{$dest_decl { delete wrapper; }\n};
-    my $no_ptr = $is_vector || $need_cv;
+    $cstr .= qq{$dest_decl { @{[$no_ptr ? "" : "if (wrapper->held) delete wrapper->held; "]}delete wrapper; }\n};
     my $use_override = $constructor_override{$class} && !$is_vector;
     my $func_suffix = 0;
     for my $extra_args ($is_vector ? [] : map $_->[0], @$cons_info) {
