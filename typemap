@@ -93,10 +93,8 @@ T_OPENCV_VECTOR
       PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
     }
     cw_error CW_err = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_newWithVals(&$var, wrappers, count);
-    if (CW_err.error)
-      for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
-    PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
     for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
+    PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
   }
   }
 
