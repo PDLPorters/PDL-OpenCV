@@ -5,6 +5,8 @@ vector_DMatchWrapper* T_OPENCV_VECTOR
 vector_KeyPointWrapper* T_OPENCV_VECTOR
 vector_MatWrapper* T_OPENCV_VECTOR
 vector_StringWrapper* T_OPENCV_VECTOR
+vector_vector_charWrapper* T_OPENCV_VECTOR
+vector_vector_ucharWrapper* T_OPENCV_VECTOR
 vector_vector_Point2fWrapper* T_OPENCV_VECTOR
 vector_vector_DMatchWrapper* T_OPENCV_VECTOR2
 vector_vector_KeyPointWrapper* T_OPENCV_VECTOR2

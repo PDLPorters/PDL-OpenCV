@@ -17,6 +17,7 @@ my $T = [qw(A B S U L F D)];
 our %type_overrides = (
   String => ['StringWrapper*', 'StringWrapper*'], # PP, C
   bool => ['byte', 'unsigned char'],
+  char => ['byte', 'char'],
   uchar => ['byte', 'unsigned char'],
   c_string => ['char *', 'char *'],
   size_t => ['indx', 'size_t'],
