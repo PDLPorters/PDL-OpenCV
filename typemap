@@ -20,11 +20,11 @@ INPUT
 T_PTROBJ_SPECIAL
   if (!SvOK($arg)) {
     $var = NULL;
-  } else if (sv_derived_from($arg, \"${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/g;\$ntt}\")) {
+  } else if (sv_derived_from($arg, \"${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/;\$ntt}\")) {
     IV tmp = SvIV((SV*)SvRV($arg));
     $var = INT2PTR($type, tmp);
   } else
-    croak(\"$var is not of type ${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/g;\$ntt}\")
+    croak(\"$var is not of type ${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/;\$ntt}\")
 
 T_OPENCV_STRING
   {
@@ -52,12 +52,12 @@ T_OPENCV_VECTOR
       PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
       } : $type =~ /DMatch|KeyPoint/ ? \qq{
       cw_error CW_err = {0,NULL,0};
-      if (sv_derived_from(*sp, \"${(my $ntt=$type)=~s/^vector_(.*)Wrapper\s*\**$/PDL::OpenCV::$1/g;\$ntt}\")){
+      if (sv_derived_from(*sp, \"${(my $ntt=$type)=~s/^vector_(.*)Wrapper\s*\**$/PDL::OpenCV::$1/;\$ntt}\")){
         IV tmp = SvIV((SV*)SvRV(*sp));
         wrappers[i] = INT2PTR(${(my $novec=$type)=~s/^vector_//; \$novec}, tmp);
       } else {
         for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
-        PDL_CORE_(pdl_barf)(\"$var is not of type ${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/g;\$ntt}\");
+        PDL_CORE_(pdl_barf)(\"$var is not of type ${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/;\$ntt}\");
       }
       } : $type =~ /Mat/ ? \qq{
       pdl *p = PDL_CORE_(SvPDLV)(*sp);
@@ -100,7 +100,7 @@ T_OPENCV_VECTOR
 
 OUTPUT
 T_PTROBJ_SPECIAL
-  sv_setref_pv($arg, \"${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/g;\$ntt}\",
+  sv_setref_pv($arg, \"${(my $ntt=$type)=~s/(.*?)Wrapper\s*\**$/PDL::OpenCV::$1/;\$ntt}\",
                (void*)$var);
 
 T_OPENCV_STRING
@@ -140,7 +140,7 @@ T_OPENCV_VECTOR
     PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
     sv_setpv(pxsv, cptr);
     } : $type =~ /DMatch|KeyPoint/ ? \qq{
-    sv_setref_pv(pxsv, \"${(my $ntt=$type)=~s/^vector_(.*)Wrapper\s*\**$/PDL::OpenCV::$1/g;\$ntt}\",
+    sv_setref_pv(pxsv, \"${(my $ntt=$type)=~s/^vector_(.*)Wrapper\s*\**$/PDL::OpenCV::$1/;\$ntt}\",
                  wrap2[i]);
     } : $type =~ /Mat/ ? \qq{
     PDL_Indx d1, d2, d3; pdl_datatypes dt;
