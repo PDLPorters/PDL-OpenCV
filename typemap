@@ -42,13 +42,11 @@ T_OPENCV_VECTOR
     if(SvTYPE(SvRV($arg)) != SVt_PVAV) PDL_CORE_(pdl_barf)(\"$var not an array-ref\");
     AV *av = (AV *)SvRV($arg);
     PDL_Indx count = av_len(av) + 1, i = 0, dim0 = cw_${(my $nostar=$type)=~s/Wrapper\s*\**$//; \$nostar}_dim0();
+    for (i = 0; i < count; i++)
+      if (!av_fetch(av, i, 0)) PDL_CORE_(pdl_barf)(\"$var index %td not a valid SV\", i);
     ${(my $novec=$type)=~s/^vector_//; \$novec} wrappers[count];
     for (i = 0; i < count; i++) {
       SV **sp = av_fetch(av, i, 0);
-      if (!sp) {
-        for (i--; i >= 0; i--) cw_${(my $novecstar=$type)=~s/^vector_(.*)Wrapper\s*\**$/$1/; \$novecstar}_DESTROY(wrappers[i]);
-        PDL_CORE_(pdl_barf)(\"$var index %td not a valid SV\", i);
-      }
       ${ $type =~ /String/ ? \qq{
       cw_error CW_err = cw_String_new(&wrappers[i], NULL, SvOK(*sp) ? SvPV_nolen(*sp) : NULL);
       PDL_CORE_(barf_if_error)(*(pdl_error *)&CW_err);
