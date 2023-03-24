@@ -1,1 +1,1 @@
-wmf('Objdetect', ['objdetect']);
+wmf('Objdetect', [qw(objdetect)]);

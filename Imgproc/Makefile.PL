@@ -1,1 +1,1 @@
-wmf('Imgproc', ['imgproc']);
+wmf('Imgproc', [qw(imgproc)]);

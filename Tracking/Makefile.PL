@@ -1,1 +1,1 @@
-wmf('Tracking', ['tracking']);
+wmf('Tracking', [qw(tracking video/tracking)]);

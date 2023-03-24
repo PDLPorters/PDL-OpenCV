@@ -1,1 +1,1 @@
-wmf('Imgcodecs', ['imgcodecs']);
+wmf('Imgcodecs', [qw(imgcodecs)]);

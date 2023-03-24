@@ -1,1 +1,1 @@
-wmf('Highgui', ['highgui']);
+wmf('Highgui', [qw(highgui)]);

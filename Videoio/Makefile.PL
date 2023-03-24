@@ -1,1 +1,1 @@
-wmf('Videoio', ['videoio']);
+wmf('Videoio', [qw(videoio)]);

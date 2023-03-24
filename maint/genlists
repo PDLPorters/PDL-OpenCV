@@ -12,17 +12,19 @@ use Cwd;
 use IPC::Open2;
 use Data::Dumper;
 
-my $HEADERS = 'maint/headers.txt';
-my $HEADERS_DIR = '/usr/include/opencv4';
+my $HEADERS_FILE = 'maint/headers.txt';
+my $HEADERS_DIR = '/usr/include/opencv4/opencv2';
 my $CVDIR = '../opencv/modules/python/src2';
 my $PYSCRIPT = <<'EOF';
 import hdr_parser, json, sys
 parser = hdr_parser.CppHeaderParser()
-json.dump([[x,parser.parse(x)] for x in sys.stdin.read().splitlines()], sys.stdout)
+json.dump([[*x,parser.parse(x[1])] for x in [json.loads(x) for x in sys.stdin.read().splitlines()]], sys.stdout)
 EOF
 
-my @HEADERS_FILES = do { local @ARGV = $HEADERS; grep !/^\s*#/, <> };
-chomp @HEADERS_FILES;
+my @HEADERS = map {
+  chomp; my ($dest, @files) = split / /; map [$dest, $_], @files;
+} do { local @ARGV = $HEADERS_FILE; grep !/^\s*#/, <> };
+my %dest2headers; push @{$dest2headers{$_->[0]}}, $_->[1] for @HEADERS;
 
 my $tdir = tempdir(CLEANUP=>1);
 my %force_wrap = (
@@ -36,8 +38,8 @@ my $cons_re = join '|',
   keys %force_wrap;
 sub process_header {
   my ($dir, $file) = @_;
-  open my $fh, '<', catfile($dir, $file) or die "$file: $!";
-  my $outfile = catfile($tdir, $file);
+  open my $fh, '<', catfile($dir, "$file.hpp") or die "$file.hpp: $!";
+  my $outfile = catfile($tdir, "$file.hpp");
   my $outdir = dirname $outfile;
   make_path $outdir or die "$outdir: $!" if !-d $outdir;
   open my $outfh, '>', $outfile or die "$outfile: $!";
@@ -54,7 +56,7 @@ my $json_data;
 my $old_dir = getcwd();
 chdir $CVDIR or die "chdir: $!";
 my $pid = open2(my $child_out, my $child_in, qw(python3 -c), $PYSCRIPT);
-print $child_in map process_header($HEADERS_DIR, $_)."\n", @HEADERS_FILES;
+print $child_in map encode_json([$_->[0], process_header($HEADERS_DIR, $_->[1])])."\n", @HEADERS;
 close $child_in;
 $json_data = decode_json do { local $/; <$child_out> };
 chdir $old_dir or die "chdir: $!";
@@ -151,8 +153,7 @@ if (@ARGV) {
 }
 my (%dest2enums, %dest2funcs, %dest2classdefs, %dest2class2create);
 for (@$json_data) {
-  my ($file, $d) = @$_;
-  my $dest = $file =~ /core/ ? "" : basename($file, ".hpp");
+  my ($dest, $file, $d) = @$_;
 print "$file -> |$dest|\n";
   for my $t (@$d) {
     my ($name, $ret, $flags, $args, $ret_cpp, $doc) = @$t;
@@ -234,7 +235,7 @@ sub writefile {
   my $dir = ucfirst $dest;
   if ($dest and !-d $dir) {
     my %n2f = (
-    'Makefile.PL' => "wmf('$dir', ['$dest']);\n",
+    'Makefile.PL' => "wmf('$dir', [qw(@{$dest2headers{$dest}})]);\n",
     'module.pd' => <<EOF,
 use strict;
 use warnings;
