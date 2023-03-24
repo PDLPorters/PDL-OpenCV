@@ -51,7 +51,9 @@ our %DIMTYPES = (
   Scalar=>[map ['double', "v$_", "val[$_]"], 0..3],
   Size=>[map ['ptrdiff_t', $_], qw(width height)],
   Size2f=>[map ['float', $_], qw(width height)],
+  Vec3d=>[map ['double', "v$_", "val[$_]"], 0..2],
   Vec4f=>[map ['float', "v$_", "val[$_]"], 0..3],
+  Vec4i=>[map ['ptrdiff_t', "v$_", "val[$_]"], 0..3],
   Vec6f=>[map ['float', "v$_", "val[$_]"], 0..5],
 );
 my $dimtypes_re = join '|', sort keys %DIMTYPES; $dimtypes_re = qr/$dimtypes_re/;
