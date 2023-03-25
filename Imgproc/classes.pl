@@ -1,11 +1,5 @@
 (
 ['GeneralizedHough',['Algorithm'],'@brief finds arbitrary template in the grayscale image using Generalized Hough Transform'],
-['GeneralizedHoughBallard',['GeneralizedHough'],'@brief finds arbitrary template in the grayscale image using Generalized Hough Transform
-
-Detects position only without translation and rotation @cite Ballard1981 .',1,'cv::createGeneralizedHoughBallard',[[[],'@brief Creates a smart pointer to a cv::GeneralizedHoughBallard class and initializes it.']]],
-['GeneralizedHoughGuil',['GeneralizedHough'],'@brief finds arbitrary template in the grayscale image using Generalized Hough Transform
-
-Detects position, translation and rotation @cite Guil1999 .',1,'cv::createGeneralizedHoughGuil',[[[],'@brief Creates a smart pointer to a cv::GeneralizedHoughGuil class and initializes it.']]],
 ['CLAHE',['Algorithm'],'@brief Base class for Contrast Limited Adaptive Histogram Equalization.',1,'cv::createCLAHE',[[[['double','clipLimit','40.0',[]],['Size','tileGridSize','Size(8, 8)',[]]],'@brief Creates a smart pointer to a cv::CLAHE class and initializes it.
 
 @param clipLimit Threshold for contrast limiting.

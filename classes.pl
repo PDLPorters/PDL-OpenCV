@@ -39,37 +39,6 @@ You can initialize it by default constructor and then override any parameters, o
 be fully initialized using the advanced variant of the constructor.',0,'cv::TermCriteria',[[[],''],[[['int','type','',[]],['int','maxCount','',[]],['double','epsilon','',[]]],'@param type The type of termination criteria, one of TermCriteria::Type
     @param maxCount The maximum number of iterations or elements to compute.
     @param epsilon The desired accuracy or change in parameters at which the iterative algorithm stops.']]],
-['Moments',[],'@brief struct returned by cv::moments
-
-The spatial moments \\f$\\texttt{Moments::m}_{ji}\\f$ are computed as:
-
-\\f[\\texttt{m} _{ji}= \\sum _{x,y}  \\left ( \\texttt{array} (x,y)  \\cdot x^j  \\cdot y^i \\right )\\f]
-
-The central moments \\f$\\texttt{Moments::mu}_{ji}\\f$ are computed as:
-
-\\f[\\texttt{mu} _{ji}= \\sum _{x,y}  \\left ( \\texttt{array} (x,y)  \\cdot (x -  \\bar{x} )^j  \\cdot (y -  \\bar{y} )^i \\right )\\f]
-
-where \\f$(\\bar{x}, \\bar{y})\\f$ is the mass center:
-
-\\f[\\bar{x} = \\frac{\\texttt{m}_{10}}{\\texttt{m}_{00}} , \\; \\bar{y} = \\frac{\\texttt{m}_{01}}{\\texttt{m}_{00}}\\f]
-
-The normalized central moments \\f$\\texttt{Moments::nu}_{ij}\\f$ are computed as:
-
-\\f[\\texttt{nu} _{ji}= \\frac{\\texttt{mu}_{ji}}{\\texttt{m}_{00}^{(i+j)/2+1}} .\\f]
-
-@note
-\\f$\\texttt{mu}_{00}=\\texttt{m}_{00}\\f$, \\f$\\texttt{nu}_{00}=1\\f$
-\\f$\\texttt{nu}_{10}=\\texttt{mu}_{10}=\\texttt{mu}_{01}=\\texttt{mu}_{10}=0\\f$ , hence the values are not
-stored.
-
-The moments of a contour are defined in the same way but computed using the Green\'s formula (see
-<http://en.wikipedia.org/wiki/Green_theorem>). So, due to a limited raster resolution, the moments
-computed for a contour are slightly different from the moments computed for the same rasterized
-contour.
-
-@note
-Since the contour moments are computed using Green formula, you may get seemingly odd results for
-contours with self-intersections, e.g. a zero area (m00) for butterfly-shaped contours.'],
 ['RNG',[],'@brief Random Number Generator
 
 Random number generator. It encapsulates the state (currently, a 64-bit
@@ -88,10 +57,6 @@ introduced by G. Marsaglia and W. W. Tsang.',0,'cv::RNG',[[[],'@brief constructo
     , the constructor uses the above default value instead to avoid the
     singular random number sequence, consisting of all zeros.'],[[['uint64','state','',[]]],'@overload
     @param state 64-bit value used to initialize the RNG.']]],
-['RNG_MT19937',[],'@brief Mersenne Twister random number generator
-
-Inspired by http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/MT2002/CODES/mt19937ar.c
-@todo document'],
 ['Algorithm',[],'@brief This is a base class for all more or less complex algorithms in OpenCV
 
 especially for classes of algorithms, for which there can be multiple implementations. The examples

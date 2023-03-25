@@ -1,5 +1,4 @@
 (
-['BaseCascadeClassifier',['Algorithm'],''],
 ['CascadeClassifier',[],'@brief Cascade classifier class for object detection.',0,'cv::CascadeClassifier',[[[],''],[[['String','filename','',['/C','/Ref']]],'@brief Loads a classifier from a file.
 
     @param filename Name of the file from which the classifier is loaded.']]],

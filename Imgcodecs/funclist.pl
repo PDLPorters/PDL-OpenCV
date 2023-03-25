@@ -49,66 +49,6 @@ Currently, the following file formats are supported:
 
 @param filename Name of file to be loaded.
 @param flags Flag that can take values of cv::ImreadModes',0,'Mat',['String','filename','',['/C','/Ref']],['int','flags','IMREAD_COLOR',[]]],
-['','imreadmulti','@brief Loads a multi-page image from a file.
-
-The function imreadmulti loads a multi-page image from the specified file into a vector of Mat objects.
-@param filename Name of file to be loaded.
-@param flags Flag that can take values of cv::ImreadModes, default with cv::IMREAD_ANYCOLOR.
-@param mats A vector of Mat objects holding each page, if more than one.
-@sa cv::imread',0,'bool',['String','filename','',['/C','/Ref']],['vector_Mat','mats','',['/O','/Ref']],['int','flags','IMREAD_ANYCOLOR',[]]],
-['','imreadmulti','@brief Loads a of images of a multi-page image from a file.
-
-The function imreadmulti loads a specified range from a multi-page image from the specified file into a vector of Mat objects.
-@param filename Name of file to be loaded.
-@param start Start index of the image to load
-@param count Count number of images to load
-@param flags Flag that can take values of cv::ImreadModes, default with cv::IMREAD_ANYCOLOR.
-@param mats A vector of Mat objects holding each page, if more than one.
-@sa cv::imread',0,'bool',['String','filename','',['/C','/Ref']],['vector_Mat','mats','',['/O','/Ref']],['int','start','',[]],['int','count','',[]],['int','flags','IMREAD_ANYCOLOR',[]]],
-['','imcount','@brief Returns the number of images inside the give file
-
-The function imcount will return the number of pages in a multi-page image, or 1 for single-page images
-@param filename Name of file to be loaded.
-@param flags Flag that can take values of cv::ImreadModes, default with cv::IMREAD_ANYCOLOR.',0,'size_t',['String','filename','',['/C','/Ref']],['int','flags','IMREAD_ANYCOLOR',[]]],
-['','imwrite','@brief Saves an image to a specified file.
-
-The function imwrite saves the image to the specified file. The image format is chosen based on the
-filename extension (see cv::imread for the list of extensions). In general, only 8-bit
-single-channel or 3-channel (with \'BGR\' channel order) images
-can be saved using this function, with these exceptions:
-
-- 16-bit unsigned (CV_16U) images can be saved in the case of PNG, JPEG 2000, and TIFF formats
-- 32-bit float (CV_32F) images can be saved in PFM, TIFF, OpenEXR, and Radiance HDR formats;
-  3-channel (CV_32FC3) TIFF images will be saved using the LogLuv high dynamic range encoding
-  (4 bytes per pixel)
-- PNG images with an alpha channel can be saved using this function. To do this, create
-8-bit (or 16-bit) 4-channel image BGRA, where the alpha channel goes last. Fully transparent pixels
-should have alpha set to 0, fully opaque pixels should have alpha set to 255/65535 (see the code sample below).
-- Multiple images (vector of Mat) can be saved in TIFF format (see the code sample below).
-
-If the image format is not supported, the image will be converted to 8-bit unsigned (CV_8U) and saved that way.
-
-If the format, depth or channel order is different, use
-Mat::convertTo and cv::cvtColor to convert it before saving. Or, use the universal FileStorage I/O
-functions to save the image to XML or YAML format.
-
-The sample below shows how to create a BGRA image, how to set custom compression parameters and save it to a PNG file.
-It also demonstrates how to save multiple images in a TIFF file:
-@include snippets/imgcodecs_imwrite.cpp
-@param filename Name of the file.
-@param img (Mat or vector of Mat) Image or Images to be saved.
-@param params Format-specific parameters encoded as pairs (paramId_1, paramValue_1, paramId_2, paramValue_2, ... .) see cv::ImwriteFlags',0,'bool',['String','filename','',['/C','/Ref']],['Mat','img','',[]],['vector_int','params','std::vector<int>()',['/C','/Ref']]],
-['','imwritemulti','',0,'bool',['String','filename','',['/C','/Ref']],['vector_Mat','img','',[]],['vector_int','params','std::vector<int>()',['/C','/Ref']]],
-['','imdecode','@brief Reads an image from a buffer in memory.
-
-The function imdecode reads an image from the specified buffer in the memory. If the buffer is too short or
-contains invalid data, the function returns an empty matrix ( Mat::data==NULL ).
-
-See cv::imread for the list of supported formats and flags description.
-
-@note In the case of color images, the decoded images will have the channels stored in **B G R** order.
-@param buf Input array or vector of bytes.
-@param flags The same flags as in cv::imread, see cv::ImreadModes.',0,'Mat',['Mat','buf','',[]],['int','flags','',[]]],
 ['','imencode','@brief Encodes an image into a memory buffer.
 
 The function imencode compresses the image and stores it in the memory buffer that is resized to fit the
@@ -118,10 +58,4 @@ result. See cv::imwrite for the list of supported formats and flags description.
 @param img Image to be written.
 @param buf Output buffer resized to fit the compressed image.
 @param params Format-specific parameters. See cv::imwrite and cv::ImwriteFlags.',0,'bool',['String','ext','',['/C','/Ref']],['Mat','img','',[]],['vector_uchar','buf','',['/O','/Ref']],['vector_int','params','std::vector<int>()',['/C','/Ref']]],
-['','haveImageReader','@brief Returns true if the specified image can be decoded by OpenCV
-
-@param filename File name of the image',0,'bool',['String','filename','',['/C','/Ref']]],
-['','haveImageWriter','@brief Returns true if an image with the specified filename can be encoded by OpenCV
-
- @param filename File name of the image',0,'bool',['String','filename','',['/C','/Ref']]],
 );
