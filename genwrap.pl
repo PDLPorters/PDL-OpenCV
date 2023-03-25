@@ -16,7 +16,7 @@ my %extra_cons_args = (
   String => [['const char*', 'str']],
 );
 my %constructor_override = (
-  String => "str ? cv::String(str) : cv::String();"
+  String => "str ? cv::String(str) : cv::String()"
 );
 my $CHEADER = <<'EOF';
 #include "opencv_wrapper.h"
@@ -226,7 +226,7 @@ EOF
       $cstr .= "$new_decl {\n TRY_WRAP(";
       $cstr .= $no_ptr && !$use_override && !@$extra_args ? " *cw_retval = new $wrapper;" :
 	"\n  (*cw_retval = new $wrapper)->held = ".
-	($use_override ? "$constructor_override{$class}\n" :
+	($use_override ? "$constructor_override{$class};\n" :
 	  maybe_wrap(!$no_ptr && !$ptr_only, ["cv::makePtr"], $cons_func).
 	  "(@{[ join ', ', map +(code_type(@$_))[3], @$extra_args ]});\n");
       $cstr .= " )\n}\n";
