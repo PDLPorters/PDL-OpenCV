@@ -148,7 +148,7 @@ The algorithm normalizes the brightness and increases the contrast of the image.
 
 @param src Source 8-bit single channel image.
 @param dst Destination image of the same size and type as src .',0,'void',['Mat','src','',[]],['Mat','dst','',['/O']]],
-['',['wrapperEMD','EMD'],'@brief Computes the "minimal work" distance between two weighted point configurations.
+['',['cv::wrapperEMD','EMD'],'@brief Computes the "minimal work" distance between two weighted point configurations.
 
 The function computes the earth mover distance and/or a lower boundary of the distance between the
 two weighted point configurations. One of the applications described in @cite RubnerSept98,

@@ -20,7 +20,7 @@
     If they don\'t overlap, we get zero. If they coincide at same location with same size, we get 1.
     @param kp1 First keypoint
     @param kp2 Second keypoint',0,'float',['KeyPoint','kp1','',['/C','/Ref']],['KeyPoint','kp2','',['/C','/Ref']]],
-['',['sum','sumElems'],'@brief Calculates the sum of array elements.
+['',['cv::sum','sumElems'],'@brief Calculates the sum of array elements.
 
 The function cv::sum calculates and returns the sum of array elements,
 independently for each channel.

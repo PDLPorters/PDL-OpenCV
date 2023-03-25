@@ -338,8 +338,9 @@ EOF
 sub maybe_suffix {
   my ($suffixh, $class, $name, @rest) = @_;
   ($class,
-    ref($name) ? $name :
-      [$name, $name.($suffixh->{$class}{$name}++ ? $suffixh->{$class}{$name} : '')],
+    ref($name) ? $name : [
+      !$rest[1] ? join('::', grep length, "cv", $class, $name) : $name,
+      $name.($suffixh->{$class}{$name}++ ? $suffixh->{$class}{$name} : '')],
     @rest
   );
 }

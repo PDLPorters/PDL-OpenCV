@@ -203,7 +203,8 @@ print "class.class: $cname @{[0+@$args]}\n";
         die ">1 aliases for $name: @aliases" if @aliases > 1;
         $aliases[0] =~ s/^=//;
         if ($aliases[0] !~ /\d$/) { # we replace their numbering with ours
-          $func = [$func, $aliases[0]];
+          (my $colons = $name) =~ s/\./::/g;
+          $func = [$ismethod ? $func : $colons, $aliases[0]];
           $name_alias .= "/$aliases[0]";
         }
       }

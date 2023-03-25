@@ -151,7 +151,7 @@ sub code_type {
 
 sub gen_code {
 	my ($ptr_only, $class, $name, $doc, $ismethod, $ret, @params) = @_;
-	$name = [$name, $name] if !ref $name;
+	$name = [!$ismethod ? join('::', grep length, "cv", $class, $name) : $name, $name] if !ref $name;
 	my ($in_name, $out_name) = @$name;
 	die "No class given for '$name' method='$ismethod'" if !$class and $ismethod;
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
@@ -174,8 +174,7 @@ sub gen_code {
 	$str .= " TRY_WRAP(\n";
 	$str .= "  if (!cw_retval) throw std::invalid_argument(\"NULL retval pointer passed to ${class}::$out_name\");\n" if $ret ne 'void';
 	$str .= "  $cpp_ret";
-	$str .= !$ismethod ? join('::', grep length, "cv", $class, $in_name) :
-	  "self->held->$in_name";
+	$str .= !$ismethod ? $in_name : "self->held->$in_name";
 	$str .= "(".join(', ', map +(code_type(@$_))[3], @params).");\n";
 	$str .= $after_ret;
 	$str .= " )\n";
@@ -279,7 +278,7 @@ $decls{cDT} {
 }
 EOF
   } elsif (@fields) {
-    my ($xhstr, $xcstr) = gen_code($ptr_only, $class, ['', "newWithVals"], '', 0, $class, @fields);
+    my ($xhstr, $xcstr) = gen_code($ptr_only, $class, ["cv::$class", "newWithVals"], '', 0, $class, @fields);
     $hstr .= $xhstr; $cstr .= $xcstr;
     my %decls = (
       gV => qq{cw_error cw_$vector_str${class}_getVals($wrapper *self,@{[join ',', map "$_->[0] *$_->[1]", @fields]})},
