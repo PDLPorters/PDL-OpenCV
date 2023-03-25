@@ -131,6 +131,7 @@ sub code_type {
   $cpptype = qq{cv::$cpptype} if $cpptype =~ $wrap_re;
   $cpptype = maybe_wrap($is_vector, [("std::vector")x$is_vector], $cpptype);
   my $was_ptr = $intype =~ $wrap_re ? ($intype =~ s/\s*\*+$// || $intype =~ s/^Ptr_//) : 0;
+  $cpptype = maybe_wrap($was_ptr, ["cv::Ptr"], $cpptype);
   $intype = $type_overrides{$intype}[1] if $type_overrides{$intype};
   $intype = ('vector_'x$is_vector).$type_alias{$no_vector} if $is_vector and $type_alias{$no_vector};
   my $nowrapper = $intype;
@@ -146,7 +147,7 @@ sub code_type {
     $cpp_input = "static_cast<cv::$colons>($v)"; # enums
   }
   $cpp_input = "static_cast<bool>($v)" if $intype_orig eq 'bool'; # help C++ pick which polymorphism to call
-  ($no_ptr, $intype, $cpptype, $cpp_input);
+  ($no_ptr, $intype, $cpptype, $cpp_input, $nowrapper);
 }
 
 sub gen_code {
@@ -155,9 +156,9 @@ sub gen_code {
 	my ($in_name, $out_name) = @$name;
 	die "No class given for '$name' method='$ismethod'" if !$class and $ismethod;
 	$ret = $type_overrides{$ret}[1] if $type_overrides{$ret};
-	my ($no_ptr, $func_ret, $cpptype) = code_type($ret, 'ret');
+	my ($no_ptr, $func_ret, $cpptype, undef, $nowrapper) = code_type($ret, 'ret');
 	my $after_ret = $ret eq 'StringWrapper*' ? "  CW_err = cw_String_new(cw_retval, NULL, cpp_retval.c_str()); if (CW_err.error) return CW_err;\n" :
-	  $ret =~ $wrap_re ? "  CW_err = cw_${ret}_new(cw_retval, NULL); if (CW_err.error) return CW_err; (*cw_retval)->held = ".(
+	  $ret =~ $wrap_re ? "  (*cw_retval = new ${nowrapper}Wrapper)->held = ".(
 	    $no_ptr ? "cpp_retval" : "cv::Ptr<$cpptype>(new $cpptype(cpp_retval))"
 	  ).";\n" : '';
 	my $cpp_ret = $ret eq 'void' ? '' :
