@@ -175,8 +175,10 @@ sub gen_code {
 	$str .= " TRY_WRAP(\n";
 	$str .= "  if (!cw_retval) throw std::invalid_argument(\"NULL retval pointer passed to ${class}::$out_name\");\n" if $ret ne 'void';
 	$str .= "  $cpp_ret";
-	$str .= !$ismethod ? $in_name : "self->held->$in_name";
-	$str .= "(".join(', ', map +(code_type(@$_))[3], grep ref() ne 'REF', @params).");\n";
+	if (ref $in_name) { $str .= "$$in_name;\n" } else {
+	  $str .= !$ismethod ? $in_name : "self->held->$in_name";
+	  $str .= "(".join(', ', map +(code_type(@$_))[3], grep ref() ne 'REF', @params).");\n";
+	}
 	$str .= $after_ret;
 	$str .= " )\n";
 	$str .= "}\n\n";

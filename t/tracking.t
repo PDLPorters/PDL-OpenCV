@@ -15,7 +15,7 @@ use PDL::OpenCV::Objdetect;
     my $cpy = $imgb->copy;
     my ($pts) = ellipse2Poly([250,250],[200,100],45,60,120+$_,1);
     rectangle($cpy, $_, $_+1, [255,0,0,0]) for $pts->dog;
-    imshow("ud", $cpy), waitKey(50) if $ENV{AUTHOR_TESTING};
+    imshow("ud", $cpy), waitKey(300) if $ENV{AUTHOR_TESTING};
   }
 }
 
@@ -62,7 +62,7 @@ while ($res) {
       rectangle($frame, [$bx,$by], [$bx+$bw,$by+$bh], [0,255,255,0], 2, 1, 0);
     }
   }
-  imshow("ud", $frame), waitKey(500) if $ENV{AUTHOR_TESTING};
+  imshow("ud", $frame), waitKey(300) if $ENV{AUTHOR_TESTING};
   if ((int($x/2) % 2) == 0) {
           is(all ($box) >0,1,"tracker found box $x.");
           ok $track_res, 'tracker said found';
