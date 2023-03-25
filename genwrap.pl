@@ -279,17 +279,13 @@ $decls{cDT} {
 }
 EOF
   } elsif (@fields) {
+    my ($xhstr, $xcstr) = gen_code($ptr_only, $class, ['', "newWithVals"], '', 0, $class, @fields);
+    $hstr .= $xhstr; $cstr .= $xcstr;
     my %decls = (
-      nWV => qq{cw_error cw_$vector_str${class}_newWithVals($wrapper **cw_retval, @{[join ',', map "@$_[0,1]", @fields]})},
       gV => qq{cw_error cw_$vector_str${class}_getVals($wrapper *self,@{[join ',', map "$_->[0] *$_->[1]", @fields]})},
     );
     $hstr .= join '', map "$_;\n", @decls{sort keys %decls};
     $cstr .= <<EOF;
-$decls{nWV} {
- TRY_WRAP(
-  (*cw_retval = new $wrapper)->held = cv::${class}(@{[join ',', map $_->[1], @fields]});
- )
-}
 $decls{gV} {
  TRY_WRAP(
   @{[join "\n  ", map "*$_->[1] = self->held.@{[$_->[2]||$_->[1]]};", @fields]}
