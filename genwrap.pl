@@ -167,7 +167,7 @@ sub gen_code {
 	die "Error: '$out_name' no return type from '$ret'".do {require Data::Dumper; Data::Dumper::Dumper(\@_)} if $ret ne 'void' and !$func_ret;
 	my @input_args = $ret ne 'void' ? "$func_ret*cw_retval" : ();
 	push @input_args, "${class}Wrapper *self" if $ismethod;
-	push @input_args, map +(code_type(@$_))[1]." $_->[1]", @params;
+	push @input_args, map +(code_type(@$_))[1]." $_->[1]", map ref() eq 'REF' ? $$_ : $_, @params;
 	my $fname = join '_', grep length, 'cw', $class, $out_name;
 	my $str = "cw_error $fname(" . join(", ", @input_args) . ")";
 	my $hstr = $str.";\n";
@@ -176,7 +176,7 @@ sub gen_code {
 	$str .= "  if (!cw_retval) throw std::invalid_argument(\"NULL retval pointer passed to ${class}::$out_name\");\n" if $ret ne 'void';
 	$str .= "  $cpp_ret";
 	$str .= !$ismethod ? $in_name : "self->held->$in_name";
-	$str .= "(".join(', ', map +(code_type(@$_))[3], @params).");\n";
+	$str .= "(".join(', ', map +(code_type(@$_))[3], grep ref() ne 'REF', @params).");\n";
 	$str .= $after_ret;
 	$str .= " )\n";
 	$str .= "}\n\n";
