@@ -175,6 +175,7 @@ print "enum: $name\n";
       $ret =~ s/^:\s*//;
       $ret = [map {(my $r=$_)=~s/^cv:://;$r} split /\s*,\s*/, $ret];
 print "class: $cname\n";
+      $cname =~ s/\./::/g;
       push @{$dest2classdefs{$dest}}, [$cname, $ret, $doc];
     } elsif ($ret =~ /^Ptr_/ and $name =~ /^cv\.(.*)\.create/) {
       my $cname = $1;
@@ -195,20 +196,18 @@ print "class.class: $cname @{[0+@$args]}\n";
       push @{$dest2class2create{$dest}{$cname}[2]}, [$args, $doc];
     } elsif ($inc_all or $force{$name}) {
       my (undef, @n) = split /\./, $name;
-      unshift @n, '' if @n == 1;
-      die "Unexpected number of elts in (@n)" if @n != 2;
-      my $ismethod = 0+(!!$n[0] && !grep $_ eq '/S', @$flags);
+      my $func = pop @n;
+      my $ismethod = 0+!!((grep /^[A-Z]/, @n) && !(grep $_ eq '/S', @$flags));
       my $name_alias = $name;
       if (my @aliases = grep /^=/, @$flags) {
         die ">1 aliases for $name: @aliases" if @aliases > 1;
         $aliases[0] =~ s/^=//;
         if ($aliases[0] !~ /\d$/) { # we replace their numbering with ours
-          $n[1] = [$n[1], $aliases[0]];
+          $func = [$func, $aliases[0]];
           $name_alias .= "/$aliases[0]";
         }
       }
-      push @n, $doc, $ismethod, $ret, @$args;
-      push @{$dest2funcs{$dest}}, \@n;
+      push @{$dest2funcs{$dest}}, [join('::', @n), $func, $doc, $ismethod, $ret, @$args];
       print "$name_alias\n";
     }
   }
