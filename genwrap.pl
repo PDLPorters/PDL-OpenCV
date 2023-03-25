@@ -307,29 +307,28 @@ sub gen_const {
 }
 
 sub gen_chfiles {
-  my ($macro, $extras, $typespecs, $vectorspecs, $cvheaders, $funclist, $consts, @params) = @_;
+  my ($macro, $extras, $ptr_only, $typespecs, $vectorspecs, $cvheaders, $funclist, $consts, @params) = @_;
   my $hstr = sprintf($HHEADER, $macro) . $extras->[0];
   my $cstr = join '', (map "#include <opencv2/$_.hpp>\n", qw(opencv core/utility), @{$cvheaders||[]}), $extras->[2], $CHEADER;
   $hstr .= join '', map join(' ', 'typedef struct', ("${_}Wrapper") x 2).";\n", sort keys %$typespecs;
   $hstr .= join '', map join(' ', 'typedef struct', ("vector_${_}Wrapper") x 2).";\n", sort keys %$vectorspecs;
   $hstr .= join '', map join(' ', 'typedef struct', ("vector_vector_${_}Wrapper") x 2).";\n", sort keys %$vectorspecs;
-  my %po;
   for (sort keys %$typespecs) {
     my ($fields, $po, $cf, $xa) = @{$typespecs->{$_}};
-    my ($xhstr, $xcstr) = gen_wrapper($po{$_} = $po, $cf, $xa||[[[]]], $_, 0, @$fields);
+    my ($xhstr, $xcstr) = gen_wrapper($po, $cf, $xa||[[[]]], $_, 0, @$fields);
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for (sort keys %$vectorspecs) {
-    my ($xhstr, $xcstr) = gen_wrapper($po{$_}, undef, [], $_, 1, @{$vectorspecs->{$_}});
+    my ($xhstr, $xcstr) = gen_wrapper($ptr_only->{$_}, undef, [], $_, 1, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
-    ($xhstr, $xcstr) = gen_wrapper($po{$_}, undef, [], $_, 2, @{$vectorspecs->{$_}});
+    ($xhstr, $xcstr) = gen_wrapper($ptr_only->{$_}, undef, [], $_, 2, @{$vectorspecs->{$_}});
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   $hstr .= $extras->[1] || '';
   $cstr .= $extras->[3] || '';
   my %class2func2suffix;
   for my $func (@{$funclist||[]}) {
-    my ($xhstr, $xcstr) = gen_code($po{$func->[0]}, maybe_suffix(\%class2func2suffix, @$func));
+    my ($xhstr, $xcstr) = gen_code($ptr_only->{$func->[0]}, maybe_suffix(\%class2func2suffix, @$func));
     $hstr .= $xhstr; $cstr .= $xcstr;
   }
   for my $c (@{$consts||[]}) {
@@ -365,8 +364,8 @@ sub writefile {
 }
 
 sub readclasses {
-  return +{} if !-f 'classes.pl';
-  my @classlist = do ''. catfile curdir, 'classes.pl'; die if $@;
+  return +{} if !-f (my $file = ''. catfile shift(), 'classes.pl');
+  my @classlist = do $file; die if $@;
   +{map +($_->[0]=>[
     [], @$_[3..5],
   ]), @classlist
@@ -376,12 +375,15 @@ sub readclasses {
 my $filegen = $ARGV[0] || die "No file given";
 my @cvheaders = grep length, split /,/, $ARGV[1]||'';
 my $cons_arg = $ARGV[2] // '';
+my $in_submod = $filegen ne 'opencv_wrapper' && $cons_arg ne 'nocons';
 my $extras = $filegen eq 'opencv_wrapper' ? [$HTOP_GLOBAL,$HBODY_GLOBAL,"",gen_gettype().$CBODY_GLOBAL] : [qq{#include "opencv_wrapper.h"\n},"",qq{#include "wraplocal.h"\n},""];
-my $localclasses = readclasses();
+my $localclasses = readclasses(curdir);
 my $globalclasses = +{ (map +($_=>[$GLOBALTYPES{$_}, undef, "cv::$_", [[$extra_cons_args{$_}]]]), keys %GLOBALTYPES), %$localclasses };
 my $typespec = $filegen eq 'opencv_wrapper' ? $globalclasses : $cons_arg eq 'nocons' ? +{} : $localclasses;
 my $vectorspecs = $filegen eq 'opencv_wrapper' ? \%VECTORTYPES : +{};
 my @funclist = do ''. catfile curdir, 'funclist.pl'; die if $@;
 my $funclist = $filegen eq 'opencv_wrapper' ? [] : \@funclist;
-my $consts = ($filegen eq 'opencv_wrapper' or $cons_arg ne 'nocons')  && -f 'constlist.txt' ? gen_consts() : [];
-make_chfiles($filegen, $extras, $typespec, $vectorspecs, \@cvheaders, $funclist, $consts);
+my $consts = ($filegen eq 'opencv_wrapper' or $cons_arg ne 'nocons') && -f 'constlist.txt' ? gen_consts() : [];
+my %relevant_classes = (%$localclasses, $in_submod ? %{readclasses(updir)} : ());
+my %ptr_only = map +($_=>$relevant_classes{$_}[1]), keys %relevant_classes;
+make_chfiles($filegen, $extras, \%ptr_only, $typespec, $vectorspecs, \@cvheaders, $funclist, $consts);
