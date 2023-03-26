@@ -301,9 +301,9 @@ EOF
       PMCode => <<EOF,
 sub ${main::PDLOBJ}::$func {
   barf "Usage: ${main::PDLOBJ}::$func(@{[join ',', map "\\\$$_->{name}", @inputs]})\\n" if \@_ < @{[0+(grep !defined $_->{default} || !length $_->{default}, @inputs)]};
-  my (@{[join ',', map "\$$_->{name}", @inputs]}) = \@_;
-  @{[!@outputs ? '' : "my (@{[join ',', map qq{\$$_->{name}}, @outputs]});"]}
-  @{[ join "\n  ", @defaults ]}
+@{[!@inputs ? () : qq{  my (@{[join ',', map "\$$_->{name}", @inputs]}) = \@_;\n}
+]}  @{[!@outputs ? '' : "my (@{[join ',', map qq{\$$_->{name}}, @outputs]});\n"
+]}  @{[ join "\n  ", @defaults ]}
   ${main::PDLOBJ}::_${pfunc}_int(@{[join ',', map '$'.$_->{name}, @pars, @otherpars]});
   @{[!@outputs ? '' : "!wantarray ? \$$outputs[-1]{name} : (@{[join ',', map qq{\$$_->{name}}, @outputs]})"]}
 }
