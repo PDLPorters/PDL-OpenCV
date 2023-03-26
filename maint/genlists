@@ -242,6 +242,7 @@ use warnings;
 use File::Spec::Functions;
 require ''.catfile(updir, 'genpp.pl');
 
+# for pdlpp_mkgen: =head1 NAME PDL::OpenCV::$dir
 genheader("$dir");
 
 pp_done();
