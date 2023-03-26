@@ -51,16 +51,12 @@ while ($res) {
   my ($lines) = $lsd->detect(my $gray = cvtColor($frame, COLOR_BGR2GRAY));
   my ($binary) = threshold($gray, 127, 255, 0);
   my ($contours) = findContours($binary,RETR_TREE,CHAIN_APPROX_SIMPLE,[0,0]);
-  my ($bx, $by, $bw, $bh) = @{ $box->unpdl };
-  rectangle($frame, [$bx,$by], [$bx+$bw,$by+$bh], [255,0,0,0], 2, 1, 0);
+  rectangle2($frame, $box, [255,0,0,0]);
   drawContours($frame,$contours,-1,[0,255,0,0]);
   $lsd->drawSegments($frame, $lines);
   if ($CC_DIR) {
     my ($objects) = $cc->detectMultiScale(equalizeHist($gray));
-    for ($objects->dog) {
-      my ($bx, $by, $bw, $bh) = @{ $_->unpdl };
-      rectangle($frame, [$bx,$by], [$bx+$bw,$by+$bh], [0,255,255,0], 2, 1, 0);
-    }
+    rectangle2($frame, $objects, [0,255,255,0]); # broadcasting
   }
   imshow("ud", $frame), waitKey(300) if $ENV{AUTHOR_TESTING};
   if ((int($x/2) % 2) == 0) {

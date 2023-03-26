@@ -407,7 +407,8 @@ EOD
     genpp(maybe_suffix \%class2func2suffix, @$_) for grep $_->[0] eq $c, @flist;
   }
   pp_export_nothing();
-  pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], grep !$_->[0], @flist);
+  %class2func2suffix = ();
+  pp_add_exported(map ref($_->[1])?$_->[1][1]:$_->[1], map [maybe_suffix \%class2func2suffix, @$_], grep !$_->[0], @flist);
   genconsts($last);
 }
 
