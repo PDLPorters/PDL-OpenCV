@@ -26,7 +26,7 @@ EOF
 my $CBODY_GLOBAL = <<EOF;
 cw_error cw_Mat_newWithDims(MatWrapper **cw_retval, const ptrdiff_t planes, const ptrdiff_t cols, const ptrdiff_t rows, const int type, void * data) {
  TRY_WRAP(
-  char isempty = (planes == 0 && cols == 0 && rows == 0);
+  char isempty = (planes * cols * rows) == 0;
   if (!isempty && !data) throw std::invalid_argument("NULL data passed to cw_Mat_newWithDims");
   (*cw_retval = new MatWrapper)->held = isempty ? cv::Mat() : /* no check type as upgrade */
    cv::Mat(rows, cols, get_ocvtype(type,planes), data);
