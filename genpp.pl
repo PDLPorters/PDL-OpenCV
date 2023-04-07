@@ -377,18 +377,14 @@ EOPM
   my %class2func2suffix;
   if (@topfuncs) {
     pp_bless("PDL::OpenCV$last");
-    pp_addxs(<<EOF); # work around PP bug
-MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ}
-EOF
+    pp_addxs(''); # work around PP historical quirk
     genpp(maybe_suffix \%class2func2suffix, @$_) for @topfuncs;
   } else {
     pp_addpm("=pod\n\nNone.\n\n=cut\n\n");
   }
   for my $c (@classes) {
     pp_bless(my $fullclass = "PDL::OpenCV::$c");
-    pp_addxs(<<EOF); # work around PP bug
-MODULE = ${main::PDLMOD} PACKAGE = ${main::PDLOBJ}
-EOF
+    pp_addxs(''); # work around PP historical quirk
     my $doc = $class2doc{$c} // '';
     $doc = text_trim doxy2pdlpod(doxyparse($doc)) if $doc;
     pp_addpm(<<EOD);
