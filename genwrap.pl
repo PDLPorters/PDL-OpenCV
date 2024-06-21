@@ -9,7 +9,7 @@ use Config;
 require ''. catfile $Bin, 'genpp.pl';
 our (%type_overrides, %type_alias, %STAYWRAPPED, $INT_PDLTYPE, %REALCTYPE2PDLTYPE);
 my %GLOBALTYPES = do { no warnings 'once'; (%PP::OpenCV::DIMTYPES, map +($_=>[]), keys %STAYWRAPPED) };
-my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQN]/ && howbig($_) <= 8, PDL::Types::types;
+my @PDLTYPES_SUPPORTED = grep $_->real && $_->ppsym !~/[KPQNE]/ && howbig($_) <= 8, PDL::Types::types;
 my %VECTORTYPES = (%GLOBALTYPES, map +($_=>[]), qw(int float double char uchar));
 my $wrap_re = qr/^(?:(?!String)[A-Z]|vector_)/;
 my %extra_cons_args = (
