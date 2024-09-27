@@ -1,5 +1,4 @@
 package PDL::Demos::OpenCV;
-use PDL::OpenCV;
 
 sub info {('opencv', 'OpenCV')}
 

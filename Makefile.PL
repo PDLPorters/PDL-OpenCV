@@ -16,7 +16,7 @@ $hash{clean}{FILES} .= join ' ', '', map "$_.h $_.cpp", qw(opencv_wrapper wraplo
 $hash{LIBS}[0] .= $libs;
 $hash{INC} .= " $inc";
 $hash{OBJECT} .= join ' ', '', map $_.'$(OBJ_EXT)', qw(wraplocal);
-$hash{PM}{'Demo.m'} = '$(INST_LIB)/PDL/Demos/OpenCV.pm';
+$hash{PM}{'Demo.pm'} = '$(INST_LIB)/PDL/Demos/OpenCV.pm';
 
 use ExtUtils::CppGuess;
 my $guess = ExtUtils::CppGuess->new;
