@@ -53,7 +53,7 @@ while ($res) {
   my ($contours) = findContours($binary,RETR_TREE,CHAIN_APPROX_SIMPLE,[0,0]);
   rectangle2($frame, $box, [255,0,0,0]);
   drawContours($frame,$contours,-1,[0,255,0,0]);
-  $lsd->drawSegments($frame, $lines);
+  $lsd->drawSegments($frame->float, $lines);
   if ($CC_DIR) {
     my ($objects) = $cc->detectMultiScale(equalizeHist($gray));
     rectangle2($frame, $objects, [0,255,255,0]); # broadcasting
