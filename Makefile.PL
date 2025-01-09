@@ -27,30 +27,46 @@ our ($cppg_cc, $cppg_cflags) = @cpp_opts{qw(CC CCFLAGS)};
 
 our @cw_objs = map $_.'$(OBJ_EXT)', qw(opencv_wrapper);
 
+my $package_name = 'PDL::OpenCV';
+(my $repo = $package_name) =~ s#::#-#g;
+$repo = "PDLPorters/$repo";
 %hash = (%hash,
-    NAME                => 'PDL::OpenCV',
-    AUTHOR              => 'Ingo Schmid',
-    LICENSE => 'perl',
-    CONFIGURE_REQUIRES => {
-        'ExtUtils::CppGuess' => '0.22',
-        'ExtUtils::MakeMaker' => '6.3002',
-        'PDL' => '2.082', # pp_add_typemaps
-        'Alien::OpenCV' => 0,
+  NAME                => $package_name,
+  AUTHOR              => 'Ingo Schmid',
+  LICENSE => 'perl',
+  CONFIGURE_REQUIRES => {
+    'ExtUtils::CppGuess' => '0.22',
+    'ExtUtils::MakeMaker' => '6.3002',
+    'PDL' => '2.082', # pp_add_typemaps
+    'Alien::OpenCV' => 0,
+  },
+  TEST_REQUIRES => {
+    'Test::More' => '0.88',
+  },
+  PREREQ_PM => {
+    'PDL'        => '2.079',
+  },
+  MYEXTLIB => join(' ', @cw_objs),
+  depend => {
+    '$(OBJECT)'=>'opencv_wrapper.h wraplocal.h',
+    'opencv_wrapper$(OBJ_EXT)'=>'opencv_wrapper.h',
+    'opencv_wrapper.h wraplocal.h OpenCV.pm'=>'funclist.pl genpp.pl constlist.txt classes.pl', # .pm because that deps on .pd
+    'OpenCV.pm OpenCV.c'=>'typemap',
+    '$(FIRST_MAKEFILE)'=>'submodmf.pl',
+  },
+  META_MERGE => {
+    "meta-spec" => { version => 2 },
+    resources => {
+      homepage => 'http://pdl.perl.org/',
+      bugtracker  => {web=>"https://github.com/$repo/issues"},
+      repository  => {
+        url => "git://github.com/$repo.git",
+        type => 'git',
+        web => "https://github.com/$repo",
+      },
+      x_IRC => 'irc://irc.perl.org/#pdl',
     },
-    TEST_REQUIRES => {
-        'Test::More' => '0.88',
-    },
-    PREREQ_PM => {
-        'PDL'        => '2.079',
-    },
-    MYEXTLIB => join(' ', @cw_objs),
-    depend => {
-      '$(OBJECT)'=>'opencv_wrapper.h wraplocal.h',
-      'opencv_wrapper$(OBJ_EXT)'=>'opencv_wrapper.h',
-      'opencv_wrapper.h wraplocal.h OpenCV.pm'=>'funclist.pl genpp.pl constlist.txt classes.pl', # .pm because that deps on .pd
-      'OpenCV.pm OpenCV.c'=>'typemap',
-      '$(FIRST_MAKEFILE)'=>'submodmf.pl',
-    },
+  },
 );
 WriteMakefile(%hash);
 
