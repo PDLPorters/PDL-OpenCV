@@ -139,7 +139,7 @@ Ingo Schmid and the PDL Porters. Same terms as PDL itself.
 =cut
 EOPM
 
-our $VERSION = 0.001;
+our $VERSION = 0.002;
 pp_setversion($VERSION);
 
 genheader('', 1);
